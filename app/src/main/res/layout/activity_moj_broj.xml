@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- ===== HEADER ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvPlayerName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="start"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textStyle="bold"
+            tools:text="Igra: Marko" />
+
+        <TextView
+            android:id="@+id/tvRound"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold"
+            tools:text="Runda 1/2" />
+
+        <TextView
+            android:id="@+id/tvScore"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textStyle="bold"
+            tools:text="0 ⭐" />
+
+    </LinearLayout>
+
+    <!-- ===== TAJMER ProgressBar (60s) ===== -->
+    <ProgressBar
+        android:id="@+id/pbTimer"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:max="60"
+        android:progress="60" />
+
+    <!-- ===== TRAŽENI BROJ ===== -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
+
+        <TextView
+            android:id="@+id/tvTrazeniBroj"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="16dp"
+            android:text="@string/moj_broj_target_default"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:textAppearance="?attr/textAppearanceDisplaySmall" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ===== 6 DOSTUPNIH BROJEVA ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+            <TextView
+                android:id="@+id/tvBroj1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/moj_broj_number_default"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+            <TextView
+                android:id="@+id/tvBroj2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/moj_broj_number_default"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+            <TextView
+                android:id="@+id/tvBroj3"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/moj_broj_number_default"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+            <TextView
+                android:id="@+id/tvBroj4"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/moj_broj_number_default"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+            <TextView
+                android:id="@+id/tvBroj5"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/moj_broj_number_default"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_margin="4dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+            <TextView
+                android:id="@+id/tvBroj6"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="@string/moj_broj_number_default"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+    <!-- ===== POLJE ZA IZRAZ (read-only) ===== -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tlIzraz"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:hint="@string/moj_broj_hint_izraz">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etIzraz"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="false"
+            android:focusableInTouchMode="false"
+            android:inputType="none"
+            android:maxLines="1" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- ===== TASTATURA (GridLayout 4×4) ===== -->
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:columnCount="4"
+        android:rowCount="4"
+        android:useDefaultMargins="false">
+
+        <!-- Red 1: broj1, broj2, broj3, ( -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnB1"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:textAllCaps="false"
+            tools:text="25"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnB2"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:textAllCaps="false"
+            tools:text="50"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnB3"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:textAllCaps="false"
+            tools:text="75"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLeftParen"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_left_paren"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            android:layout_columnWeight="1" />
+
+        <!-- Red 2: broj4, broj5, broj6, ) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnB4"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:textAllCaps="false"
+            tools:text="3"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnB5"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:textAllCaps="false"
+            tools:text="6"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnB6"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:textAllCaps="false"
+            tools:text="100"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRightParen"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_right_paren"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            android:layout_columnWeight="1" />
+
+        <!-- Red 3: +, -, ×, ÷ -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPlus"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_plus"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMinus"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_minus"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMult"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_mult"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDiv"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_div"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:layout_columnWeight="1" />
+
+        <!-- Red 4: ←, C, STOP, ✓ -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBackspace"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_backspace"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnClear"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_clear"
+            android:textAllCaps="false"
+            android:textSize="18sp"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnStop"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_stop"
+            android:textAllCaps="false"
+            app:backgroundTint="?attr/colorSecondaryContainer"
+            android:layout_columnWeight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPotvrdi"
+            android:layout_width="0dp"
+            android:layout_height="56dp"
+            android:layout_margin="3dp"
+            android:text="@string/moj_broj_btn_potvrdi"
+            android:textAllCaps="false"
+            android:textSize="20sp"
+            android:layout_columnWeight="1" />
+
+    </GridLayout>
+
+    <!-- ===== FOOTER: Predaj ===== -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnGiveUp"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/moj_broj_btn_give_up"
+        android:textAllCaps="false" />
+
+</LinearLayout>
+

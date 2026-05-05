@@ -1,0 +1,100 @@
+<resources>
+    <string name="app_name">Slagalica</string>
+
+    <!-- Korak po korak igra -->
+    <string name="korak_player_label">Igra: %s</string>
+    <string name="korak_round_label">Runda %d/2</string>
+    <string name="korak_score_label">%d ⭐</string>
+    <string name="korak_hint_locked">🔒 Zaključan</string>
+    <string name="korak_hint_input">Tvoja pretpostavka</string>
+    <string name="korak_btn_guess">Pogodi</string>
+    <string name="korak_btn_give_up">Predaj</string>
+    <string name="korak_time_up">Vreme je isteklo</string>
+
+    <!-- Moj broj igra -->
+    <string name="moj_broj_player_label">Igra: %s</string>
+    <string name="moj_broj_round_label">Runda %d/2</string>
+    <string name="moj_broj_score_label">%d ⭐</string>
+    <string name="moj_broj_target_default">?</string>
+    <string name="moj_broj_number_default">?</string>
+    <string name="moj_broj_hint_izraz">Tvoj izraz</string>
+    <string name="moj_broj_btn_left_paren">(</string>
+    <string name="moj_broj_btn_right_paren">)</string>
+    <string name="moj_broj_btn_plus">+</string>
+    <string name="moj_broj_btn_minus">-</string>
+    <string name="moj_broj_btn_mult">×</string>
+    <string name="moj_broj_btn_div">÷</string>
+    <string name="moj_broj_btn_backspace">←</string>
+    <string name="moj_broj_btn_clear">C</string>
+    <string name="moj_broj_btn_stop">STOP</string>
+    <string name="moj_broj_btn_potvrdi">✓</string>
+    <string name="moj_broj_btn_give_up">Predaj</string>
+    <string name="moj_broj_toast_kt1_validate">(KT1) Validacija izraza</string>
+    <string name="moj_broj_time_up">Vreme je isteklo</string>
+
+    <!-- Zajedničke greške -->
+    <string name="error_field_required">Ovo polje je obavezno</string>
+    <string name="error_invalid_email">Unesite ispravnu email adresu</string>
+    <string name="error_username_too_short">Korisničko ime mora imati najmanje 3 karaktera</string>
+    <string name="error_username_invalid_chars">Korisničko ime sme sadržati samo slova, cifre i donju crtu</string>
+    <string name="error_password_too_short">Lozinka mora imati najmanje 6 karaktera</string>
+    <string name="error_passwords_do_not_match">Lozinke se ne poklapaju</string>
+    <string name="error_region_not_selected">Izaberite region</string>
+    <string name="register_success_mock">Registracija uspešna (mock). Proveri mejl za potvrdu.</string>
+
+    <!-- Login ekran -->
+    <string name="login_title">Slagalica</string>
+    <string name="login_hint_email">Email ili korisničko ime</string>
+    <string name="login_hint_password">Lozinka</string>
+    <string name="login_button_label">Prijavi se</string>
+    <string name="login_forgot_password">Zaboravljena lozinka?</string>
+    <string name="login_no_account">Nemaš nalog? Registruj se</string>
+    <string name="login_logo_description">Logo aplikacije</string>
+
+    <!-- Registracija ekran -->
+    <string name="register_title">Registracija</string>
+    <string name="register_hint_email">Email adresa</string>
+    <string name="register_hint_username">Korisničko ime</string>
+    <string name="register_hint_password">Lozinka</string>
+    <string name="register_hint_confirm_password">Potvrda lozinke</string>
+    <string name="register_hint_region">Region</string>
+    <string name="register_button_label">Registruj se</string>
+    <string name="register_have_account">Već imaš nalog? Prijavi se</string>
+    <string name="register_avatar_description">Avatar korisnika</string>
+    <string name="register_change_avatar">Promeni avatar</string>
+
+    <!-- Promena lozinke ekran -->
+    <string name="forgot_password_title">Promena lozinke</string>
+    <string name="forgot_password_hint_current">Trenutna lozinka</string>
+    <string name="forgot_password_hint_new">Nova lozinka</string>
+    <string name="forgot_password_hint_confirm">Potvrda nove lozinke</string>
+    <string name="forgot_password_button_change">Promeni lozinku</string>
+    <string name="forgot_password_button_cancel">Otkaži</string>
+    <string name="forgot_password_success_mock">Lozinka promenjena (mock)</string>
+
+    <!-- Glavni ekran -->
+    <string name="main_welcome">Dobrodošao!</string>
+    <string name="main_btn_profile">Profil</string>
+    <string name="main_btn_play">Igraj</string>
+    <string name="main_btn_leaderboard">Rang lista</string>
+    <string name="main_btn_friends">Prijatelji</string>
+    <string name="main_btn_region">Region</string>
+    <string name="main_btn_notifications">Notifikacije</string>
+    <string name="main_btn_chat">Čet</string>
+    <string name="main_btn_logout">Odjava</string>
+    <string name="main_chip_tokens">Žetoni: %d</string>
+    <string name="main_chip_stars">Zvezde: %d</string>
+    <string name="main_chip_league">Liga: %d</string>
+    <string name="main_coming_soon">Otvaranje %s (uskoro)</string>
+
+    <!-- Regioni -->
+    <string-array name="regions_array">
+        <item>Beograd</item>
+        <item>Vojvodina</item>
+        <item>Šumadija</item>
+        <item>Zapadna Srbija</item>
+        <item>Istočna Srbija</item>
+        <item>Južna Srbija</item>
+        <item>Kosovo i Metohija</item>
+    </string-array>
+</resources>

@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ui.main.MainActivity">
+
+    <!-- Top App Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:title="@string/app_name"
+            app:titleTextAppearance="?attr/textAppearanceTitleLarge">
+
+            <!-- Chips (tokeni, zvezde, liga) na desnoj strani toolbara -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingEnd="8dp">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipTokens"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:checkable="false"
+                    android:clickable="false"
+                    android:text="Žetoni: 5"
+                    tools:ignore="HardcodedText" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipStars"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:checkable="false"
+                    android:clickable="false"
+                    android:text="Zvezde: 0"
+                    tools:ignore="HardcodedText" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipLeague"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="false"
+                    android:clickable="false"
+                    android:text="Liga: 0"
+                    tools:ignore="HardcodedText" />
+
+            </LinearLayout>
+
+        </com.google.android.material.appbar.MaterialToolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Sadržaj -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Pozdravna poruka -->
+            <TextView
+                android:id="@+id/tvWelcome"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:gravity="center"
+                android:text="@string/main_welcome"
+                android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+
+            <!-- Red 1: Profil | Igraj -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnProfile"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/main_btn_profile"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPlay"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/main_btn_play"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+
+            <!-- Red 2: Rang lista | Prijatelji -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLeaderboard"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/main_btn_leaderboard"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFriends"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/main_btn_friends"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+
+            <!-- Red 3: Region | Notifikacije -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRegion"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/main_btn_region"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnNotifications"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/main_btn_notifications"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+
+            <!-- Red 4: Čet | Odjava -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChat"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/main_btn_chat"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLogout"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="80dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:text="@string/main_btn_logout"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>
