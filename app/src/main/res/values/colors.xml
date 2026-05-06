@@ -9,4 +9,17 @@
     <color name="step_correct">#FFC8E6C9</color>
     <color name="step_wrong">#FFFFCDD2</color>
     <color name="step_number_bg">#FF6200EE</color>
+
+    <!-- Profil — avatar okvir -->
+    <color name="profile_avatar_stroke">#FF6200EE</color>
+
+    <!-- Ko zna zna — boje odgovora -->
+    <color name="kzz_answer_correct">#FF4CAF50</color>
+    <color name="kzz_answer_wrong">#FFF44336</color>
+    <color name="kzz_answer_missed">#FFFFC107</color>
+
+    <!-- Spojnice — stanja stavki -->
+    <color name="spojnice_item_selected">#FF018786</color>
+    <color name="spojnice_item_connected">#FF4CAF50</color>
+    <color name="spojnice_item_wrong">#FFF44336</color>
 </resources>

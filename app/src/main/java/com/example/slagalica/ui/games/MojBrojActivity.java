@@ -1,4 +1,4 @@
-git remote add origin https://github.com/damjanxp/-e2-ma-tim29-2026.gitpackage com.example.slagalica.ui.games;
+package com.example.slagalica.ui.games;
 
 import android.os.Bundle;
 import android.os.CountDownTimer;

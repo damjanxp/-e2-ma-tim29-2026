@@ -8,6 +8,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
 import com.example.slagalica.ui.auth.LoginActivity;
+import com.example.slagalica.ui.games.GameMenuActivity;
+import com.example.slagalica.ui.profile.ProfileActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -75,9 +77,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupListeners() {
         btnProfile.setOnClickListener(v ->
-                showComingSoon(getString(R.string.main_btn_profile)));
+                startActivity(new Intent(this, ProfileActivity.class)));
         btnPlay.setOnClickListener(v ->
-                showComingSoon(getString(R.string.main_btn_play)));
+                startActivity(new Intent(this, GameMenuActivity.class)));
         btnLeaderboard.setOnClickListener(v ->
                 showComingSoon(getString(R.string.main_btn_leaderboard)));
         btnFriends.setOnClickListener(v ->

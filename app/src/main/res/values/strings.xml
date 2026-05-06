@@ -87,6 +87,79 @@
     <string name="main_chip_league">Liga: %d</string>
     <string name="main_coming_soon">Otvaranje %s (uskoro)</string>
 
+    <!-- Meni igara -->
+    <string name="game_menu_title">Igre</string>
+    <string name="game_menu_subtitle">Izaberi igru za demo (KT1)</string>
+    <string name="game_menu_btn_play">Igraj</string>
+    <string name="game_kzz_name">Ko zna zna</string>
+    <string name="game_kzz_desc">5 pitanja sa 4 ponuđena odgovora · 5s po pitanju · max 50 bodova</string>
+    <string name="game_spojnice_name">Spojnice</string>
+    <string name="game_spojnice_desc">Poveži 5 pojmova leve i desne kolone · 2 runde · 30s po rundi</string>
+    <string name="game_korak_name">Korak po korak</string>
+    <string name="game_korak_desc">Pogodi pojam kroz 7 koraka · 2 runde · 70s po rundi</string>
+    <string name="game_moj_broj_name">Moj broj</string>
+    <string name="game_moj_broj_desc">Izrazi traženi broj sa 6 datih brojeva · 2 runde · 60s po rundi</string>
+
+    <!-- Profil -->
+    <string name="profile_title">Profil</string>
+    <string name="profile_btn_change_avatar">Promeni avatar</string>
+    <string name="profile_toast_avatar_soon">Izmena avatara (uskoro)</string>
+    <string name="profile_label_tokens">Žetoni: %d</string>
+    <string name="profile_label_stars">Zvezde: %d ⭐</string>
+    <string name="profile_label_league">Liga: %s</string>
+    <string name="profile_label_region">Region: %s</string>
+    <string name="profile_qr_title">QR kod za poziv prijatelja</string>
+    <string name="profile_qr_placeholder">[ QR ]</string>
+    <string name="profile_stats_title">Statistika</string>
+    <string name="profile_total_games">Ukupno partija: %d</string>
+    <string name="profile_win_rate">Pobede / Porazi: %d%% / %d%%</string>
+    <string name="profile_stat_kzz_title">Ko zna zna</string>
+    <string name="profile_stat_kzz">Pogođena pitanja: %d%%</string>
+    <string name="profile_stat_kzz_detail">Pogođeno: %d  |  Promašeno: %d</string>
+    <string name="profile_stat_moj_broj_title">Moj broj</string>
+    <string name="profile_stat_moj_broj">Tačan rezultat: %d%%</string>
+    <string name="profile_stat_korak_title">Korak po korak</string>
+    <string name="profile_stat_korak">Prosečan korak pogotka: %.1f / 7</string>
+    <string name="profile_stat_asoc_title">Asocijacije</string>
+    <string name="profile_stat_asoc">Rešeno: %d%%  |  Nerešeno: %d%%</string>
+    <string name="profile_stat_skocko_title">Skočko</string>
+    <string name="profile_stat_skocko">Pogodak u 1–2. pokušaju: %d%%</string>
+    <string name="profile_stat_spojnice_title">Spojnice</string>
+    <string name="profile_stat_spojnice">Uspešno povezano: %d%%</string>
+    <string name="profile_btn_logout">Odjava</string>
+    <string name="profile_section_divider">──────────────</string>
+
+    <!-- Ko zna zna -->
+    <string name="kzz_title">Ko zna zna</string>
+    <string name="kzz_player_label">Igra: %s</string>
+    <string name="kzz_question_label">Pitanje %d / 5</string>
+    <string name="kzz_time_left">%d s</string>
+    <string name="kzz_score_label">Bodovi: %d</string>
+    <string name="kzz_correct">Tačno! +10</string>
+    <string name="kzz_wrong">Netačno! −5</string>
+    <string name="kzz_time_up">Vreme isteklo!</string>
+    <string name="kzz_round_end">Kraj igre! Bodovi: %d</string>
+    <string name="kzz_btn_give_up">Predaj</string>
+
+    <!-- Spojnice -->
+    <string name="spojnice_title">Spojnice</string>
+    <string name="spojnice_player_label">Igra: %s</string>
+    <string name="spojnice_round_label">Runda %d / 2</string>
+    <string name="spojnice_time_left">%d s</string>
+    <string name="spojnice_scores_label">I1: %d  |  I2: %d</string>
+    <string name="spojnice_criterion_label">Kriterijum: %s</string>
+    <string name="spojnice_instruction">Tapni levo pa desno da povežeš pojmove</string>
+    <string name="spojnice_correct">+2</string>
+    <string name="spojnice_wrong">Netačno</string>
+    <string name="spojnice_transition">Red na %s</string>
+    <string name="spojnice_no_remaining">Svi pojmovi su povezani!</string>
+    <string name="spojnice_round_end">Kraj runde!</string>
+    <string name="spojnice_game_end">Kraj igre!  Igrač 1: %d  |  Igrač 2: %d</string>
+    <string name="spojnice_btn_give_up">Predaj</string>
+    <string name="spojnice_player1">Igrač 1</string>
+    <string name="spojnice_player2">Igrač 2</string>
+    <string name="spojnice_time_up">Vreme isteklo!</string>
+
     <!-- Regioni -->
     <string-array name="regions_array">
         <item>Beograd</item>
