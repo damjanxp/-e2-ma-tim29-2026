@@ -22,4 +22,21 @@
     <color name="spojnice_item_selected">#FF018786</color>
     <color name="spojnice_item_connected">#FF4CAF50</color>
     <color name="spojnice_item_wrong">#FFF44336</color>
+
+    <!-- Skočko — boje tablice i tragova -->
+    <color name="skocko_slot_stroke">#FF90CAF9</color>
+    <color name="skocko_hint_correct">#FFF44336</color>
+    <color name="skocko_hint_present">#FFFFC107</color>
+    <color name="skocko_hint_empty">#FFBDBDBD</color>
+    <color name="skocko_symbol_tint">#FF1565C0</color>
+
+    <!-- Notifikacije -->
+    <color name="notification_unread_bg">#FFE3F2FD</color>
+    <color name="notification_read_bg">#FFFFFFFF</color>
+    <color name="notification_type_chat">#FF1E88E5</color>
+    <color name="notification_type_ranking">#FF8E24AA</color>
+    <color name="notification_type_reward">#FFF9A825</color>
+    <color name="notification_type_general">#FF546E7A</color>
+    <color name="notification_type_friend">#FF43A047</color>
+    <color name="notification_type_league">#FFFB8C00</color>
 </resources>

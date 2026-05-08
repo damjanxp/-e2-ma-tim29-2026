@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.slagalica.R;
 import com.example.slagalica.ui.auth.LoginActivity;
 import com.example.slagalica.ui.games.GameMenuActivity;
+import com.example.slagalica.ui.notifications.NotificationsActivity;
 import com.example.slagalica.ui.profile.ProfileActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -87,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
         btnRegion.setOnClickListener(v ->
                 showComingSoon(getString(R.string.main_btn_region)));
         btnNotifications.setOnClickListener(v ->
-                showComingSoon(getString(R.string.main_btn_notifications)));
+                startActivity(new Intent(this, NotificationsActivity.class)));
         btnChat.setOnClickListener(v ->
                 showComingSoon(getString(R.string.main_btn_chat)));
         btnLogout.setOnClickListener(v -> onLogoutClicked());

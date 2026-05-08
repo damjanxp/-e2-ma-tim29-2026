@@ -30,5 +30,11 @@ public class GameMenuActivity extends AppCompatActivity {
 
         findViewById(R.id.btnMojBroj).setOnClickListener(v ->
                 startActivity(new Intent(this, MojBrojActivity.class)));
+
+        findViewById(R.id.btnSkocko).setOnClickListener(v ->
+                startActivity(new Intent(this, SkockoActivity.class)));
+
+        findViewById(R.id.btnAsocijacije).setOnClickListener(v ->
+                startActivity(new Intent(this, AsocijacijeActivity.class)));
     }
 }

@@ -125,6 +125,8 @@ com.example.slagalica/
 
 **Firebase Storage is NOT enabled** — requires paid plan. Do not generate any code that uses `FirebaseStorage`.
 
+Note: the version catalog `gradle/libs.versions.toml` currently contains a `firebase-storage` entry under [libraries] (it is unused in `app/build.gradle`). Do NOT add or enable `firebase-storage` in dependencies — leave it unused.
+
 ### Firestore collections
 
 | Collection | Document ID | Purpose |
@@ -161,12 +163,12 @@ com.example.slagalica/
 
 This exact structure was reached after fixing a classloader conflict. Any change to plugin placement will break the build.
 
-| File | Content |
-|------|---------|
-| `settings.gradle` | Only `foojay-resolver` — **no google-services here** |
-| `build.gradle` (root) | `alias(libs.plugins.google.services) apply false` |
-| `libs.versions.toml` | `googleServices = "4.4.4"` |
-| `app/build.gradle` | `alias(libs.plugins.google.services)` (no version) |
+| | File | Content |
+| |------|---------|
+| | `settings.gradle` | Only `foojay-resolver` — **no google-services here** |
+| | `build.gradle` (root) | `alias(libs.plugins.android.application) apply false` and `alias(libs.plugins.google.services) apply false` |
+| | `libs.versions.toml` | `googleServices = "4.4.4"` |
+| | `app/build.gradle` | `alias(libs.plugins.android.application)` and `alias(libs.plugins.google.services)` (no plugin versions here) |
 
 **Why:** Declaring `google-services` in `settings.gradle` uses the settings classloader which initializes before AGP, making `com.android.build.api.variant.Variant` unavailable and breaking the build.
 
@@ -176,6 +178,8 @@ This exact structure was reached after fixing a classloader conflict. Any change
 - Only use hardcoded version strings for libraries NOT in the catalog
 - Never declare a plugin version in `app/build.gradle` — versions go in `libs.versions.toml` only
 - `compileSdk` must be a plain integer: `compileSdk 35` — never use version blocks like `version = release(36) { ... }`
+
+- Note: there is a mismatch in the repository where Navigation dependencies are hardcoded in `app/build.gradle` as `2.8.4` while the version catalog defines `navigationComponent = "2.7.7"`. When changing navigation versions, update `gradle/libs.versions.toml` and prefer `libs.navigation-fragment` / `libs.navigation-ui` rather than editing `app/build.gradle` directly.
 
 ---
 
@@ -192,6 +196,16 @@ This exact structure was reached after fixing a classloader conflict. Any change
 ./gradlew clean
 
 # View logs from this app only
+adb logcat -s "Slagalica:*"
+```
+
+On Windows PowerShell use the project wrapper directly (PowerShell):
+
+```powershell
+.\gradlew assembleDebug
+.\gradlew installDebug
+.\gradlew clean
+# View logs (adb must be on PATH)
 adb logcat -s "Slagalica:*"
 ```
 

@@ -99,6 +99,10 @@
     <string name="game_korak_desc">Pogodi pojam kroz 7 koraka · 2 runde · 70s po rundi</string>
     <string name="game_moj_broj_name">Moj broj</string>
     <string name="game_moj_broj_desc">Izrazi traženi broj sa 6 datih brojeva · 2 runde · 60s po rundi</string>
+    <string name="game_skocko_name">Skočko</string>
+    <string name="game_skocko_desc">Pogodi kombinaciju 4 simbola · 6 pokušaja · 30s</string>
+    <string name="game_asoc_name">Asocijacije</string>
+    <string name="game_asoc_desc">Pogodi asocijacije kroz polja A-D · 120s</string>
 
     <!-- Profil -->
     <string name="profile_title">Profil</string>
@@ -160,6 +164,19 @@
     <string name="spojnice_player2">Igrač 2</string>
     <string name="spojnice_time_up">Vreme isteklo!</string>
 
+    <!-- Skočko -->
+    <string name="skocko_title">Skočko</string>
+    <string name="skocko_time_left">%d s</string>
+    <string name="skocko_instruction">Pogodi tačnu kombinaciju u 6 pokušaja</string>
+    <string name="skocko_btn_give_up">Predaj</string>
+    <string name="skocko_symbol_smiley">Smeško</string>
+    <string name="skocko_symbol_square">Kvadrat</string>
+    <string name="skocko_symbol_circle">Krug</string>
+    <string name="skocko_symbol_heart">Srce</string>
+    <string name="skocko_symbol_triangle">Trougao</string>
+    <string name="skocko_slot_desc">Polje pokušaja</string>
+    <string name="skocko_solution_desc">Rešenje</string>
+
     <!-- Regioni -->
     <string-array name="regions_array">
         <item>Beograd</item>
@@ -170,4 +187,70 @@
         <item>Južna Srbija</item>
         <item>Kosovo i Metohija</item>
     </string-array>
+
+    <!-- Asocijacije -->
+    <string name="asoc_title">Asocijacije</string>
+    <string name="asoc_time_left">%d s</string>
+    <string name="asoc_a1">A1</string>
+    <string name="asoc_a2">A2</string>
+    <string name="asoc_a3">A3</string>
+    <string name="asoc_a4">A4</string>
+    <string name="asoc_b1">B1</string>
+    <string name="asoc_b2">B2</string>
+    <string name="asoc_b3">B3</string>
+    <string name="asoc_b4">B4</string>
+    <string name="asoc_a">A</string>
+    <string name="asoc_b">B</string>
+    <string name="asoc_center">\?\?\?</string>
+    <string name="asoc_c">C</string>
+    <string name="asoc_d">D</string>
+    <string name="asoc_c4">C4</string>
+    <string name="asoc_c3">C3</string>
+    <string name="asoc_c2">C2</string>
+    <string name="asoc_c1">C1</string>
+    <string name="asoc_d4">D4</string>
+    <string name="asoc_d3">D3</string>
+    <string name="asoc_d2">D2</string>
+    <string name="asoc_d1">D1</string>
+    <string name="asoc_btn_give_up">Predaj</string>
+
+    <!-- Notifikacije -->
+    <string name="notifications_title">Notifikacije</string>
+    <string name="notifications_filter_all">Sve</string>
+    <string name="notifications_filter_read">Pročitane</string>
+    <string name="notifications_filter_unread">Nepročitane</string>
+    <string name="notifications_mark_all_read">Označi sve kao pročitano</string>
+    <string name="notifications_empty">Nema notifikacija</string>
+
+    <string name="notification_type_chat">ČET</string>
+    <string name="notification_type_ranking">RANG</string>
+    <string name="notification_type_reward">NAGRADA</string>
+    <string name="notification_type_general">OPŠTE</string>
+    <string name="notification_type_friend_invite">PRIJATELJ</string>
+    <string name="notification_type_league">LIGA</string>
+
+    <string name="notification_title_chat">Nova poruka</string>
+    <string name="notification_message_chat">Marko Vam je poslao/la poruku</string>
+    <string name="notification_title_ranking">Rang lista</string>
+    <string name="notification_message_ranking">Postali ste #5 na rang listi</string>
+    <string name="notification_title_reward">Dnevna nagrada</string>
+    <string name="notification_message_reward">Otključali ste dnevnu nagradu</string>
+    <string name="notification_title_general">Liga</string>
+    <string name="notification_message_general">Dobrodošli u novu ligu</string>
+    <string name="notification_title_friend_invite">Zahtev za prijateljstvo</string>
+    <string name="notification_message_friend_invite">Ana Vam je poslala zahtev za prijateljstvo</string>
+    <string name="notification_title_league">Nova liga</string>
+    <string name="notification_message_league">Uznapredovali ste do Srebrne lige!</string>
+
+    <string name="notification_action_claim">Preuzmi</string>
+    <string name="notification_action_accept">Prihvati</string>
+
+    <string name="notification_channel_chat_name">Ćaskanje</string>
+    <string name="notification_channel_chat_desc">Obaveštenja o porukama u četu</string>
+    <string name="notification_channel_ranking_name">Rang lista</string>
+    <string name="notification_channel_ranking_desc">Promene na rang listi i rezultatima</string>
+    <string name="notification_channel_reward_name">Nagrade</string>
+    <string name="notification_channel_reward_desc">Dnevne i posebne nagrade</string>
+    <string name="notification_channel_general_name">Opšta</string>
+    <string name="notification_channel_general_desc">Opšta obaveštenja aplikacije</string>
 </resources>
