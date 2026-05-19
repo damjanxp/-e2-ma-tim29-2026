@@ -10,6 +10,19 @@
     <string name="korak_btn_guess">Pogodi</string>
     <string name="korak_btn_give_up">Predaj</string>
     <string name="korak_time_up">Vreme je isteklo</string>
+    <string name="korak_loading">Učitavanje zadatka…</string>
+    <string name="korak_dialog_correct_title">Bravo!</string>
+    <string name="korak_dialog_correct_msg">+%d bodova</string>
+    <string name="korak_dialog_timeout_title">Nisi pogodio</string>
+    <string name="korak_dialog_timeout_msg">Tačan odgovor je: %s</string>
+    <string name="korak_dialog_next_round">Sledeća runda</string>
+    <string name="korak_dialog_finish">Završi igru</string>
+    <string name="korak_dialog_give_up_title">Da li si siguran?</string>
+    <string name="korak_dialog_give_up_msg">Igra će biti izgubljena.</string>
+    <string name="korak_dialog_give_up_yes">Predaj</string>
+    <string name="korak_dialog_give_up_no">Nastavi</string>
+    <string name="korak_wrong_answer">Pogrešan odgovor. Pokušaj ponovo!</string>
+    <string name="korak_result_extra">bodovi</string>
 
     <!-- Moj broj igra -->
     <string name="moj_broj_player_label">Igra: %s</string>
@@ -31,6 +44,20 @@
     <string name="moj_broj_btn_give_up">Predaj</string>
     <string name="moj_broj_toast_kt1_validate">(KT1) Validacija izraza</string>
     <string name="moj_broj_time_up">Vreme je isteklo</string>
+    <string name="moj_broj_dialog_correct_title">Tačno!</string>
+    <string name="moj_broj_dialog_correct_msg">+10 bodova! Tvoj izraz daje %d.</string>
+    <string name="moj_broj_dialog_near_title">Nije tačno</string>
+    <string name="moj_broj_dialog_near_msg">Tvoj rezultat: %d (cilj: %d)</string>
+    <string name="moj_broj_dialog_timeout_title">Vreme isteklo</string>
+    <string name="moj_broj_dialog_timeout_msg">Nisi uneo izraz. Cilj je bio: %d</string>
+    <string name="moj_broj_dialog_next_round">Sledeća runda</string>
+    <string name="moj_broj_dialog_finish">Završi igru</string>
+    <string name="moj_broj_dialog_give_up_title">Da li si siguran?</string>
+    <string name="moj_broj_dialog_give_up_msg">Igra će biti izgubljena.</string>
+    <string name="moj_broj_dialog_give_up_yes">Predaj</string>
+    <string name="moj_broj_dialog_give_up_no">Nastavi</string>
+    <string name="moj_broj_hint_stop_first">Pritisni STOP da se generiše traženi broj</string>
+    <string name="moj_broj_hint_stop_second">Pritisni STOP da se prikažu dostupni brojevi</string>
 
     <!-- Zajedničke greške -->
     <string name="error_field_required">Ovo polje je obavezno</string>
@@ -60,6 +87,9 @@
     <string name="register_hint_region">Region</string>
     <string name="register_button_label">Registruj se</string>
     <string name="register_have_account">Već imaš nalog? Prijavi se</string>
+    <string name="register_dialog_verify_title">Proveri mejl</string>
+    <string name="register_dialog_verify_message">Poslat ti je verifikacioni mejl. Klikni link u mejlu pa se vrati i prijavi.</string>
+    <string name="register_dialog_verify_ok">U redu</string>
     <string name="register_avatar_description">Avatar korisnika</string>
     <string name="register_change_avatar">Promeni avatar</string>
 

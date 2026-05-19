@@ -1,23 +1,28 @@
 package com.example.slagalica.ui.auth;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.repository.UserRepository;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.regex.Pattern;
 
 /**
  * Ekran za registraciju novog korisnika.
- * KT1: samo GUI logika i validacija, bez Firebase poziva.
+ * KT2: koristi {@link UserRepository} za Firebase registraciju sa email verifikacijom.
  */
 public class RegisterActivity extends AppCompatActivity {
 
@@ -43,32 +48,46 @@ public class RegisterActivity extends AppCompatActivity {
 
     private MaterialButton btnRegister;
     private TextView tvLogin;
+    private ProgressBar pbLoading;
+
+    private UserRepository userRepository;
+
+    // -------------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------------
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
+        userRepository = UserRepository.getInstance();
+
         initViews();
         setupRegionDropdown();
         setupListeners();
     }
 
-    private void initViews() {
-        tlEmail = findViewById(R.id.tlEmail);
-        tlUsername = findViewById(R.id.tlUsername);
-        tlPassword = findViewById(R.id.tlPassword);
-        tlConfirmPassword = findViewById(R.id.tlConfirmPassword);
-        tlRegion = findViewById(R.id.tlRegion);
+    // -------------------------------------------------------------------------
+    // Inicijalizacija
+    // -------------------------------------------------------------------------
 
-        etEmail = findViewById(R.id.etEmail);
-        etUsername = findViewById(R.id.etUsername);
-        etPassword = findViewById(R.id.etPassword);
+    private void initViews() {
+        tlEmail           = findViewById(R.id.tlEmail);
+        tlUsername        = findViewById(R.id.tlUsername);
+        tlPassword        = findViewById(R.id.tlPassword);
+        tlConfirmPassword = findViewById(R.id.tlConfirmPassword);
+        tlRegion          = findViewById(R.id.tlRegion);
+
+        etEmail           = findViewById(R.id.etEmail);
+        etUsername        = findViewById(R.id.etUsername);
+        etPassword        = findViewById(R.id.etPassword);
         etConfirmPassword = findViewById(R.id.etConfirmPassword);
-        actvRegion = findViewById(R.id.actvRegion);
+        actvRegion        = findViewById(R.id.actvRegion);
 
         btnRegister = findViewById(R.id.btnRegister);
-        tvLogin = findViewById(R.id.tvLogin);
+        tvLogin     = findViewById(R.id.tvLogin);
+        pbLoading   = findViewById(R.id.pbLoading);
     }
 
     private void setupRegionDropdown() {
@@ -86,26 +105,78 @@ public class RegisterActivity extends AppCompatActivity {
         tvLogin.setOnClickListener(v -> finish());
     }
 
+    // -------------------------------------------------------------------------
+    // Registracija
+    // -------------------------------------------------------------------------
+
     private void onRegisterClicked() {
         clearErrors();
 
-        String email = getText(etEmail);
-        String username = getText(etUsername);
-        String password = getText(etPassword);
+        String email           = getText(etEmail);
+        String username        = getText(etUsername);
+        String password        = getText(etPassword);
         String confirmPassword = getText(etConfirmPassword);
-        String region = actvRegion.getText() != null ? actvRegion.getText().toString().trim() : "";
+        String region          = actvRegion.getText() != null
+                ? actvRegion.getText().toString().trim() : "";
 
         if (!validateInputs(email, username, password, confirmPassword, region)) {
             return;
         }
 
-        // KT1: mock registracija — Firebase se dodaje u KT2
-        Toast.makeText(this, getString(R.string.register_success_mock), Toast.LENGTH_LONG).show();
-        finish();
+        setLoading(true);
+
+        userRepository.register(email, username, region, password,
+                new UserRepository.AuthCallback() {
+                    @Override
+                    public void onSuccess(FirebaseUser user) {
+                        setLoading(false);
+                        showVerificationDialog();
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        setLoading(false);
+                        showError(message);
+                    }
+                });
     }
+
+    // -------------------------------------------------------------------------
+    // Dijalozi i feedback
+    // -------------------------------------------------------------------------
+
+    /**
+     * Prikazuje AlertDialog koji obaveštava korisnika da proveri mejl.
+     * Klik na OK zatvara RegisterActivity i vraća na LoginActivity.
+     */
+    private void showVerificationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.register_dialog_verify_title))
+                .setMessage(getString(R.string.register_dialog_verify_message))
+                .setCancelable(false)
+                .setPositiveButton(getString(R.string.register_dialog_verify_ok),
+                        (dialog, which) -> finish())
+                .show();
+    }
+
+    /** Prikazuje Snackbar sa porukom greške. */
+    private void showError(String message) {
+        Snackbar.make(btnRegister, message, Snackbar.LENGTH_LONG).show();
+    }
+
+    /** Prikazuje ili skriva ProgressBar i onemogućava/omogućava dugme. */
+    private void setLoading(boolean isLoading) {
+        pbLoading.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        btnRegister.setEnabled(!isLoading);
+    }
+
+    // -------------------------------------------------------------------------
+    // Validacija
+    // -------------------------------------------------------------------------
 
     /**
      * Validira sva polja forme i postavlja odgovarajuće greške na TextInputLayout-ove.
+     * Proverava sva polja odjednom — korisnik vidi sve greške istovremeno.
      *
      * @return true ako su svi unosi ispravni, false ako postoji bar jedna greška
      */
