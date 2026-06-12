@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <!-- ===== HEADER red 1: runda + skorovi ===== -->
+    <!-- ===== HEADER ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -15,11 +15,21 @@
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/tvRoundLabel"
+            android:id="@+id/tvOpponentScore"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="start"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textStyle="bold"
+            tools:text="Marko: 0" />
+
+        <TextView
+            android:id="@+id/tvRoundLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textStyle="bold"
             tools:text="Runda 1 / 2" />
@@ -30,22 +40,11 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="end"
-            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textStyle="bold"
-            tools:text="I1: 0  |  I2: 0" />
+            tools:text="Bodovi: 0" />
 
     </LinearLayout>
-
-    <!-- ===== HEADER red 2: čiji je red ===== -->
-    <TextView
-        android:id="@+id/tvPlayerName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:gravity="center"
-        android:textAppearance="?attr/textAppearanceLabelLarge"
-        android:textStyle="bold"
-        tools:text="▶ Igra: Igrač 1" />
 
     <!-- ===== TAJMER ===== -->
     <ProgressBar
@@ -74,6 +73,16 @@
             tools:text="30 s" />
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvTurnStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginBottom="4dp"
+        android:textAppearance="?attr/textAppearanceLabelLarge"
+        android:textStyle="bold"
+        tools:text="Ti si na potezu!" />
 
     <!-- ===== KRITERIJUM ===== -->
     <TextView

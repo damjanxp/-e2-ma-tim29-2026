@@ -4,9 +4,12 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.model.User;
+import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.ui.auth.LoginActivity;
 import com.example.slagalica.ui.games.GameMenuActivity;
 import com.example.slagalica.ui.notifications.NotificationsActivity;
@@ -16,15 +19,15 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 
 /**
- * Glavni ekran aplikacije — prikazuje navigaciona dugmad i statusne čipove.
- * KT1: sve akcije su mock, bez Firebase poziva.
+ * Glavni ekran aplikacije — navigaciona dugmad i statusni čipovi.
+ *
+ * <p>Statusna traka (žetoni, zvezde, liga) se u KT2 puni iz Firestore profila i
+ * osvežava u {@code onResume()} kako bi posle partije prikazala aktuelno stanje
+ * (Student 2).</p>
  */
 public class MainActivity extends AppCompatActivity {
 
-    // KT1: hardkodovane vrednosti — u KT2 se pune iz Firestore korisničkog profila
-    private static final int MOCK_TOKENS = 5;
-    private static final int MOCK_STARS = 0;
-    private static final int MOCK_LEAGUE = 0;
+    private final UserRepository userRepository = UserRepository.getInstance();
 
     private Chip chipTokens;
     private Chip chipStars;
@@ -46,8 +49,13 @@ public class MainActivity extends AppCompatActivity {
 
         initViews();
         setupToolbar();
-        setupChips();
         setupListeners();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadStatusBar();
     }
 
     private void initViews() {
@@ -70,12 +78,6 @@ public class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
     }
 
-    private void setupChips() {
-        chipTokens.setText(getString(R.string.main_chip_tokens, MOCK_TOKENS));
-        chipStars.setText(getString(R.string.main_chip_stars, MOCK_STARS));
-        chipLeague.setText(getString(R.string.main_chip_league, MOCK_LEAGUE));
-    }
-
     private void setupListeners() {
         btnProfile.setOnClickListener(v ->
                 startActivity(new Intent(this, ProfileActivity.class)));
@@ -94,6 +96,40 @@ public class MainActivity extends AppCompatActivity {
         btnLogout.setOnClickListener(v -> onLogoutClicked());
     }
 
+    /** Učitava aktuelne žetone, zvezde i ligu iz Firestore profila. */
+    private void loadStatusBar() {
+        userRepository.ensureSignedIn(new UserRepository.SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                String uid = userRepository.getCurrentUid();
+                if (uid == null) {
+                    return;
+                }
+                userRepository.getOrCreateUser(uid, new UserRepository.UserCallback() {
+                    @Override
+                    public void onSuccess(User user) {
+                        if (isFinishing() || isDestroyed()) {
+                            return;
+                        }
+                        chipTokens.setText(getString(R.string.main_chip_tokens, user.getTokens()));
+                        chipStars.setText(getString(R.string.main_chip_stars, user.getTotalStars()));
+                        chipLeague.setText(getString(R.string.main_chip_league, user.getCurrentLeague()));
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        // statusna traka ostaje na podrazumevanim vrednostima
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                // bez konekcije statusna traka ostaje na podrazumevanim vrednostima
+            }
+        });
+    }
+
     /** Prikazuje Toast poruku "Otvaranje X (uskoro)" za nedovršene funkcionalnosti. */
     private void showComingSoon(String sectionName) {
         Toast.makeText(this,
@@ -103,10 +139,10 @@ public class MainActivity extends AppCompatActivity {
 
     /** Odjavljuje korisnika i vraća na ekran za prijavu. */
     private void onLogoutClicked() {
+        userRepository.signOut();
         Intent intent = new Intent(this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
 }
-

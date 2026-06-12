@@ -283,4 +283,66 @@
     <string name="notification_channel_reward_desc">Dnevne i posebne nagrade</string>
     <string name="notification_channel_general_name">Opšta</string>
     <string name="notification_channel_general_desc">Opšta obaveštenja aplikacije</string>
+
+    <!-- ============ Student 2 — KT2 (profil + 1v1 igre) ============ -->
+
+    <!-- Profil (dodatno) -->
+    <string name="profile_no_email">Neregistrovan igrač</string>
+    <string name="profile_error_load">Učitavanje profila nije uspelo</string>
+    <string name="profile_avatar_dialog_title">Izaberi avatar</string>
+    <string name="profile_avatar_option">Opcija avatara</string>
+    <string name="profile_toast_avatar_updated">Avatar je promenjen</string>
+    <string name="profile_stat_avg_points">Prosečno bodova po igri: %.1f</string>
+
+    <!-- Zajednički dijalozi -->
+    <string name="dialog_cancel">Otkaži</string>
+    <string name="dialog_yes">Da</string>
+    <string name="dialog_no">Ne</string>
+    <string name="dialog_give_up_title">Predaja partije</string>
+    <string name="dialog_give_up_message">Da li si siguran? Izgubićeš partiju.</string>
+
+    <!-- Matchmaking -->
+    <string name="matchmaking_title">Traženje protivnika</string>
+    <string name="matchmaking_searching">Tražim protivnika…</string>
+    <string name="matchmaking_found">Protivnik pronađen: %s</string>
+    <string name="matchmaking_preparing">Priprema meča…</string>
+    <string name="matchmaking_btn_cancel">Otkaži</string>
+
+    <!-- Ko zna zna — 1v1 (dodatno) -->
+    <string name="kzz_waiting_opponent">Čeka se odgovor protivnika…</string>
+    <string name="kzz_waiting_content">Učitavanje pitanja…</string>
+    <string name="kzz_opponent_score_label">%1$s: %2$d</string>
+    <string name="kzz_too_slow">Tačno, ali protivnik je bio brži!</string>
+    <string name="kzz_opponent_left">Protivnik je napustio partiju</string>
+
+    <!-- Spojnice — 1v1 (dodatno) -->
+    <string name="spojnice_score_label">Bodovi: %d</string>
+    <string name="spojnice_your_turn">Ti si na potezu!</string>
+    <string name="spojnice_opponent_turn">Na potezu: %s</string>
+    <string name="spojnice_waiting_content">Učitavanje spojnica…</string>
+    <string name="spojnice_opponent_score_label">%1$s: %2$d</string>
+    <string name="spojnice_opponent_left">Protivnik je napustio partiju</string>
+
+    <!-- Rezultat meča -->
+    <string name="result_title">Rezultat meča</string>
+    <string name="result_win">Pobeda! 🎉</string>
+    <string name="result_lose">Poraz</string>
+    <string name="result_draw">Nerešeno</string>
+    <string name="result_game_kzz">Ko zna zna</string>
+    <string name="result_game_spojnice">Spojnice</string>
+    <string name="result_score_row">%1$d : %2$d</string>
+    <string name="result_total">Ukupno</string>
+    <string name="result_btn_home">Nazad na početni ekran</string>
+    <string name="result_players">%1$s  protiv  %2$s</string>
+    <string name="result_you">Ti</string>
+
+    <!-- Lige -->
+    <string-array name="leagues_array">
+        <item>Nulta liga</item>
+        <item>Bronzana liga</item>
+        <item>Srebrna liga</item>
+        <item>Zlatna liga</item>
+        <item>Platinasta liga</item>
+        <item>Dijamantska liga</item>
+    </string-array>
 </resources>

@@ -24,8 +24,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
@@ -54,9 +54,12 @@ dependencies {
     annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
 
     // Navigation Component
-    implementation 'androidx.navigation:navigation-fragment:2.8.4'
-    implementation 'androidx.navigation:navigation-ui:2.8.4'
+    implementation libs.navigation.fragment
+    implementation libs.navigation.ui
 
     // exp4j
     implementation 'net.objecthunter:exp4j:0.4.8'
+
+    // ZXing — generisanje QR koda na profilu (Student 2)
+    implementation libs.zxing.core
 }

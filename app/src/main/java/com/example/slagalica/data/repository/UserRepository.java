@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.slagalica.data.model.User;
+import com.example.slagalica.util.AvatarProvider;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
@@ -12,8 +13,12 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Singleton repozitorijum koji upravlja svim operacijama vezanim za
@@ -68,6 +73,12 @@ public class UserRepository {
     /** Callback za operacije koje vraćaju {@link User} POJO pri uspehu. */
     public interface UserCallback {
         void onSuccess(User user);
+        void onError(String message);
+    }
+
+    /** Callback bez povratne vrednosti (Student 2 — profil/igre). */
+    public interface SimpleCallback {
+        void onSuccess();
         void onError(String message);
     }
 
@@ -361,6 +372,112 @@ public class UserRepository {
             return "Korisnički nalog nije pronađen.";
         }
         return "Došlo je do greške. Pokušaj ponovo.";
+    }
+
+    // =========================================================================
+    // Profil, avatar i statistika (Student 2 — Prikaz profila + igre)
+    // =========================================================================
+
+    /** Vraća UID trenutno prijavljenog korisnika ili {@code null}. */
+    @Nullable
+    public String getCurrentUid() {
+        FirebaseUser user = mAuth.getCurrentUser();
+        return user != null ? user.getUid() : null;
+    }
+
+    /**
+     * Obezbeđuje da postoji prijavljen Firebase korisnik. Ako niko nije prijavljen
+     * (npr. neregistrovan igrač koji po specifikaciji sme da igra protiv drugog),
+     * prijavljuje anonimnog korisnika.
+     */
+    public void ensureSignedIn(@NonNull SimpleCallback cb) {
+        if (mAuth.getCurrentUser() != null) {
+            cb.onSuccess();
+            return;
+        }
+        mAuth.signInAnonymously()
+                .addOnSuccessListener(result -> cb.onSuccess())
+                .addOnFailureListener(e ->
+                        cb.onError("Prijava nije uspela. Proveri internet konekciju."));
+    }
+
+    /**
+     * Učitava profil korisnika; ako dokument ne postoji (npr. anonimni igrač),
+     * kreira ga sa podrazumevanim vrednostima koristeći timsku šemu.
+     */
+    public void getOrCreateUser(@NonNull String uid, @NonNull UserCallback cb) {
+        mDb.collection(COLLECTION_USERS).document(uid).get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        User user = snapshot.toObject(User.class);
+                        if (user != null) {
+                            cb.onSuccess(user);
+                        } else {
+                            cb.onError("Greška pri čitanju korisničkog profila.");
+                        }
+                        return;
+                    }
+                    // Dokument ne postoji — kreiraj podrazumevani (anonimni/gost)
+                    FirebaseUser fu = mAuth.getCurrentUser();
+                    String email = fu != null && fu.getEmail() != null ? fu.getEmail() : "";
+                    String username = !email.isEmpty()
+                            ? email.substring(0, email.indexOf('@'))
+                            : "Igrac-" + uid.substring(0, Math.min(4, uid.length()));
+                    long now = System.currentTimeMillis();
+                    User newUser = new User(uid, email, username, "Beograd",
+                            null, 5, 0, 0, now, now, 0);
+                    mDb.collection(COLLECTION_USERS).document(uid).set(newUser)
+                            .addOnSuccessListener(v -> cb.onSuccess(newUser))
+                            .addOnFailureListener(e -> cb.onError("Kreiranje profila nije uspelo."));
+                })
+                .addOnFailureListener(e ->
+                        cb.onError("Učitavanje profila nije uspelo. Proveri internet konekciju."));
+    }
+
+    /**
+     * Menja avatar korisnika. Lokalni avatar (indeks) se čuva kao string u polju
+     * {@code avatarUrl} (bez Firebase Storage, po AGENTS.md).
+     */
+    public void updateAvatar(@NonNull String uid, int avatarIndex, @NonNull SimpleCallback cb) {
+        mDb.collection(COLLECTION_USERS).document(uid)
+                .update("avatarUrl", AvatarProvider.storedValue(avatarIndex))
+                .addOnSuccessListener(v -> cb.onSuccess())
+                .addOnFailureListener(e -> cb.onError("Izmena avatara nije uspela."));
+    }
+
+    /** Beleži rezultat jedne igre "Ko zna zna" u statistiku korisnika. */
+    public void recordKzzResult(@NonNull String uid, int correct, int wrong, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("kzzCorrect", FieldValue.increment(correct));
+        updates.put("kzzWrong", FieldValue.increment(wrong));
+        updates.put("kzzPointsSum", FieldValue.increment(points));
+        updates.put("kzzGames", FieldValue.increment(1));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /** Beleži rezultat jedne igre "Spojnice" u statistiku korisnika. */
+    public void recordSpojniceResult(@NonNull String uid, int connected, int missed, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("spojniceConnected", FieldValue.increment(connected));
+        updates.put("spojniceMissed", FieldValue.increment(missed));
+        updates.put("spojnicePointsSum", FieldValue.increment(points));
+        updates.put("spojniceGames", FieldValue.increment(1));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /** Beleži odigranu partiju (i pobedu) u statistiku korisnika. */
+    public void recordMatchResult(@NonNull String uid, boolean won) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("matchesPlayed", FieldValue.increment(1));
+        if (won) {
+            updates.put("matchesWon", FieldValue.increment(1));
+        }
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /** Odjava (alias za {@link #logout()} — koristi ga Student 2 kod profila). */
+    public void signOut() {
+        mAuth.signOut();
     }
 }
 

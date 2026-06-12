@@ -6,6 +6,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.ui.match.MatchmakingActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 
 public class GameMenuActivity extends AppCompatActivity {
@@ -19,11 +20,13 @@ public class GameMenuActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
 
+        // Ko zna zna i Spojnice su 1 na 1 (Student 2) — vode na matchmaking,
+        // koji uparuje dva igrača pa pokreće partiju (Ko zna zna → Spojnice).
         findViewById(R.id.btnKoZnaZna).setOnClickListener(v ->
-                startActivity(new Intent(this, KoZnaZnaActivity.class)));
+                startActivity(new Intent(this, MatchmakingActivity.class)));
 
         findViewById(R.id.btnSpojnice).setOnClickListener(v ->
-                startActivity(new Intent(this, SpojniceActivity.class)));
+                startActivity(new Intent(this, MatchmakingActivity.class)));
 
         findViewById(R.id.btnKorakPoKorak).setOnClickListener(v ->
                 startActivity(new Intent(this, KorakPoKorakActivity.class)));

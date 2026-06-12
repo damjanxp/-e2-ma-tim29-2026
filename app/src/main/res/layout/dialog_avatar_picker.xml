@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:columnCount="3"
+    android:padding="16dp">
+
+    <ImageView
+        android:id="@+id/ivAvatarOption0"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_columnWeight="1"
+        android:layout_margin="8dp"
+        android:contentDescription="@string/profile_avatar_option"
+        android:src="@drawable/avatar_0" />
+
+    <ImageView
+        android:id="@+id/ivAvatarOption1"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_columnWeight="1"
+        android:layout_margin="8dp"
+        android:contentDescription="@string/profile_avatar_option"
+        android:src="@drawable/avatar_1" />
+
+    <ImageView
+        android:id="@+id/ivAvatarOption2"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_columnWeight="1"
+        android:layout_margin="8dp"
+        android:contentDescription="@string/profile_avatar_option"
+        android:src="@drawable/avatar_2" />
+
+    <ImageView
+        android:id="@+id/ivAvatarOption3"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_columnWeight="1"
+        android:layout_margin="8dp"
+        android:contentDescription="@string/profile_avatar_option"
+        android:src="@drawable/avatar_3" />
+
+    <ImageView
+        android:id="@+id/ivAvatarOption4"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_columnWeight="1"
+        android:layout_margin="8dp"
+        android:contentDescription="@string/profile_avatar_option"
+        android:src="@drawable/avatar_4" />
+
+    <ImageView
+        android:id="@+id/ivAvatarOption5"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_columnWeight="1"
+        android:layout_margin="8dp"
+        android:contentDescription="@string/profile_avatar_option"
+        android:src="@drawable/avatar_5" />
+
+</GridLayout>

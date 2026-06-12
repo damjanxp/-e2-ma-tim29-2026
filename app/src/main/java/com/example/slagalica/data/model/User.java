@@ -29,6 +29,34 @@ public class User {
     private int avatarFrameType;
 
     // -------------------------------------------------------------------------
+    // Statistika igara (dodatak Studenta 2 — Prikaz profila / statistika).
+    // Uvećavaju se kroz FieldValue.increment nakon svake igre; podrazumevano 0.
+    // -------------------------------------------------------------------------
+
+    private long matchesPlayed;
+    private long matchesWon;
+
+    private long kzzCorrect;
+    private long kzzWrong;
+    private long kzzPointsSum;
+    private long kzzGames;
+
+    private long spojniceConnected;
+    private long spojniceMissed;
+    private long spojnicePointsSum;
+    private long spojniceGames;
+
+    private long mojBrojHits;
+    private long mojBrojGames;
+    private long korakStepSum;
+    private long korakHits;
+    private long korakGames;
+    private long asocSolved;
+    private long asocUnsolved;
+    private long skockoEarlyHits;
+    private long skockoGames;
+
+    // -------------------------------------------------------------------------
     // Konstruktori
     // -------------------------------------------------------------------------
 
@@ -166,6 +194,67 @@ public class User {
     public void setAvatarFrameType(int avatarFrameType) {
         this.avatarFrameType = avatarFrameType;
     }
+
+    // -------------------------------------------------------------------------
+    // Getteri/setteri statistike (Student 2)
+    // -------------------------------------------------------------------------
+
+    public long getMatchesPlayed() { return matchesPlayed; }
+    public void setMatchesPlayed(long matchesPlayed) { this.matchesPlayed = matchesPlayed; }
+
+    public long getMatchesWon() { return matchesWon; }
+    public void setMatchesWon(long matchesWon) { this.matchesWon = matchesWon; }
+
+    public long getKzzCorrect() { return kzzCorrect; }
+    public void setKzzCorrect(long kzzCorrect) { this.kzzCorrect = kzzCorrect; }
+
+    public long getKzzWrong() { return kzzWrong; }
+    public void setKzzWrong(long kzzWrong) { this.kzzWrong = kzzWrong; }
+
+    public long getKzzPointsSum() { return kzzPointsSum; }
+    public void setKzzPointsSum(long kzzPointsSum) { this.kzzPointsSum = kzzPointsSum; }
+
+    public long getKzzGames() { return kzzGames; }
+    public void setKzzGames(long kzzGames) { this.kzzGames = kzzGames; }
+
+    public long getSpojniceConnected() { return spojniceConnected; }
+    public void setSpojniceConnected(long spojniceConnected) { this.spojniceConnected = spojniceConnected; }
+
+    public long getSpojniceMissed() { return spojniceMissed; }
+    public void setSpojniceMissed(long spojniceMissed) { this.spojniceMissed = spojniceMissed; }
+
+    public long getSpojnicePointsSum() { return spojnicePointsSum; }
+    public void setSpojnicePointsSum(long spojnicePointsSum) { this.spojnicePointsSum = spojnicePointsSum; }
+
+    public long getSpojniceGames() { return spojniceGames; }
+    public void setSpojniceGames(long spojniceGames) { this.spojniceGames = spojniceGames; }
+
+    public long getMojBrojHits() { return mojBrojHits; }
+    public void setMojBrojHits(long mojBrojHits) { this.mojBrojHits = mojBrojHits; }
+
+    public long getMojBrojGames() { return mojBrojGames; }
+    public void setMojBrojGames(long mojBrojGames) { this.mojBrojGames = mojBrojGames; }
+
+    public long getKorakStepSum() { return korakStepSum; }
+    public void setKorakStepSum(long korakStepSum) { this.korakStepSum = korakStepSum; }
+
+    public long getKorakHits() { return korakHits; }
+    public void setKorakHits(long korakHits) { this.korakHits = korakHits; }
+
+    public long getKorakGames() { return korakGames; }
+    public void setKorakGames(long korakGames) { this.korakGames = korakGames; }
+
+    public long getAsocSolved() { return asocSolved; }
+    public void setAsocSolved(long asocSolved) { this.asocSolved = asocSolved; }
+
+    public long getAsocUnsolved() { return asocUnsolved; }
+    public void setAsocUnsolved(long asocUnsolved) { this.asocUnsolved = asocUnsolved; }
+
+    public long getSkockoEarlyHits() { return skockoEarlyHits; }
+    public void setSkockoEarlyHits(long skockoEarlyHits) { this.skockoEarlyHits = skockoEarlyHits; }
+
+    public long getSkockoGames() { return skockoGames; }
+    public void setSkockoGames(long skockoGames) { this.skockoGames = skockoGames; }
 
     // -------------------------------------------------------------------------
     // toString
