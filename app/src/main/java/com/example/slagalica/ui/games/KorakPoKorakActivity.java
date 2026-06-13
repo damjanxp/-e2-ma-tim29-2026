@@ -1,9 +1,18 @@
 package com.example.slagalica.ui.games;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -11,6 +20,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.Korak;
 import com.example.slagalica.data.model.KorakState;
+import com.example.slagalica.data.repository.GameContentRepository;
+import com.example.slagalica.data.repository.MatchRepository;
+import com.example.slagalica.data.repository.UserRepository;
+import com.example.slagalica.logic.games.KorakPoKorakLogic;
+import com.example.slagalica.ui.match.MatchResultActivity;
+import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -19,105 +34,608 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Aktivnost za igru "Korak po korak".
- * KT1: vizuelni demo — svaki 10s se otvara sledeći hint, bez prave validacije.
- * KT2: biće nadograđena Firebase integracijom i tačnom proverom odgovora.
+ * Igra "Korak po korak" — KT2, multiplayer 1 na 1.
+ *
+ * <p>2 runde po 70 sekundi (7 hintova × 10s). Prvu rundu igra player1 (aktivni),
+ * drugu player2. Player1 učitava oba zadatka iz Firestore-a i upisuje ih u RTDB.
+ * Oba igrača slušaju stanje runde ({@link MatchRepository#listenKorakState}) i
+ * prikazuju hintove onako kako ih aktivni igrač otkriva.</p>
+ *
+ * <p>Bodovanje je determinističko:
+ * aktivni pogodak → {@link KorakPoKorakLogic#bodoviZaPogodakUKoraku(int)},
+ * protivnička šansa → {@link KorakPoKorakLogic#bodoviZaPreuzimanje()}.</p>
  */
 public class KorakPoKorakActivity extends AppCompatActivity {
 
-    // KT1: fake hint-ovi na temu "JABUKA"
-    private static final String[] FAKE_HINTS = {
-            "voće",
-            "crvena ili zelena",
-            "Newton",
-            "raste na drvetu",
-            "Adam i Eva",
-            "u tortama i pitama",
-            "JA_UKA"
-    };
+    private static final int MAX_ROUNDS        = 2;
+    private static final int ACTIVE_DURATION_MS = 70_000;
+    private static final int CHANCE_DURATION_MS = 10_000;
+    private static final int ROUND_DELAY_MS     = 1_800;
 
-    private RecyclerView rvKoraci;
-    private TextInputLayout tlGuess;
+    // ─── Views ───────────────────────────────────────────────────────────────
+    private TextView         tvOpponentScore;
+    private TextView         tvRoundLabel;
+    private TextView         tvScore;
+    private TextView         tvTimer;
+    private TextView         tvTurnStatus;
+    private ProgressBar      pbTimer;
+    private RecyclerView     rvKoraci;
+    private TextInputLayout  tlGuess;
     private TextInputEditText etGuess;
-    private MaterialButton btnGuess;
-    private MaterialButton btnGiveUp;
+    private MaterialButton   btnGuess;
+    private MaterialButton   btnGiveUp;
 
+    // ─── Meč ─────────────────────────────────────────────────────────────────
+    private final MatchRepository        matchRepository  = MatchRepository.getInstance();
+    private final UserRepository         userRepository   = UserRepository.getInstance();
+    private final GameContentRepository  contentRepo      = GameContentRepository.getInstance();
+
+    private String  matchId;
+    private String  myUid;
+    private String  opponentUid;
+    private String  opponentName;
+    private boolean isPlayerOne;
+    private boolean opponentOnline = true;
+
+    private int myKzzScore, oppKzzScore;
+    private int mySpojniceScore, oppSpojniceScore;
+    private int myMojBrojScore, oppMojBrojScore;
+
+    // ─── Stanje igre ─────────────────────────────────────────────────────────
+    private int     currentRound   = 0;
+    private boolean gameEnded      = false;
+    private int     myTotalScore   = 0;
+    private int     opponentTotalScore = 0;
+
+    // Stanje runde
+    private String  currentPhase   = "";
+    private int     localHintsOpened = 0;
+    private boolean roundResolved  = false;
+    private boolean guessGiven     = false;    // aktivni igrač dao pogodak ili isteklo
+    private boolean chanceGiven    = false;    // pasivni dao šansu ili istekla
+
+    // Zadaci (player1 učitava oba, oba igrača primaju iz RTDB)
+    private String       currentResenje;
+    private List<String> currentKoraci;
     private KorakAdapter adapter;
 
-    /** Tajmer za otvaranje hint-ova — čuva se kao polje i cancels se u onDestroy(). */
-    private CountDownTimer hintTimer;
+    // ─── Timeri ──────────────────────────────────────────────────────────────
+    private CountDownTimer activeTimer;
+    private CountDownTimer chanceTimer;
+    private CountDownTimer displayTimer;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final List<Runnable> matchDetachers = new ArrayList<>();
+    private Runnable roundStateDetacher;
+    private Runnable zadatakDetacher;
+
+    // =========================================================================
+    // Lifecycle
+    // =========================================================================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_korak_po_korak);
 
+        readExtras();
         initViews();
-        setupRecyclerView();
         setupListeners();
-        startHintTimer();
-    }
-
-    private void initViews() {
-        rvKoraci = findViewById(R.id.rvKoraci);
-        tlGuess  = findViewById(R.id.tlGuess);
-        etGuess  = findViewById(R.id.etGuess);
-        btnGuess  = findViewById(R.id.btnGuess);
-        btnGiveUp = findViewById(R.id.btnGiveUp);
-    }
-
-    private void setupRecyclerView() {
-        List<Korak> koraci = buildFakeKoraci();
-        adapter = new KorakAdapter(koraci);
-        rvKoraci.setLayoutManager(new LinearLayoutManager(this));
-        rvKoraci.setAdapter(adapter);
-        // Otvori prvi hint odmah — preostalih 6 otvara tajmer (svakih 10s)
-        adapter.otvoriSledeci();
-    }
-
-    /** Gradi listu od 7 zaključanih koraka s fake hint-ovima. */
-    private List<Korak> buildFakeKoraci() {
-        List<Korak> list = new ArrayList<>();
-        for (int i = 0; i < FAKE_HINTS.length; i++) {
-            list.add(new Korak(i + 1, FAKE_HINTS[i], KorakState.ZAKLJUCAN));
-        }
-        return list;
-    }
-
-    private void setupListeners() {
-        btnGuess.setOnClickListener(v ->
-                Toast.makeText(this, "(KT1) Provera odgovora", Toast.LENGTH_SHORT).show());
-
-        btnGiveUp.setOnClickListener(v -> finish());
-    }
-
-    /**
-     * Pokreće CountDownTimer od 70s koji svaki 10s otvara sledeći hint.
-     * Na isteku prikazuje Toast poruku.
-     */
-    private void startHintTimer() {
-        hintTimer = new CountDownTimer(70_000, 10_000) {
-
-            @Override
-            public void onTick(long millisUntilFinished) {
-                adapter.otvoriSledeci();
-            }
-
-            @Override
-            public void onFinish() {
-                Toast.makeText(KorakPoKorakActivity.this,
-                        getString(R.string.korak_time_up),
-                        Toast.LENGTH_SHORT).show();
-            }
-        }.start();
+        setupBackHandler();
+        joinMatch();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (hintTimer != null) {
-            hintTimer.cancel();
+        handler.removeCallbacksAndMessages(null);
+        otkaziSveTimere();
+        detachAll();
+    }
+
+    // =========================================================================
+    // Init
+    // =========================================================================
+
+    private void readExtras() {
+        matchId          = getIntent().getStringExtra(Constants.EXTRA_MATCH_ID);
+        opponentUid      = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
+        opponentName     = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
+        isPlayerOne      = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        myKzzScore       = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
+        oppKzzScore      = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
+        mySpojniceScore  = getIntent().getIntExtra(Constants.EXTRA_MY_SPOJNICE, 0);
+        oppSpojniceScore = getIntent().getIntExtra(Constants.EXTRA_OPP_SPOJNICE, 0);
+        myMojBrojScore   = getIntent().getIntExtra(Constants.EXTRA_MY_MOJ_BROJ, 0);
+        oppMojBrojScore  = getIntent().getIntExtra(Constants.EXTRA_OPP_MOJ_BROJ, 0);
+        myUid            = userRepository.getCurrentUid();
+    }
+
+    private void initViews() {
+        tvOpponentScore = findViewById(R.id.tvOpponentScore);
+        tvRoundLabel    = findViewById(R.id.tvRoundLabel);
+        tvScore         = findViewById(R.id.tvScore);
+        tvTimer         = findViewById(R.id.tvTimer);
+        tvTurnStatus    = findViewById(R.id.tvTurnStatus);
+        pbTimer         = findViewById(R.id.pbTimer);
+        rvKoraci        = findViewById(R.id.rvKoraci);
+        tlGuess         = findViewById(R.id.tlGuess);
+        etGuess         = findViewById(R.id.etGuess);
+        btnGuess        = findViewById(R.id.btnGuess);
+        btnGiveUp       = findViewById(R.id.btnGiveUp);
+
+        rvKoraci.setLayoutManager(new LinearLayoutManager(this));
+        setInputEnabled(false);
+        tvTurnStatus.setText("Učitavanje zadatka...");
+        updateScoreLabels();
+    }
+
+    private void setupListeners() {
+        btnGuess.setOnClickListener(v -> onGuessClicked());
+        btnGiveUp.setOnClickListener(v -> confirmGiveUp());
+    }
+
+    private void setupBackHandler() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { confirmGiveUp(); }
+        });
+    }
+
+    // =========================================================================
+    // Prisustvo i inicijalizacija meča
+    // =========================================================================
+
+    private void joinMatch() {
+        if (matchId == null || myUid == null) {
+            Toast.makeText(this, "Greška pri učitavanju meča.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        matchRepository.setPresence(matchId, myUid);
+
+        matchDetachers.add(matchRepository.listenOpponentPresence(matchId, opponentUid,
+                online -> {
+                    boolean wasOnline = opponentOnline;
+                    opponentOnline = online;
+                    if (wasOnline && !online) {
+                        Toast.makeText(this, opponentName + " je napustio igru.",
+                                Toast.LENGTH_SHORT).show();
+                        // Preskoči čekanje na protivnika
+                        if (!roundResolved && isOpponentActiveCurrent()) {
+                            advancePhase();
+                        }
+                    }
+                }));
+
+        if (isPlayerOne) {
+            // Player1 učitava oba zadatka i upisuje ih u RTDB
+            ucitajIUpisiZadatke();
+        } else {
+            // Player2 čeka zadatak u RTDB
+            startRound(0);
         }
     }
-}
 
+    /** Player1 učitava 2 zadatka iz Firestorea i upisuje ih u RTDB, pa pokreće rundu 0. */
+    private void ucitajIUpisiZadatke() {
+        tvTurnStatus.setText("Učitavanje zadataka...");
+        contentRepo.getRandomKorakPoKorak(new GameContentRepository.KorakLoadCallback() {
+            @Override
+            public void onSuccess(com.example.slagalica.data.model.KorakPoKorakZadatak z0) {
+                matchRepository.writeKorakZadatak(matchId, 0, z0.getResenje(), z0.getKoraci(), null);
+                // Učitaj zadatak za rundu 1 (drugi, po mogućnosti različit)
+                contentRepo.getRandomKorakPoKorak(new GameContentRepository.KorakLoadCallback() {
+                    @Override
+                    public void onSuccess(com.example.slagalica.data.model.KorakPoKorakZadatak z1) {
+                        matchRepository.writeKorakZadatak(matchId, 1, z1.getResenje(), z1.getKoraci(), null);
+                        startRound(0);
+                    }
+                    @Override
+                    public void onError(String message) {
+                        // Fallback: koristi isti zadatak
+                        matchRepository.writeKorakZadatak(matchId, 1, z0.getResenje(), z0.getKoraci(), null);
+                        startRound(0);
+                    }
+                });
+            }
+            @Override
+            public void onError(String message) {
+                Toast.makeText(KorakPoKorakActivity.this, message, Toast.LENGTH_LONG).show();
+                finish();
+            }
+        });
+    }
+
+    // =========================================================================
+    // Upravljanje rundama
+    // =========================================================================
+
+    private void startRound(int round) {
+        currentRound    = round;
+        currentPhase    = "";
+        localHintsOpened = 0;
+        roundResolved   = false;
+        guessGiven      = false;
+        chanceGiven     = false;
+        currentResenje  = null;
+        currentKoraci   = null;
+
+        tvRoundLabel.setText("Runda " + (round + 1) + "/" + MAX_ROUNDS);
+        pbTimer.setMax(70);
+        pbTimer.setProgress(70);
+        tvTimer.setText("–");
+        tvTurnStatus.setText("Čeka se zadatak...");
+        etGuess.setText("");
+        setInputEnabled(false);
+
+        // Reset adaptera sa praznim koracima
+        initAdapter(null);
+        updateScoreLabels();
+
+        if (roundStateDetacher != null) { roundStateDetacher.run(); roundStateDetacher = null; }
+        if (zadatakDetacher    != null) { zadatakDetacher.run();    zadatakDetacher    = null; }
+
+        // Oba igrača čekaju zadatak (player1 ga je već upisao ili će upisati odmah)
+        zadatakDetacher = matchRepository.listenKorakZadatak(matchId, round,
+                new MatchRepository.KorakZadatakListener() {
+            @Override
+            public void onZadatak(@NonNull String resenje, @NonNull List<String> koraci) {
+                if (gameEnded) return;
+                currentResenje = resenje;
+                currentKoraci  = koraci;
+                initAdapter(koraci);
+
+                // Pokreni listener stanja runde
+                roundStateDetacher = matchRepository.listenKorakState(
+                        matchId, round, KorakPoKorakActivity.this::onRoundStateChanged);
+
+                // Aktivni igrač postavlja inicijalnu fazu
+                if (isActivePlayerForRound(round)) {
+                    matchRepository.setKorakOpenedHints(matchId, round, 0);
+                    matchRepository.setKorakPhase(matchId, round, Constants.KORAK_PHASE_ACTIVE);
+                }
+            }
+            @Override
+            public void onError(@NonNull String message) {
+                Toast.makeText(KorakPoKorakActivity.this, message, Toast.LENGTH_LONG).show();
+                finish();
+            }
+        });
+    }
+
+    // =========================================================================
+    // Listener stanja runde (oba igrača ga primaju)
+    // =========================================================================
+
+    private void onRoundStateChanged(@NonNull String phase, int openedHints,
+                                     @Nullable MatchRepository.KorakGuessData activeGuess,
+                                     @Nullable MatchRepository.KorakGuessData opponentGuess) {
+        if (gameEnded || roundResolved) return;
+
+        // Otvori hintove do trenutnog broja (catch-up za pasivnog igrača)
+        while (localHintsOpened < openedHints && adapter != null) {
+            adapter.otvoriSledeci();
+            localHintsOpened++;
+        }
+
+        // Proveri da li je runda završena
+        if (Constants.KORAK_PHASE_DONE.equals(phase)) {
+            if (!roundResolved) {
+                onRoundDone(activeGuess, opponentGuess);
+            }
+            return;
+        }
+
+        // Promjena faze (ACTIVE → OPPONENT_CHANCE)
+        if (!phase.equals(currentPhase)) {
+            currentPhase = phase;
+            otkaziSveTimere();
+
+            if (Constants.KORAK_PHASE_ACTIVE.equals(phase)) {
+                renderTurnStatus();
+                startActivePhaseTurn();
+            } else if (Constants.KORAK_PHASE_CHANCE.equals(phase)) {
+                renderTurnStatus();
+                startChancePhaseTurn();
+            }
+        }
+
+        // Ako je protivnik napustio a on je aktivan — preskoči
+        if (!opponentOnline && isOpponentActiveCurrent()) {
+            advancePhase();
+        }
+    }
+
+    // =========================================================================
+    // Faza ACTIVE — aktivni igrač igra 70s
+    // =========================================================================
+
+    private void startActivePhaseTurn() {
+        pbTimer.setMax(70);
+        pbTimer.setProgress(70);
+
+        boolean iAmActive = isActivePlayerForRound(currentRound);
+
+        if (iAmActive) {
+            // Aktivni igrač: otvara hintove i kontroliše timer
+            activeTimer = new CountDownTimer(ACTIVE_DURATION_MS, 10_000) {
+                int hintsOpened = localHintsOpened;
+
+                @Override
+                public void onTick(long ms) {
+                    if (hintsOpened < 7 && adapter != null) {
+                        adapter.otvoriSledeci();
+                        hintsOpened++;
+                        localHintsOpened = hintsOpened;
+                        matchRepository.setKorakOpenedHints(matchId, currentRound, hintsOpened);
+                    }
+                    int s = (int) Math.ceil(ms / 1000.0);
+                    pbTimer.setProgress(Math.min(s, 70));
+                    tvTimer.setText(s + "s");
+                }
+
+                @Override
+                public void onFinish() {
+                    pbTimer.setProgress(0);
+                    tvTimer.setText("0s");
+                    if (!guessGiven && !roundResolved) {
+                        guessGiven = true;
+                        matchRepository.setKorakPhase(matchId, currentRound, Constants.KORAK_PHASE_CHANCE);
+                    }
+                }
+            }.start();
+            setInputEnabled(true);
+        } else {
+            // Pasivni igrač: display timer (približno)
+            long estimatedMs = Math.max((7 - localHintsOpened) * 10_000L, 0);
+            displayTimer = new CountDownTimer(estimatedMs + 5_000, 1_000) {
+                @Override
+                public void onTick(long ms) {
+                    int s = (int) Math.ceil(ms / 1000.0);
+                    pbTimer.setProgress(Math.min(s, 70));
+                    tvTimer.setText(s + "s");
+                }
+                @Override public void onFinish() { tvTimer.setText("…"); }
+            }.start();
+            setInputEnabled(false);
+        }
+    }
+
+    // =========================================================================
+    // Faza OPPONENT_CHANCE — pasivni igrač ima 10 sekundi
+    // =========================================================================
+
+    private void startChancePhaseTurn() {
+        pbTimer.setMax(10);
+        pbTimer.setProgress(10);
+
+        boolean iAmPassive = !isActivePlayerForRound(currentRound); // pasivni postaje aktivan za unos
+
+        if (iAmPassive) {
+            setInputEnabled(true);
+            chanceTimer = new CountDownTimer(CHANCE_DURATION_MS, 250) {
+                @Override
+                public void onTick(long ms) {
+                    int s = (int) Math.ceil(ms / 1000.0);
+                    pbTimer.setProgress(s);
+                    tvTimer.setText(s + "s");
+                }
+                @Override
+                public void onFinish() {
+                    pbTimer.setProgress(0);
+                    tvTimer.setText("0s");
+                    if (!chanceGiven && !roundResolved) {
+                        chanceGiven = true;
+                        setInputEnabled(false);
+                        matchRepository.submitKorakOpponentGuess(matchId, currentRound, myUid, false);
+                        matchRepository.setKorakPhase(matchId, currentRound, Constants.KORAK_PHASE_DONE);
+                    }
+                }
+            }.start();
+        } else {
+            // Originalni aktivni igrač: samo display
+            setInputEnabled(false);
+            displayTimer = new CountDownTimer(CHANCE_DURATION_MS, 250) {
+                @Override
+                public void onTick(long ms) {
+                    int s = (int) Math.ceil(ms / 1000.0);
+                    pbTimer.setProgress(s);
+                    tvTimer.setText(s + "s");
+                }
+                @Override public void onFinish() { tvTimer.setText("0s"); }
+            }.start();
+        }
+    }
+
+    // =========================================================================
+    // Provera odgovora
+    // =========================================================================
+
+    private void onGuessClicked() {
+        String input = etGuess.getText() != null ? etGuess.getText().toString().trim() : "";
+        if (input.isEmpty() || currentResenje == null) return;
+
+        tlGuess.setError(null);
+        boolean correct = KorakPoKorakLogic.tacanOdgovor(input, currentResenje);
+
+        if (Constants.KORAK_PHASE_ACTIVE.equals(currentPhase)) {
+            // Aktivni igrač pogađa
+            if (guessGiven) return;
+            if (correct) {
+                guessGiven = true;
+                setInputEnabled(false);
+                otkaziSveTimere();
+                matchRepository.submitKorakActiveGuess(matchId, currentRound, myUid, true, localHintsOpened - 1);
+                matchRepository.setKorakPhase(matchId, currentRound, Constants.KORAK_PHASE_DONE);
+            } else {
+                Toast.makeText(this, "Netačan odgovor, pokušaj ponovo!", Toast.LENGTH_SHORT).show();
+                etGuess.selectAll();
+            }
+        } else if (Constants.KORAK_PHASE_CHANCE.equals(currentPhase)) {
+            // Pasivni igrač u šansi
+            if (chanceGiven) return;
+            chanceGiven = true;
+            otkaziSveTimere();
+            setInputEnabled(false);
+            matchRepository.submitKorakOpponentGuess(matchId, currentRound, myUid, correct);
+            matchRepository.setKorakPhase(matchId, currentRound, Constants.KORAK_PHASE_DONE);
+            if (!correct) {
+                Toast.makeText(this, "Netačan odgovor.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // =========================================================================
+    // Prelaz faze (ako protivnik napusti)
+    // =========================================================================
+
+    private void advancePhase() {
+        if (roundResolved) return;
+        otkaziSveTimere();
+        if (Constants.KORAK_PHASE_ACTIVE.equals(currentPhase)) {
+            if (!guessGiven) {
+                guessGiven = true;
+                matchRepository.setKorakPhase(matchId, currentRound, Constants.KORAK_PHASE_CHANCE);
+            }
+        } else if (Constants.KORAK_PHASE_CHANCE.equals(currentPhase)) {
+            if (!chanceGiven) {
+                chanceGiven = true;
+                matchRepository.setKorakPhase(matchId, currentRound, Constants.KORAK_PHASE_DONE);
+            }
+        }
+    }
+
+    // =========================================================================
+    // Kraj runde — deterministično bodovanje
+    // =========================================================================
+
+    private void onRoundDone(@Nullable MatchRepository.KorakGuessData activeGuess,
+                              @Nullable MatchRepository.KorakGuessData opponentGuess) {
+        if (roundResolved) return;
+        roundResolved = true;
+        otkaziSveTimere();
+        setInputEnabled(false);
+
+        boolean iAmActiveThisRound = isActivePlayerForRound(currentRound);
+
+        if (activeGuess != null && activeGuess.correct) {
+            int pts = KorakPoKorakLogic.bodoviZaPogodakUKoraku(
+                    Math.max(0, Math.min(6, activeGuess.korakIndex)));
+            if (iAmActiveThisRound) myTotalScore += pts;
+            else opponentTotalScore += pts;
+        } else if (opponentGuess != null && opponentGuess.correct) {
+            int pts = KorakPoKorakLogic.bodoviZaPreuzimanje();
+            if (!iAmActiveThisRound) myTotalScore += pts;
+            else opponentTotalScore += pts;
+        }
+
+        updateScoreLabels();
+
+        boolean isLast = (currentRound >= MAX_ROUNDS - 1);
+        handler.postDelayed(() -> {
+            if (isLast) endGame();
+            else startRound(currentRound + 1);
+        }, ROUND_DELAY_MS);
+    }
+
+    // =========================================================================
+    // Kraj igre — prelazak na MatchResultActivity
+    // =========================================================================
+
+    private void endGame() {
+        if (gameEnded) return;
+        gameEnded = true;
+
+        matchRepository.setGameResult(matchId, Constants.GAME_KORAK, myUid, myTotalScore);
+
+        Intent intent = new Intent(this, MatchResultActivity.class);
+        intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
+        intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
+        intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);
+        intent.putExtra(Constants.EXTRA_MY_SPOJNICE, mySpojniceScore);
+        intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, oppSpojniceScore);
+        intent.putExtra(Constants.EXTRA_MY_MOJ_BROJ, myMojBrojScore);
+        intent.putExtra(Constants.EXTRA_OPP_MOJ_BROJ, oppMojBrojScore);
+        intent.putExtra(Constants.EXTRA_MY_KORAK, myTotalScore);
+        intent.putExtra(Constants.EXTRA_OPP_KORAK, opponentTotalScore);
+        startActivity(intent);
+        finish();
+    }
+
+    // =========================================================================
+    // Predaja
+    // =========================================================================
+
+    private void confirmGiveUp() {
+        new AlertDialog.Builder(this)
+                .setTitle("Da li si siguran?")
+                .setMessage("Igra će biti izgubljena.")
+                .setPositiveButton("Predaj", (d, w) -> {
+                    gameEnded = true;
+                    matchRepository.leaveMatch(matchId, myUid);
+                    finish();
+                })
+                .setNegativeButton("Nastavi", null)
+                .show();
+    }
+
+    // =========================================================================
+    // UI helpers
+    // =========================================================================
+
+    private boolean isActivePlayerForRound(int round) {
+        return (isPlayerOne && round == 0) || (!isPlayerOne && round == 1);
+    }
+
+    /** Da li je protivnik onaj koji trenutno treba da radi akciju u tekućoj fazi. */
+    private boolean isOpponentActiveCurrent() {
+        if (roundResolved) return false;
+        if (Constants.KORAK_PHASE_ACTIVE.equals(currentPhase)) return !isActivePlayerForRound(currentRound);
+        if (Constants.KORAK_PHASE_CHANCE.equals(currentPhase)) return isActivePlayerForRound(currentRound);
+        return false;
+    }
+
+    private void renderTurnStatus() {
+        boolean iAmActive = isActivePlayerForRound(currentRound);
+        if (Constants.KORAK_PHASE_ACTIVE.equals(currentPhase)) {
+            tvTurnStatus.setText(iAmActive ? "Ti pogađaš!" : opponentName + " pogađa...");
+        } else if (Constants.KORAK_PHASE_CHANCE.equals(currentPhase)) {
+            boolean iAmInChance = !iAmActive; // pasivni dobija šansu
+            tvTurnStatus.setText(iAmInChance ? "Tvoja šansa! (10s)" : "Šansa za " + opponentName + "...");
+        }
+    }
+
+    private void setInputEnabled(boolean enabled) {
+        etGuess.setEnabled(enabled);
+        btnGuess.setEnabled(enabled);
+        if (!enabled) tlGuess.setError(null);
+    }
+
+    private void initAdapter(@Nullable List<String> koraci) {
+        List<Korak> list = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            String hint = (koraci != null && i < koraci.size()) ? koraci.get(i) : "?";
+            list.add(new Korak(i + 1, hint, KorakState.ZAKLJUCAN));
+        }
+        adapter = new KorakAdapter(list);
+        rvKoraci.setAdapter(adapter);
+    }
+
+    private void updateScoreLabels() {
+        tvScore.setText("Bodovi: " + myTotalScore);
+        tvOpponentScore.setText((opponentName != null ? opponentName : "?") + ": " + opponentTotalScore);
+    }
+
+    private void otkaziSveTimere() {
+        if (activeTimer  != null) { activeTimer.cancel();  activeTimer  = null; }
+        if (chanceTimer  != null) { chanceTimer.cancel();  chanceTimer  = null; }
+        if (displayTimer != null) { displayTimer.cancel(); displayTimer = null; }
+    }
+
+    private void detachAll() {
+        if (roundStateDetacher != null) { roundStateDetacher.run(); roundStateDetacher = null; }
+        if (zadatakDetacher    != null) { zadatakDetacher.run();    zadatakDetacher    = null; }
+        for (Runnable d : matchDetachers) d.run();
+        matchDetachers.clear();
+    }
+}

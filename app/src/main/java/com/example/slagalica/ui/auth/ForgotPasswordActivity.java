@@ -2,18 +2,21 @@ package com.example.slagalica.ui.auth;
 
 import android.os.Bundle;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.repository.UserRepository;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+import com.google.firebase.auth.FirebaseUser;
 
 /**
  * Ekran za promenu lozinke.
- * KT1: samo GUI logika i validacija, bez Firebase poziva.
+ * KT2: puna implementacija — reauthentikacija starom lozinkom i promena
+ * lozinke kroz {@link UserRepository#changePassword}.
  */
 public class ForgotPasswordActivity extends AppCompatActivity {
 
@@ -66,9 +69,42 @@ public class ForgotPasswordActivity extends AppCompatActivity {
             return;
         }
 
-        // KT1: mock promena lozinke — Firebase se dodaje u KT2
-        Toast.makeText(this, getString(R.string.forgot_password_success_mock), Toast.LENGTH_SHORT).show();
-        finish();
+        // KT2: prava promena lozinke kroz Firebase (reauth + updatePassword)
+        setLoading(true);
+        UserRepository.getInstance().changePassword(currentPassword, newPassword,
+                new UserRepository.AuthCallback() {
+                    @Override
+                    public void onSuccess(FirebaseUser user) {
+                        Snackbar.make(btnChangePassword,
+                                "Lozinka uspešno promenjena.",
+                                Snackbar.LENGTH_SHORT).show();
+                        // Kratka pauza da korisnik vidi poruku, pa zatvori ekran
+                        btnChangePassword.postDelayed(ForgotPasswordActivity.this::finish, 1200);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        setLoading(false);
+                        // Greška o slaboj/novoj lozinki ide na polje nove lozinke,
+                        // sve ostalo (pogrešna stara lozinka, mreža) na staru
+                        if (message != null && message.contains("najmanje 6")) {
+                            tlNewPassword.setError(message);
+                        } else {
+                            tlCurrentPassword.setError(message);
+                        }
+                    }
+                });
+    }
+
+    /**
+     * Uključuje/isključuje "loading" stanje forme — dugme je onemogućeno
+     * dok traje Firebase poziv da se spreči dupli klik.
+     */
+    private void setLoading(boolean loading) {
+        btnChangePassword.setEnabled(!loading);
+        btnChangePassword.setText(loading ? "Menjam lozinku…"
+                : getString(R.string.forgot_password_button_change));
+        tvCancel.setEnabled(!loading);
     }
 
     /**

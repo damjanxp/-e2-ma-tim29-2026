@@ -20,8 +20,8 @@ public class GameMenuActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(v -> finish());
 
-        // Ko zna zna i Spojnice su 1 na 1 (Student 2) — vode na matchmaking,
-        // koji uparuje dva igrača pa pokreće partiju (Ko zna zna → Spojnice).
+        // Sve 1v1 igre idu kroz matchmaking koji uparuje igrače
+        // pa pokreće celi lanac: KoZnaZna → Spojnice → MojBroj → KorakPoKorak
         findViewById(R.id.btnKoZnaZna).setOnClickListener(v ->
                 startActivity(new Intent(this, MatchmakingActivity.class)));
 
@@ -29,10 +29,10 @@ public class GameMenuActivity extends AppCompatActivity {
                 startActivity(new Intent(this, MatchmakingActivity.class)));
 
         findViewById(R.id.btnKorakPoKorak).setOnClickListener(v ->
-                startActivity(new Intent(this, KorakPoKorakActivity.class)));
+                startActivity(new Intent(this, MatchmakingActivity.class)));
 
         findViewById(R.id.btnMojBroj).setOnClickListener(v ->
-                startActivity(new Intent(this, MojBrojActivity.class)));
+                startActivity(new Intent(this, MatchmakingActivity.class)));
 
         findViewById(R.id.btnSkocko).setOnClickListener(v ->
                 startActivity(new Intent(this, SkockoActivity.class)));

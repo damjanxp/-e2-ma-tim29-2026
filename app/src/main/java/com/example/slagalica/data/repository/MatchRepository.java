@@ -18,6 +18,7 @@ import com.google.firebase.database.ServerValue;
 import com.google.firebase.database.Transaction;
 import com.google.firebase.database.ValueEventListener;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -481,6 +482,271 @@ public class MatchRepository {
     }
 
     // =========================================================================
+    // Moj broj — model klase
+    // =========================================================================
+
+    /** POJO koji se čuva u RTDB za izraz jednog igrača u igri Moj broj. */
+    public static class MojBrojExpression {
+        public String value;
+        public int result;
+        public boolean isValid;
+        public boolean submitted;
+
+        public MojBrojExpression() {}
+
+        public MojBrojExpression(String value, int result, boolean isValid, boolean submitted) {
+            this.value = value;
+            this.result = result;
+            this.isValid = isValid;
+            this.submitted = submitted;
+        }
+    }
+
+    // =========================================================================
+    // Moj broj — callback interfejsi
+    // =========================================================================
+
+    /** Okida se kad starter upiše traženi broj i 6 dostupnih brojeva. */
+    public interface MojBrojRoundListener {
+        void onRound(int target, int[] numbers);
+        void onError(@NonNull String message);
+    }
+
+    /** Okida se na svaku promenu izraza bilo kog igrača u rundi. */
+    public interface MojBrojExpressionsListener {
+        void onExpressions(@NonNull Map<String, MojBrojExpression> byUid);
+    }
+
+    // =========================================================================
+    // Moj broj — metode
+    // =========================================================================
+
+    /**
+     * Starter upisuje traženi broj i 6 dostupnih brojeva za rundu.
+     * Ovo je signal non-starteru da počne igru.
+     */
+    public void writeMojBrojRound(@NonNull String matchId, int round,
+                                  int target, @NonNull int[] numbers,
+                                  @Nullable SimpleCallback cb) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("target", target);
+        Map<String, Integer> numbersMap = new HashMap<>();
+        for (int i = 0; i < numbers.length; i++) {
+            numbersMap.put(String.valueOf(i), numbers[i]);
+        }
+        data.put("numbers", numbersMap);
+        mojBrojRoundRef(matchId, round).updateChildren(data)
+                .addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
+                .addOnFailureListener(e -> { if (cb != null) cb.onError("Upis runde nije uspeo."); });
+    }
+
+    /**
+     * Čeka da starter upiše sadržaj runde; jednokratni listener koji
+     * se uklanja čim podaci stignu.
+     */
+    public Runnable listenMojBrojRound(@NonNull String matchId, int round,
+                                       @NonNull MojBrojRoundListener listener) {
+        DatabaseReference ref = mojBrojRoundRef(matchId, round);
+        ValueEventListener vel = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Long target = snapshot.child("target").getValue(Long.class);
+                DataSnapshot numbersSnap = snapshot.child("numbers");
+                if (target == null || !numbersSnap.exists()) {
+                    return; // još nije upisano
+                }
+                int[] nums = new int[6];
+                for (int i = 0; i < 6; i++) {
+                    Long v = numbersSnap.child(String.valueOf(i)).getValue(Long.class);
+                    nums[i] = v != null ? v.intValue() : 0;
+                }
+                ref.removeEventListener(this);
+                listener.onRound(target.intValue(), nums);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onError("Greška pri učitavanju runde.");
+            }
+        };
+        ref.addValueEventListener(vel);
+        return () -> ref.removeEventListener(vel);
+    }
+
+    /** Igrač upisuje rezultat svog izraza (poziva se na POTVRDI ili isteku tajmera). */
+    public void submitMojBrojExpression(@NonNull String matchId, int round,
+                                        @NonNull String uid, @NonNull String expression,
+                                        int result, boolean isValid) {
+        mojBrojRoundRef(matchId, round).child("expressions").child(uid)
+                .setValue(new MojBrojExpression(expression, result, isValid, true));
+    }
+
+    /**
+     * Sluša izraze oba igrača za rundu. Okida se na svaku promenu
+     * dok ga pozivalac ne otkači.
+     */
+    public Runnable listenMojBrojExpressions(@NonNull String matchId, int round,
+                                              @NonNull MojBrojExpressionsListener listener) {
+        DatabaseReference ref = mojBrojRoundRef(matchId, round).child("expressions");
+        ValueEventListener vel = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                Map<String, MojBrojExpression> result = new HashMap<>();
+                for (DataSnapshot child : snapshot.getChildren()) {
+                    MojBrojExpression expr = child.getValue(MojBrojExpression.class);
+                    if (child.getKey() != null && expr != null) {
+                        result.put(child.getKey(), expr);
+                    }
+                }
+                listener.onExpressions(result);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // ignorisano
+            }
+        };
+        ref.addValueEventListener(vel);
+        return () -> ref.removeEventListener(vel);
+    }
+
+    // =========================================================================
+    // Korak po korak — model klase
+    // =========================================================================
+
+    /** Podaci o pogotku jednog igrača (za bodovanje). */
+    public static class KorakGuessData {
+        public String uid;
+        public boolean correct;
+        public int korakIndex;
+
+        public KorakGuessData() {}
+
+        public KorakGuessData(String uid, boolean correct, int korakIndex) {
+            this.uid = uid;
+            this.correct = correct;
+            this.korakIndex = korakIndex;
+        }
+    }
+
+    // =========================================================================
+    // Korak po korak — callback interfejsi
+    // =========================================================================
+
+    public interface KorakZadatakListener {
+        void onZadatak(@NonNull String resenje, @NonNull List<String> koraci);
+        void onError(@NonNull String message);
+    }
+
+    public interface KorakStateListener {
+        void onState(@NonNull String phase, int openedHints,
+                     @Nullable KorakGuessData activeGuess,
+                     @Nullable KorakGuessData opponentGuess);
+    }
+
+    // =========================================================================
+    // Korak po korak — metode
+    // =========================================================================
+
+    /** Player1 upisuje zadatak za datu rundu (resenje + 7 hintova). */
+    public void writeKorakZadatak(@NonNull String matchId, int round,
+                                  @NonNull String resenje, @NonNull List<String> koraci,
+                                  @Nullable SimpleCallback cb) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("resenje", resenje);
+        data.put("koraci", koraci);
+        korakRoundRef(matchId, round).updateChildren(data)
+                .addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
+                .addOnFailureListener(e -> { if (cb != null) cb.onError("Upis zadatka nije uspeo."); });
+    }
+
+    /** Jednokratni listener koji čeka zadatak za rundu. */
+    public Runnable listenKorakZadatak(@NonNull String matchId, int round,
+                                       @NonNull KorakZadatakListener listener) {
+        DatabaseReference ref = korakRoundRef(matchId, round);
+        ValueEventListener vel = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String resenje = snapshot.child("resenje").getValue(String.class);
+                DataSnapshot koraciSnap = snapshot.child("koraci");
+                if (resenje == null || !koraciSnap.exists()) {
+                    return; // još nije upisano
+                }
+                List<String> koraci = new ArrayList<>();
+                for (DataSnapshot k : koraciSnap.getChildren()) {
+                    String hint = k.getValue(String.class);
+                    if (hint != null) koraci.add(hint);
+                }
+                if (koraci.size() < 7) return; // nepotpuno
+                ref.removeEventListener(this);
+                listener.onZadatak(resenje, koraci);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onError("Greška pri učitavanju zadatka.");
+            }
+        };
+        ref.addValueEventListener(vel);
+        return () -> ref.removeEventListener(vel);
+    }
+
+    /** Aktivni igrač ažurira broj otvorenih hintova. */
+    public void setKorakOpenedHints(@NonNull String matchId, int round, int count) {
+        korakRoundRef(matchId, round).child("openedHints").setValue(count);
+    }
+
+    /** Aktivni igrač postavlja fazu runde. */
+    public void setKorakPhase(@NonNull String matchId, int round, @NonNull String phase) {
+        korakRoundRef(matchId, round).child("phase").setValue(phase);
+    }
+
+    /** Aktivni igrač upisuje rezultat svog pogotka (tačan ili ne). */
+    public void submitKorakActiveGuess(@NonNull String matchId, int round,
+                                       @NonNull String uid, boolean correct, int korakIndex) {
+        korakRoundRef(matchId, round).child("activeGuess")
+                .setValue(new KorakGuessData(uid, correct, korakIndex));
+    }
+
+    /** Pasivni igrač upisuje rezultat svoje šanse. */
+    public void submitKorakOpponentGuess(@NonNull String matchId, int round,
+                                          @NonNull String uid, boolean correct) {
+        korakRoundRef(matchId, round).child("opponentGuess")
+                .setValue(new KorakGuessData(uid, correct, -1));
+    }
+
+    /** Oba igrača slušaju celo stanje runde u realnom vremenu. */
+    public Runnable listenKorakState(@NonNull String matchId, int round,
+                                     @NonNull KorakStateListener listener) {
+        DatabaseReference ref = korakRoundRef(matchId, round);
+        ValueEventListener vel = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                String phase = snapshot.child("phase").getValue(String.class);
+                Long openedLong = snapshot.child("openedHints").getValue(Long.class);
+                int opened = openedLong != null ? openedLong.intValue() : 0;
+
+                KorakGuessData activeGuess = null;
+                KorakGuessData opponentGuess = null;
+                if (snapshot.child("activeGuess").exists()) {
+                    activeGuess = snapshot.child("activeGuess").getValue(KorakGuessData.class);
+                }
+                if (snapshot.child("opponentGuess").exists()) {
+                    opponentGuess = snapshot.child("opponentGuess").getValue(KorakGuessData.class);
+                }
+                listener.onState(phase != null ? phase : "", opened, activeGuess, opponentGuess);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                // ignorisano
+            }
+        };
+        ref.addValueEventListener(vel);
+        return () -> ref.removeEventListener(vel);
+    }
+
+    // =========================================================================
     // Pomoćne reference
     // =========================================================================
 
@@ -490,5 +756,13 @@ public class MatchRepository {
 
     private DatabaseReference spojniceStateRef(String matchId, int round) {
         return matchRef(matchId).child("spojnice").child("state").child(String.valueOf(round));
+    }
+
+    private DatabaseReference mojBrojRoundRef(String matchId, int round) {
+        return matchRef(matchId).child("mojBroj").child("rounds").child(String.valueOf(round));
+    }
+
+    private DatabaseReference korakRoundRef(String matchId, int round) {
+        return matchRef(matchId).child("korakPoKorak").child("rounds").child(String.valueOf(round));
     }
 }
