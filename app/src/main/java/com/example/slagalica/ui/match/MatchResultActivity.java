@@ -28,10 +28,10 @@ import android.widget.TextView;
  */
 public class MatchResultActivity extends AppCompatActivity {
 
-    public static final String EXTRA_MY_KZZ       = "extra_my_kzz";
-    public static final String EXTRA_OPP_KZZ      = "extra_opp_kzz";
-    public static final String EXTRA_MY_SPOJNICE  = "extra_my_spojnice";
-    public static final String EXTRA_OPP_SPOJNICE = "extra_opp_spojnice";
+    public static final String EXTRA_MY_KZZ       = Constants.EXTRA_MY_KZZ;
+    public static final String EXTRA_OPP_KZZ      = Constants.EXTRA_OPP_KZZ;
+    public static final String EXTRA_MY_SPOJNICE  = Constants.EXTRA_MY_SPOJNICE;
+    public static final String EXTRA_OPP_SPOJNICE = Constants.EXTRA_OPP_SPOJNICE;
 
     private final UserRepository userRepository = UserRepository.getInstance();
 
@@ -44,22 +44,31 @@ public class MatchResultActivity extends AppCompatActivity {
         int oppKzz      = getIntent().getIntExtra(EXTRA_OPP_KZZ, 0);
         int mySpojnice  = getIntent().getIntExtra(EXTRA_MY_SPOJNICE, 0);
         int oppSpojnice = getIntent().getIntExtra(EXTRA_OPP_SPOJNICE, 0);
+        int myMojBroj   = getIntent().getIntExtra(Constants.EXTRA_MY_MOJ_BROJ, 0);
+        int oppMojBroj  = getIntent().getIntExtra(Constants.EXTRA_OPP_MOJ_BROJ, 0);
+        int myKorak     = getIntent().getIntExtra(Constants.EXTRA_MY_KORAK, 0);
+        int oppKorak    = getIntent().getIntExtra(Constants.EXTRA_OPP_KORAK, 0);
         String opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
 
-        int myTotal  = myKzz + mySpojnice;
-        int oppTotal = oppKzz + oppSpojnice;
+        int myTotal  = myKzz + mySpojnice + myMojBroj + myKorak;
+        int oppTotal = oppKzz + oppSpojnice + oppMojBroj + oppKorak;
 
-        bindResult(myKzz, oppKzz, mySpojnice, oppSpojnice, myTotal, oppTotal, opponentName);
+        bindResult(myKzz, oppKzz, mySpojnice, oppSpojnice,
+                myMojBroj, oppMojBroj, myKorak, oppKorak,
+                myTotal, oppTotal, opponentName);
         recordStatistics(myTotal, oppTotal);
         setupNavigation();
     }
 
     private void bindResult(int myKzz, int oppKzz, int mySpojnice, int oppSpojnice,
+                            int myMojBroj, int oppMojBroj, int myKorak, int oppKorak,
                             int myTotal, int oppTotal, String opponentName) {
         TextView tvOutcome = findViewById(R.id.tvOutcome);
         TextView tvPlayers = findViewById(R.id.tvPlayers);
         TextView tvKzzScore = findViewById(R.id.tvKzzScore);
         TextView tvSpojniceScore = findViewById(R.id.tvSpojniceScore);
+        TextView tvMojBrojScore = findViewById(R.id.tvMojBrojScore);
+        TextView tvKorakScore = findViewById(R.id.tvKorakScore);
         TextView tvTotalScore = findViewById(R.id.tvTotalScore);
 
         if (myTotal > oppTotal) {
@@ -75,6 +84,8 @@ public class MatchResultActivity extends AppCompatActivity {
 
         tvKzzScore.setText(getString(R.string.result_score_row, myKzz, oppKzz));
         tvSpojniceScore.setText(getString(R.string.result_score_row, mySpojnice, oppSpojnice));
+        tvMojBrojScore.setText(getString(R.string.result_score_row, myMojBroj, oppMojBroj));
+        tvKorakScore.setText(getString(R.string.result_score_row, myKorak, oppKorak));
         tvTotalScore.setText(getString(R.string.result_score_row, myTotal, oppTotal));
     }
 

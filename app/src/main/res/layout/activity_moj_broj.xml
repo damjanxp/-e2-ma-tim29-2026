@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="12dp">
 
     <!-- ===== HEADER ===== -->
     <LinearLayout
@@ -15,17 +15,17 @@
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/tvPlayerName"
+            android:id="@+id/tvOpponentScore"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="start"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textStyle="bold"
-            tools:text="Igra: Marko" />
+            tools:text="Marko: 0" />
 
         <TextView
-            android:id="@+id/tvRound"
+            android:id="@+id/tvRoundLabel"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -42,26 +42,46 @@
             android:gravity="end"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textStyle="bold"
-            tools:text="0 ⭐" />
+            tools:text="Bodovi: 0" />
 
     </LinearLayout>
 
-    <!-- ===== TAJMER ProgressBar (60s) ===== -->
+    <!-- ===== TAJMER ===== -->
     <ProgressBar
         android:id="@+id/pbTimer"
         style="@style/Widget.AppCompat.ProgressBar.Horizontal"
         android:layout_width="match_parent"
         android:layout_height="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginTop="6dp"
         android:max="60"
         android:progress="60" />
+
+    <TextView
+        android:id="@+id/tvTimer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="2dp"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
+        android:textStyle="bold"
+        tools:text="60 s" />
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="6dp"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textStyle="italic"
+        tools:text="Čeka se protivnik…" />
 
     <!-- ===== TRAŽENI BROJ ===== -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="6dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp">
 
@@ -70,327 +90,230 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:padding="16dp"
-            android:text="@string/moj_broj_target_default"
-            android:textSize="48sp"
+            android:padding="14dp"
+            android:textAppearance="?attr/textAppearanceDisplaySmall"
             android:textStyle="bold"
-            android:textAppearance="?attr/textAppearanceDisplaySmall" />
+            tools:text="Traženi: ?" />
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- ===== 6 DOSTUPNIH BROJEVA ===== -->
+    <!-- ===== IZRAZ + DEL ===== -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="?attr/colorOutline">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/tvIzraz"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="44dp"
+                android:gravity="center_vertical"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:padding="4dp"
+                tools:text="75 + 3 × 4" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDel"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:text="⌫"
+                android:textSize="16sp"
+                android:enabled="false"
+                android:padding="0dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ===== 4 JEDNOCIFRENA BROJA ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_margin="4dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-            <TextView
-                android:id="@+id/tvBroj1"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="@string/moj_broj_number_default"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum0"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_margin="4dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-            <TextView
-                android:id="@+id/tvBroj2"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="@string/moj_broj_number_default"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum1"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_margin="4dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-            <TextView
-                android:id="@+id/tvBroj3"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="@string/moj_broj_number_default"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum2"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_margin="4dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-            <TextView
-                android:id="@+id/tvBroj4"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="@string/moj_broj_number_default"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_margin="4dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-            <TextView
-                android:id="@+id/tvBroj5"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="@string/moj_broj_number_default"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_margin="4dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-            <TextView
-                android:id="@+id/tvBroj6"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:text="@string/moj_broj_number_default"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum3"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
 
     </LinearLayout>
 
-    <!-- ===== POLJE ZA IZRAZ (read-only) ===== -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tlIzraz"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+    <!-- ===== 2 POSEBNA BROJA ===== -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:hint="@string/moj_broj_hint_izraz">
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etIzraz"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:focusable="false"
-            android:focusableInTouchMode="false"
-            android:inputType="none"
-            android:maxLines="1" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum4"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
 
-    </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum5"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
 
-    <!-- ===== TASTATURA (GridLayout 4×4) ===== -->
-    <GridLayout
+    </LinearLayout>
+
+    <!-- ===== OPERATORI ===== -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:columnCount="4"
-        android:rowCount="4"
-        android:useDefaultMargins="false">
-
-        <!-- Red 1: broj1, broj2, broj3, ( -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnB1"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:textAllCaps="false"
-            tools:text="25"
-            android:layout_columnWeight="1" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnB2"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:textAllCaps="false"
-            tools:text="50"
-            android:layout_columnWeight="1" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnB3"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:textAllCaps="false"
-            tools:text="75"
-            android:layout_columnWeight="1" />
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnLeftParen"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_left_paren"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="("
             android:textAllCaps="false"
-            android:textSize="18sp"
-            android:layout_columnWeight="1" />
-
-        <!-- Red 2: broj4, broj5, broj6, ) -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnB4"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:textAllCaps="false"
-            tools:text="3"
-            android:layout_columnWeight="1" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnB5"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:textAllCaps="false"
-            tools:text="6"
-            android:layout_columnWeight="1" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnB6"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:textAllCaps="false"
-            tools:text="100"
-            android:layout_columnWeight="1" />
+            android:textSize="16sp"
+            android:enabled="false" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnRightParen"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_right_paren"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text=")"
             android:textAllCaps="false"
-            android:textSize="18sp"
-            android:layout_columnWeight="1" />
+            android:textSize="16sp"
+            android:enabled="false" />
 
-        <!-- Red 3: +, -, ×, ÷ -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPlus"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_plus"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="+"
             android:textAllCaps="false"
-            android:textSize="20sp"
-            android:layout_columnWeight="1" />
+            android:textSize="16sp"
+            android:enabled="false" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMinus"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_minus"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="-"
             android:textAllCaps="false"
-            android:textSize="20sp"
-            android:layout_columnWeight="1" />
+            android:textSize="16sp"
+            android:enabled="false" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMult"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_mult"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="×"
             android:textAllCaps="false"
-            android:textSize="20sp"
-            android:layout_columnWeight="1" />
+            android:textSize="16sp"
+            android:enabled="false" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDiv"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_div"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="÷"
             android:textAllCaps="false"
-            android:textSize="20sp"
-            android:layout_columnWeight="1" />
+            android:textSize="16sp"
+            android:enabled="false" />
 
-        <!-- Red 4: ←, C, STOP, ✓ -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnBackspace"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_backspace"
-            android:textAllCaps="false"
-            android:textSize="18sp"
-            android:layout_columnWeight="1" />
+    </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnClear"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_clear"
-            android:textAllCaps="false"
-            android:textSize="18sp"
-            android:layout_columnWeight="1" />
+    <!-- ===== STOP / POTVRDI ===== -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnStopPotvrdi"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="STOP"
+        android:textAllCaps="false"
+        android:textSize="16sp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnStop"
-            style="@style/Widget.Material3.Button.TonalButton"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_stop"
-            android:textAllCaps="false"
-            app:backgroundTint="?attr/colorSecondaryContainer"
-            android:layout_columnWeight="1" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPotvrdi"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_margin="3dp"
-            android:text="@string/moj_broj_btn_potvrdi"
-            android:textAllCaps="false"
-            android:textSize="20sp"
-            android:layout_columnWeight="1" />
-
-    </GridLayout>
-
-    <!-- ===== FOOTER: Predaj ===== -->
+    <!-- ===== PREDAJ ===== -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnGiveUp"
         style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/moj_broj_btn_give_up"
+        android:text="Predaj igru"
         android:textAllCaps="false" />
 
 </LinearLayout>
-

@@ -31,6 +31,27 @@ public final class Constants {
     public static final String EXTRA_MY_SCORE       = "extra_my_score";
     public static final String EXTRA_OPPONENT_SCORE = "extra_opponent_score";
 
+    // Kumulativni bodovi koji se prenose kroz lanac igara
+    public static final String EXTRA_MY_KZZ       = "extra_my_kzz";
+    public static final String EXTRA_OPP_KZZ      = "extra_opp_kzz";
+    public static final String EXTRA_MY_SPOJNICE  = "extra_my_spojnice";
+    public static final String EXTRA_OPP_SPOJNICE = "extra_opp_spojnice";
+    public static final String EXTRA_MY_MOJ_BROJ  = "extra_my_moj_broj";
+    public static final String EXTRA_OPP_MOJ_BROJ = "extra_opp_moj_broj";
+    public static final String EXTRA_MY_KORAK     = "extra_my_korak";
+    public static final String EXTRA_OPP_KORAK    = "extra_opp_korak";
+
+    // ==== Identifikatori igara (za setGameResult) ====
+    public static final String GAME_KZZ      = "kzz";
+    public static final String GAME_SPOJNICE = "spojnice";
+    public static final String GAME_MOJ_BROJ = "mojBroj";
+    public static final String GAME_KORAK    = "korakPoKorak";
+
+    // ==== Korak po korak — faze runde ====
+    public static final String KORAK_PHASE_ACTIVE  = "ACTIVE";
+    public static final String KORAK_PHASE_CHANCE  = "OPPONENT_CHANCE";
+    public static final String KORAK_PHASE_DONE    = "DONE";
+
     // ==== Ko zna zna ====
     public static final int KZZ_QUESTION_COUNT   = 5;
     public static final int KZZ_QUESTION_TIME_MS = 5_000;

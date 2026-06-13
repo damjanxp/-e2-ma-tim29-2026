@@ -22,7 +22,7 @@ import com.example.slagalica.data.model.SpojnicePuzzle;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.SpojniceLogic;
-import com.example.slagalica.ui.match.MatchResultActivity;
+import com.example.slagalica.ui.games.MojBrojActivity;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 
@@ -494,14 +494,15 @@ public class SpojniceActivity extends AppCompatActivity {
         matchRepository.setGameResult(matchId, MatchRepository.GAME_SPOJNICE, myUid, myScore);
         userRepository.recordSpojniceResult(myUid, myConnectedCount, myMissedCount, myScore);
 
-        Intent intent = new Intent(this, MatchResultActivity.class);
+        Intent intent = new Intent(this, MojBrojActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
+        intent.putExtra(Constants.EXTRA_IS_PLAYER_ONE, isPlayerOne);
         intent.putExtra(Constants.EXTRA_OPPONENT_UID, opponentUid);
         intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
-        intent.putExtra(MatchResultActivity.EXTRA_MY_KZZ, myKzzScore);
-        intent.putExtra(MatchResultActivity.EXTRA_OPP_KZZ, opponentKzzScore);
-        intent.putExtra(MatchResultActivity.EXTRA_MY_SPOJNICE, myScore);
-        intent.putExtra(MatchResultActivity.EXTRA_OPP_SPOJNICE, opponentScore);
+        intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
+        intent.putExtra(Constants.EXTRA_OPP_KZZ, opponentKzzScore);
+        intent.putExtra(Constants.EXTRA_MY_SPOJNICE, myScore);
+        intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, opponentScore);
         startActivity(intent);
         finish();
     }

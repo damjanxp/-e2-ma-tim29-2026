@@ -3,68 +3,122 @@ package com.example.slagalica.ui.games;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.repository.MatchRepository;
+import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.MojBrojLogic;
+import com.example.slagalica.ui.games.KorakPoKorakActivity;
+import com.example.slagalica.util.Constants;
 import com.example.slagalica.util.ShakeDetector;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
- * Aktivnost za igru "Moj broj".
- * KT2: puna implementacija — shake-to-stop, exp4j validacija izraza, bodovanje.
+ * Igra "Moj broj" — KT2, multiplayer 1 na 1.
  *
- * <p>Faze igre:
- * <ul>
- *   <li>0 — čeka prvi STOP (ili auto-timer 5s) → generiše traženi broj.</li>
- *   <li>1 — čeka drugi STOP (ili auto-timer 5s) → generiše 6 dostupnih brojeva + pokreće 60s timer.</li>
- *   <li>2 — aktivna igra: igrač unosi izraz, pritiska Potvrdi ili protekne 60s.</li>
- * </ul>
- * </p>
+ * <p>2 runde po 60 sekundi. Prvu rundu generiše player1 (starter),
+ * drugu rundu generiše player2. Starter pritiskanjem STOP dugmeta generiše traženi
+ * broj i 6 dostupnih brojeva, upisuje ih u Realtime Database. Non-starter čeka na
+ * te podatke, a čim stignu — oba igrača počinju unos istovremeno.</p>
+ *
+ * <p>Bodovanje je determinističko: oba klijenta nad istim RTDB podacima
+ * pozivaju {@link MojBrojLogic#izracunajBodovanje} i dolaze do identičnog
+ * rezultata.</p>
  */
 public class MojBrojActivity extends AppCompatActivity {
 
-    /** Ključ za Intent extra koji prenosi bodove nazad u MatchOrchestratorActivity. */
-    public static final String EXTRA_BODOVI = "moj_broj_bodovi";
-
-    private static final int ROUND_DURATION_MS = 60_000;
-    private static final int ROUND_TICK_MS     = 1_000;
-    private static final int AUTO_STOP_MS      = 5_000;   // auto-STOP ako igrač ne pritisne
     private static final int MAX_ROUNDS        = 2;
+    private static final int ROUND_DURATION_MS = 60_000;
+    private static final int AUTO_STOP_MS      = 5_000;
+    private static final int TICK_MS           = 250;
+
+    // ─── Token model (isti kao u solo verziji) ────────────────────────────────
+    private static final class Token {
+        final String value;
+        final int numIndex;
+        Token(String v, int idx) { value = v; numIndex = idx; }
+        boolean isNumber() { return numIndex >= 0; }
+    }
+    private enum LastType { EMPTY, NUMBER_OR_CLOSE, OP_OR_OPEN }
 
     // ─── Views ───────────────────────────────────────────────────────────────
-    private TextView          tvTrazeniBroj;
-    private TextView[]        tvBrojevi;
-    private TextInputLayout   tlIzraz;
-    private TextInputEditText etIzraz;
-    private ProgressBar       pbTimer;
-    private TextView          tvRound;
-    private TextView          tvScore;
-    private MaterialButton[]  btnBrojevi;
+    private TextView        tvOpponentScore;
+    private TextView        tvRoundLabel;
+    private TextView        tvScore;
+    private TextView        tvTimer;
+    private TextView        tvStatus;
+    private TextView        tvTrazeniBroj;
+    private TextView        tvIzraz;
+    private ProgressBar     pbTimer;
+    private MaterialButton  btnStopPotvrdi;
+    private MaterialButton  btnDel;
+    private MaterialButton  btnGiveUp;
+    private MaterialButton  btnLeftParen, btnRightParen;
+    private MaterialButton  btnPlus, btnMinus, btnMult, btnDiv;
+    private MaterialButton[] btnBrojevi;
+
+    // ─── Meč ─────────────────────────────────────────────────────────────────
+    private final MatchRepository matchRepository = MatchRepository.getInstance();
+    private final UserRepository userRepository   = UserRepository.getInstance();
+
+    private String  matchId;
+    private String  myUid;
+    private String  opponentUid;
+    private String  opponentName;
+    private boolean isPlayerOne;
+    private boolean opponentOnline = true;
+
+    // Bodovi iz prethodnih igara (prenose se kroz lanac)
+    private int myKzzScore, oppKzzScore;
+    private int mySpojniceScore, oppSpojniceScore;
 
     // ─── Stanje igre ─────────────────────────────────────────────────────────
-    private ShakeDetector    shakeDetector;
-    private CountDownTimer   rundaTimer;
-    private CountDownTimer   autoStopTimer;
+    private int     currentRound         = 0;
+    private boolean amIStarter           = false;
+    private int     faza                 = 0; // 0=stop1, 1=stop2, 2=igra, 3=čekanje
+    private boolean myExpressionSubmitted = false;
+    private boolean roundResolved         = false;
+    private boolean gameEnded             = false;
 
-    private final StringBuilder izraz        = new StringBuilder();
-    private int[]               dostupniBrojevi;
-    private int                 trazeniBroj;
-    private int                 faza         = 0;
-    private int                 trenutnaRunda = 1;
-    private int                 ukupnoBodova  = 0;
+    private int  myTotalScore       = 0;
+    private int  opponentTotalScore = 0;
+    private int  trazeniBroj;
+    private int[] dostupniBrojevi;
+
+    private Map<String, MatchRepository.MojBrojExpression> lastExpressions;
+
+    // ─── Token unos ──────────────────────────────────────────────────────────
+    private final List<Token> tokens  = new ArrayList<>();
+    private final boolean[]   used    = new boolean[6];
+    private LastType          lastType = LastType.EMPTY;
+
+    // ─── Timeri ──────────────────────────────────────────────────────────────
+    private ShakeDetector   shakeDetector;
+    private CountDownTimer  rundaTimer;
+    private CountDownTimer  autoStopTimer;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final List<Runnable> matchDetachers = new ArrayList<>();
+    private Runnable roundDataDetacher;
+    private Runnable expressionsDetacher;
 
     private final Random random = new Random();
 
@@ -77,378 +131,542 @@ public class MojBrojActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_moj_broj);
 
+        readExtras();
         initViews();
         setupListeners();
-
-        shakeDetector = new ShakeDetector(this, this::onStopClicked);
-        pokreniRundu();
+        setupBackHandler();
+        joinMatch();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        shakeDetector.start();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        shakeDetector.stop();
-    }
-
-    @Override
-    protected void onDestroy() {
+    @Override protected void onResume()  { super.onResume();  if (shakeDetector != null) shakeDetector.start(); }
+    @Override protected void onPause()   { super.onPause();   if (shakeDetector != null) shakeDetector.stop();  }
+    @Override protected void onDestroy() {
         super.onDestroy();
         otkaziTimere();
+        if (shakeDetector != null) shakeDetector.stop();
+        handler.removeCallbacksAndMessages(null);
+        detachAll();
     }
 
     // =========================================================================
-    // Inicijalizacija
+    // Init
     // =========================================================================
 
-    private void initViews() {
-        tvTrazeniBroj = findViewById(R.id.tvTrazeniBroj);
-        pbTimer       = findViewById(R.id.pbTimer);
-        tlIzraz       = findViewById(R.id.tlIzraz);
-        etIzraz       = findViewById(R.id.etIzraz);
-        tvRound       = findViewById(R.id.tvRound);
-        tvScore       = findViewById(R.id.tvScore);
+    private void readExtras() {
+        matchId      = getIntent().getStringExtra(Constants.EXTRA_MATCH_ID);
+        opponentUid  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
+        opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
+        isPlayerOne  = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        myKzzScore      = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
+        oppKzzScore     = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
+        mySpojniceScore  = getIntent().getIntExtra(Constants.EXTRA_MY_SPOJNICE, 0);
+        oppSpojniceScore = getIntent().getIntExtra(Constants.EXTRA_OPP_SPOJNICE, 0);
+        myUid        = userRepository.getCurrentUid();
+    }
 
-        tvBrojevi = new TextView[]{
-                findViewById(R.id.tvBroj1), findViewById(R.id.tvBroj2),
-                findViewById(R.id.tvBroj3), findViewById(R.id.tvBroj4),
-                findViewById(R.id.tvBroj5), findViewById(R.id.tvBroj6)
-        };
+    private void initViews() {
+        tvOpponentScore = findViewById(R.id.tvOpponentScore);
+        tvRoundLabel    = findViewById(R.id.tvRoundLabel);
+        tvScore         = findViewById(R.id.tvScore);
+        tvTimer         = findViewById(R.id.tvTimer);
+        tvStatus        = findViewById(R.id.tvStatus);
+        tvTrazeniBroj   = findViewById(R.id.tvTrazeniBroj);
+        tvIzraz         = findViewById(R.id.tvIzraz);
+        pbTimer         = findViewById(R.id.pbTimer);
+        btnStopPotvrdi  = findViewById(R.id.btnStopPotvrdi);
+        btnDel          = findViewById(R.id.btnDel);
+        btnGiveUp       = findViewById(R.id.btnGiveUp);
+        btnLeftParen    = findViewById(R.id.btnLeftParen);
+        btnRightParen   = findViewById(R.id.btnRightParen);
+        btnPlus         = findViewById(R.id.btnPlus);
+        btnMinus        = findViewById(R.id.btnMinus);
+        btnMult         = findViewById(R.id.btnMult);
+        btnDiv          = findViewById(R.id.btnDiv);
 
         btnBrojevi = new MaterialButton[]{
-                findViewById(R.id.btnB1), findViewById(R.id.btnB2),
-                findViewById(R.id.btnB3), findViewById(R.id.btnB4),
-                findViewById(R.id.btnB5), findViewById(R.id.btnB6)
+            findViewById(R.id.btnNum0), findViewById(R.id.btnNum1),
+            findViewById(R.id.btnNum2), findViewById(R.id.btnNum3),
+            findViewById(R.id.btnNum4), findViewById(R.id.btnNum5)
         };
+
+        updateScoreLabels();
+        tvStatus.setText("Povezivanje na meč...");
     }
 
     private void setupListeners() {
-        // Brojčana dugmad — samo u fazi 2
+        btnStopPotvrdi.setOnClickListener(v -> onStopPotvrdiClicked());
+        btnDel.setOnClickListener(v -> onDel());
+        btnGiveUp.setOnClickListener(v -> confirmGiveUp());
+
         for (int i = 0; i < btnBrojevi.length; i++) {
             final int idx = i;
-            btnBrojevi[i].setOnClickListener(v -> {
-                if (faza == 2) appendToIzraz(tvBrojevi[idx].getText().toString());
-            });
+            btnBrojevi[i].setOnClickListener(v -> onNumPressed(idx));
         }
+        btnLeftParen.setOnClickListener(v  -> onOpPressed("("));
+        btnRightParen.setOnClickListener(v -> onOpPressed(")"));
+        btnPlus.setOnClickListener(v       -> onOpPressed("+"));
+        btnMinus.setOnClickListener(v      -> onOpPressed("-"));
+        btnMult.setOnClickListener(v       -> onOpPressed("×"));
+        btnDiv.setOnClickListener(v        -> onOpPressed("÷"));
+    }
 
-        // Operatori
-        findViewById(R.id.btnPlus).setOnClickListener(v       -> appendToIzraz("+"));
-        findViewById(R.id.btnMinus).setOnClickListener(v      -> appendToIzraz("-"));
-        findViewById(R.id.btnMult).setOnClickListener(v       -> appendToIzraz("×"));
-        findViewById(R.id.btnDiv).setOnClickListener(v        -> appendToIzraz("÷"));
-        findViewById(R.id.btnLeftParen).setOnClickListener(v  -> appendToIzraz("("));
-        findViewById(R.id.btnRightParen).setOnClickListener(v -> appendToIzraz(")"));
-
-        // Brisanje i reset
-        findViewById(R.id.btnBackspace).setOnClickListener(v -> {
-            if (izraz.length() > 0) {
-                izraz.deleteCharAt(izraz.length() - 1);
-                osvežiIzraz();
-            }
+    private void setupBackHandler() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { confirmGiveUp(); }
         });
-        findViewById(R.id.btnClear).setOnClickListener(v -> {
-            izraz.setLength(0);
-            osvežiIzraz();
-        });
+    }
 
-        // STOP (dugme) i Potvrdi
-        findViewById(R.id.btnStop).setOnClickListener(v   -> onStopClicked());
-        findViewById(R.id.btnPotvrdi).setOnClickListener(v -> naPotvrdi());
+    // =========================================================================
+    // Prisustvo
+    // =========================================================================
 
-        // Predaj
-        findViewById(R.id.btnGiveUp).setOnClickListener(v -> showGiveUpDialog());
+    private void joinMatch() {
+        if (matchId == null || myUid == null) {
+            Toast.makeText(this, "Greška pri učitavanju meča.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        matchRepository.setPresence(matchId, myUid);
+
+        matchDetachers.add(matchRepository.listenOpponentPresence(matchId, opponentUid,
+                online -> {
+                    boolean wasOnline = opponentOnline;
+                    opponentOnline = online;
+                    if (wasOnline && !online) {
+                        Toast.makeText(this, opponentName + " je napustio igru.",
+                                Toast.LENGTH_SHORT).show();
+                        if (faza >= 2 && !myExpressionSubmitted) {
+                            // Protivnik napustio tokom igre — submit i razresi
+                            onStopPotvrdiClicked();
+                        } else if (faza >= 2 && myExpressionSubmitted) {
+                            if (lastExpressions != null) onExpressionsChanged(lastExpressions);
+                            else onExpressionsChanged(new HashMap<>());
+                        }
+                    }
+                }));
+
+        pokreniRundu(0);
     }
 
     // =========================================================================
     // Tok runde
     // =========================================================================
 
-    /** Resetuje UI i pokreće novu rundu od faze 0. */
-    private void pokreniRundu() {
+    private void pokreniRundu(int round) {
+        currentRound = round;
+        amIStarter = (isPlayerOne && round == 0) || (!isPlayerOne && round == 1);
         faza = 0;
-        izraz.setLength(0);
-        osvežiIzraz();
-        tlIzraz.setError(null);
+        myExpressionSubmitted = false;
+        roundResolved = false;
+        lastExpressions = null;
 
-        // Resetuj prikaz
-        tvTrazeniBroj.setText(getString(R.string.moj_broj_target_default));
-        for (int i = 0; i < tvBrojevi.length; i++) {
-            tvBrojevi[i].setText(getString(R.string.moj_broj_number_default));
-            btnBrojevi[i].setText(getString(R.string.moj_broj_number_default));
-        }
+        tokens.clear();
+        Arrays.fill(used, false);
+        lastType = LastType.EMPTY;
+
+        tvRoundLabel.setText("Runda " + (round + 1) + "/" + MAX_ROUNDS);
+        tvTrazeniBroj.setText("Traženi: ?");
+        tvIzraz.setText("");
+        pbTimer.setMax(60);
         pbTimer.setProgress(60);
-        azurirajHeader();
+        tvTimer.setText("–");
+        btnStopPotvrdi.setText("STOP");
+        for (MaterialButton btn : btnBrojevi) btn.setText("?");
+        setGamepadEnabled(false);
+        azurirajIzraz();
 
-        // Auto-timer: ako igrač ne pritisne STOP za 5s, skripta to uradi sama
-        pokreniAutoStop();
+        if (amIStarter) {
+            tvStatus.setText("Ti generišeš! Pritisni STOP.");
+            btnStopPotvrdi.setEnabled(true);
+            shakeDetector = new ShakeDetector(this, () -> { if (faza < 2) onStopPotvrdiClicked(); });
+            shakeDetector.start();
+            pokreniAutoStop();
+        } else {
+            tvStatus.setText("Čeka se protivnik da generiše brojeve...");
+            btnStopPotvrdi.setEnabled(false);
+            listenForRoundData(round);
+        }
+
+        if (expressionsDetacher != null) { expressionsDetacher.run(); expressionsDetacher = null; }
+        updateScoreLabels();
     }
 
-    /**
-     * Pokreće 5s auto-timer koji automatski izvršava STOP akciju
-     * (koristi se i za fazu 0 i za fazu 1).
-     */
+    private void listenForRoundData(int round) {
+        if (roundDataDetacher != null) { roundDataDetacher.run(); roundDataDetacher = null; }
+        roundDataDetacher = matchRepository.listenMojBrojRound(matchId, round,
+            new MatchRepository.MojBrojRoundListener() {
+                @Override
+                public void onRound(int target, int[] numbers) {
+                    if (gameEnded || roundResolved) return;
+                    trazeniBroj = target;
+                    dostupniBrojevi = numbers;
+                    onBrojeviPrimljeni();
+                }
+                @Override
+                public void onError(@NonNull String message) {
+                    Toast.makeText(MojBrojActivity.this, message, Toast.LENGTH_SHORT).show();
+                }
+            });
+    }
+
+    // =========================================================================
+    // STOP / POTVRDI logika
+    // =========================================================================
+
+    private void onStopPotvrdiClicked() {
+        if (faza == 0) {
+            otkaziAutoStop();
+            trazeniBroj = 100 + random.nextInt(900);
+            tvTrazeniBroj.setText("Traženi: " + trazeniBroj);
+            tvStatus.setText("Pritisni STOP za 6 brojeva.");
+            faza = 1;
+            pokreniAutoStop();
+
+        } else if (faza == 1) {
+            otkaziAutoStop();
+            dostupniBrojevi = generisi6Brojeva();
+            btnStopPotvrdi.setEnabled(false);
+            tvStatus.setText("Pisanje u bazu...");
+            matchRepository.writeMojBrojRound(matchId, currentRound, trazeniBroj, dostupniBrojevi,
+                new MatchRepository.SimpleCallback() {
+                    @Override public void onSuccess() { onBrojeviPrimljeni(); }
+                    @Override public void onError(@NonNull String msg) {
+                        Toast.makeText(MojBrojActivity.this, msg, Toast.LENGTH_SHORT).show();
+                        btnStopPotvrdi.setEnabled(true);
+                    }
+                });
+
+        } else if (faza == 2) {
+            // POTVRDI
+            otkaziTimere();
+            submitMojIzraz();
+
+        } else if (faza == 3) {
+            // već submitted, ignorisi
+        }
+    }
+
+    private void onBrojeviPrimljeni() {
+        if (gameEnded || roundResolved) return;
+        faza = 2;
+        tvTrazeniBroj.setText("Traženi: " + trazeniBroj);
+        for (int i = 0; i < 6; i++) btnBrojevi[i].setText(String.valueOf(dostupniBrojevi[i]));
+        tvStatus.setText("Unesi matematički izraz!");
+        btnStopPotvrdi.setText("POTVRDI");
+        btnStopPotvrdi.setEnabled(true);
+        setGamepadEnabled(true);
+        pbTimer.setMax(60);
+        pbTimer.setProgress(60);
+        tvTimer.setText("60s");
+        pokreniTimer60s();
+
+        expressionsDetacher = matchRepository.listenMojBrojExpressions(
+                matchId, currentRound, this::onExpressionsChanged);
+    }
+
     private void pokreniAutoStop() {
         otkaziAutoStop();
         autoStopTimer = new CountDownTimer(AUTO_STOP_MS, AUTO_STOP_MS) {
-            @Override public void onTick(long ms) { }
-            @Override public void onFinish() { onStopClicked(); }
+            @Override public void onTick(long ms) {}
+            @Override public void onFinish() { onStopPotvrdiClicked(); }
         }.start();
     }
-
-    // =========================================================================
-    // STOP logika (klik dugmeta + shake + auto-timer)
-    // =========================================================================
-
-    private void onStopClicked() {
-        otkaziAutoStop();
-
-        if (faza == 0) {
-            // Generiši traženi broj [100, 999]
-            trazeniBroj = 100 + random.nextInt(900);
-            tvTrazeniBroj.setText(String.valueOf(trazeniBroj));
-            faza = 1;
-            pokreniAutoStop();  // čekaj STOP za dostupne brojeve
-
-        } else if (faza == 1) {
-            // Generiši 6 dostupnih brojeva i pokreni 60s igru
-            dostupniBrojevi = generisi6Brojeva();
-            prikaziBrojeve(dostupniBrojevi);
-            faza = 2;
-            pokreniTimer60s();
-
-        } else if (faza == 2) {
-            // Shake tokom igre = predaja runde bez bodova
-            onRundaZavrsena(null);
-        }
-    }
-
-    // =========================================================================
-    // Potvrdi (evaluacija izraza)
-    // =========================================================================
-
-    private void naPotvrdi() {
-        if (faza != 2) return;
-
-        String unosStr = etIzraz.getText() != null ? etIzraz.getText().toString() : "";
-        if (unosStr.trim().isEmpty()) {
-            tlIzraz.setError(getString(R.string.error_field_required));
-            return;
-        }
-        tlIzraz.setError(null);
-
-        MojBrojLogic.IzrazRezultat rezultat = MojBrojLogic.evaluate(unosStr, dostupniBrojevi);
-
-        if (!rezultat.validan) {
-            tlIzraz.setError(rezultat.greska);
-            return;
-        }
-
-        // Zaokruži na int za poređenje
-        int izracunato = (int) Math.round(rezultat.rezultat);
-
-        if (izracunato == trazeniBroj) {
-            // Tačan odgovor
-            otkaziTimere();
-            ukupnoBodova += 10;
-            azurirajScore();
-            onRundaZavrsena(rezultat);
-        } else {
-            // Nije tačno — prikaži rezultat, nastavi igru
-            Snackbar.make(etIzraz,
-                    getString(R.string.moj_broj_dialog_near_msg, izracunato, trazeniBroj),
-                    Snackbar.LENGTH_SHORT).show();
-        }
-    }
-
-    // =========================================================================
-    // Tajmer 60s
-    // =========================================================================
 
     private void pokreniTimer60s() {
         otkaziRunduTimer();
-        rundaTimer = new CountDownTimer(ROUND_DURATION_MS, ROUND_TICK_MS) {
+        rundaTimer = new CountDownTimer(ROUND_DURATION_MS, TICK_MS) {
             @Override
             public void onTick(long ms) {
-                pbTimer.setProgress((int) (ms / 1000));
+                int s = (int) Math.ceil(ms / 1000.0);
+                pbTimer.setProgress(s);
+                tvTimer.setText(s + "s");
             }
-
             @Override
             public void onFinish() {
                 pbTimer.setProgress(0);
-                onRundaIstekla();
+                tvTimer.setText("0s");
+                if (!myExpressionSubmitted) submitMojIzraz();
             }
         }.start();
     }
 
     // =========================================================================
-    // Kraj runde
+    // Token — unos
     // =========================================================================
 
-    /** Poziva se kada tajmer istekne bez tačnog odgovora. */
-    private void onRundaIstekla() {
-        faza = 0;
-        boolean jePoslednja = (trenutnaRunda >= MAX_ROUNDS);
-
-        new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.moj_broj_dialog_timeout_title))
-                .setMessage(getString(R.string.moj_broj_dialog_timeout_msg, trazeniBroj))
-                .setCancelable(false)
-                .setPositiveButton(
-                        jePoslednja ? getString(R.string.moj_broj_dialog_finish)
-                                    : getString(R.string.moj_broj_dialog_next_round),
-                        (d, w) -> {
-                            if (jePoslednja) zavrsiIgru();
-                            else sledecarRunda();
-                        })
-                .show();
+    private void onNumPressed(int idx) {
+        if (faza != 2 || used[idx] || lastType == LastType.NUMBER_OR_CLOSE) return;
+        used[idx] = true;
+        tokens.add(new Token(String.valueOf(dostupniBrojevi[idx]), idx));
+        lastType = LastType.NUMBER_OR_CLOSE;
+        azurirajIzraz();
     }
 
-    /**
-     * Poziva se kada igrač pritisne Potvrdi sa tačnim ili dovoljno bliskim odgovorom,
-     * ili kada shake u fazi 2 zavrsi rundu.
-     *
-     * @param r rezultat evaluacije, {@code null} ako je runda predata bez unosa
-     */
-    private void onRundaZavrsena(MojBrojLogic.IzrazRezultat r) {
-        faza = 0;
-        boolean jePoslednja = (trenutnaRunda >= MAX_ROUNDS);
-
-        String naslov  = (r != null && r.validan && (int) Math.round(r.rezultat) == trazeniBroj)
-                ? getString(R.string.moj_broj_dialog_correct_title)
-                : getString(R.string.moj_broj_dialog_near_title);
-        String poruka  = (r != null && r.validan)
-                ? getString(R.string.moj_broj_dialog_near_msg,
-                            (int) Math.round(r.rezultat), trazeniBroj)
-                : getString(R.string.moj_broj_dialog_timeout_msg, trazeniBroj);
-
-        // Ako je tačan odgovor → posebna poruka
-        if (r != null && r.validan && (int) Math.round(r.rezultat) == trazeniBroj) {
-            poruka = getString(R.string.moj_broj_dialog_correct_msg, (int) Math.round(r.rezultat));
+    private void onOpPressed(String op) {
+        if (faza != 2) return;
+        switch (op) {
+            case "(":
+                if (lastType == LastType.NUMBER_OR_CLOSE) return;
+                tokens.add(new Token("(", -1));
+                lastType = LastType.OP_OR_OPEN;
+                break;
+            case ")":
+                if (lastType != LastType.NUMBER_OR_CLOSE) return;
+                tokens.add(new Token(")", -1));
+                lastType = LastType.NUMBER_OR_CLOSE;
+                break;
+            default:
+                if (lastType != LastType.NUMBER_OR_CLOSE) return;
+                tokens.add(new Token(op, -1));
+                lastType = LastType.OP_OR_OPEN;
+                break;
         }
-
-        final String finalPoruka = poruka;
-        new AlertDialog.Builder(this)
-                .setTitle(naslov)
-                .setMessage(finalPoruka)
-                .setCancelable(false)
-                .setPositiveButton(
-                        jePoslednja ? getString(R.string.moj_broj_dialog_finish)
-                                    : getString(R.string.moj_broj_dialog_next_round),
-                        (d, w) -> {
-                            if (jePoslednja) zavrsiIgru();
-                            else sledecarRunda();
-                        })
-                .show();
+        azurirajIzraz();
     }
 
-    private void sledecarRunda() {
-        trenutnaRunda++;
-        pokreniRundu();
+    private void onDel() {
+        if (tokens.isEmpty()) return;
+        Token last = tokens.remove(tokens.size() - 1);
+        if (last.isNumber()) used[last.numIndex] = false;
+        if (tokens.isEmpty()) {
+            lastType = LastType.EMPTY;
+        } else {
+            String prev = tokens.get(tokens.size() - 1).value;
+            lastType = (prev.equals("(") || prev.equals("+") || prev.equals("-")
+                    || prev.equals("×") || prev.equals("÷"))
+                    ? LastType.OP_OR_OPEN
+                    : LastType.NUMBER_OR_CLOSE;
+        }
+        azurirajIzraz();
+    }
+
+    private void azurirajIzraz() {
+        if (tokens.isEmpty()) {
+            tvIzraz.setText("");
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (Token t : tokens) sb.append(t.value);
+            tvIzraz.setText(sb.toString());
+        }
+        azurirajStanjeDugmadi();
+    }
+
+    private void setGamepadEnabled(boolean enabled) {
+        if (!enabled) {
+            for (MaterialButton btn : btnBrojevi) btn.setEnabled(false);
+            btnLeftParen.setEnabled(false); btnRightParen.setEnabled(false);
+            btnPlus.setEnabled(false); btnMinus.setEnabled(false);
+            btnMult.setEnabled(false); btnDiv.setEnabled(false);
+            btnDel.setEnabled(false);
+        } else {
+            azurirajStanjeDugmadi();
+        }
+    }
+
+    private void azurirajStanjeDugmadi() {
+        boolean canNum = (lastType != LastType.NUMBER_OR_CLOSE);
+        boolean canOp  = (lastType == LastType.NUMBER_OR_CLOSE);
+        for (int i = 0; i < 6; i++) btnBrojevi[i].setEnabled(canNum && !used[i]);
+        btnLeftParen.setEnabled(canNum);
+        btnRightParen.setEnabled(canOp);
+        btnPlus.setEnabled(canOp);
+        btnMinus.setEnabled(canOp);
+        btnMult.setEnabled(canOp);
+        btnDiv.setEnabled(canOp);
+        btnDel.setEnabled(!tokens.isEmpty());
     }
 
     // =========================================================================
-    // Dijalog: predaj
+    // Submit izraza i razrešavanje runde
     // =========================================================================
 
-    private void showGiveUpDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.moj_broj_dialog_give_up_title))
-                .setMessage(getString(R.string.moj_broj_dialog_give_up_msg))
-                .setPositiveButton(getString(R.string.moj_broj_dialog_give_up_yes), (d, w) -> {
-                    otkaziTimere();
-                    setResult(RESULT_CANCELED);
-                    finish();
-                })
-                .setNegativeButton(getString(R.string.moj_broj_dialog_give_up_no), null)
-                .show();
+    private void submitMojIzraz() {
+        if (myExpressionSubmitted || gameEnded) return;
+        myExpressionSubmitted = true;
+        faza = 3;
+        setGamepadEnabled(false);
+        btnStopPotvrdi.setEnabled(false);
+        tvStatus.setText("Čeka se protivnik...");
+
+        StringBuilder sb = new StringBuilder();
+        for (Token t : tokens) sb.append(t.value);
+        String expr = sb.toString();
+
+        int izracunato = 0;
+        boolean isValid = false;
+        if (!expr.isEmpty() && dostupniBrojevi != null) {
+            MojBrojLogic.IzrazRezultat r = MojBrojLogic.evaluate(expr, dostupniBrojevi);
+            if (r.validan) {
+                izracunato = (int) Math.round(r.rezultat);
+                isValid = true;
+            }
+        }
+        matchRepository.submitMojBrojExpression(matchId, currentRound, myUid, expr, izracunato, isValid);
+
+        // Ako protivnik već nije online ili već submittovao, razresi odmah
+        if (lastExpressions != null) onExpressionsChanged(lastExpressions);
+        else if (!opponentOnline) onExpressionsChanged(new HashMap<>());
+    }
+
+    private void onExpressionsChanged(@NonNull Map<String, MatchRepository.MojBrojExpression> expressions) {
+        lastExpressions = expressions;
+        if (!myExpressionSubmitted) return;
+
+        MatchRepository.MojBrojExpression oppExpr = expressions.get(opponentUid);
+        boolean opponentDone = (oppExpr != null && oppExpr.submitted) || !opponentOnline;
+        if (!opponentDone) return;
+
+        maybeResolveRound(expressions);
+    }
+
+    private void maybeResolveRound(@NonNull Map<String, MatchRepository.MojBrojExpression> expressions) {
+        if (roundResolved || gameEnded) return;
+        roundResolved = true;
+        otkaziTimere();
+
+        MatchRepository.MojBrojExpression myExpr  = expressions.get(myUid);
+        MatchRepository.MojBrojExpression oppExpr = expressions.get(opponentUid);
+
+        MojBrojLogic.IzrazRezultat myResult  = exprToRezultat(myExpr);
+        MojBrojLogic.IzrazRezultat oppResult = exprToRezultat(oppExpr);
+
+        // r1 = player1, r2 = player2 (izracunajBodovanje je definisano tako)
+        MojBrojLogic.IzrazRezultat r1 = isPlayerOne ? myResult : oppResult;
+        MojBrojLogic.IzrazRezultat r2 = isPlayerOne ? oppResult : myResult;
+
+        // Runda 0 je "runda player1-a", runda 1 je "runda player2-a"
+        boolean prvaRundaJePlayerOne = (currentRound == 0);
+
+        int[] bodovi = MojBrojLogic.izracunajBodovanje(trazeniBroj, r1, r2, prvaRundaJePlayerOne);
+        int myDelta  = isPlayerOne ? bodovi[0] : bodovi[1];
+        int oppDelta = isPlayerOne ? bodovi[1] : bodovi[0];
+
+        myTotalScore       += myDelta;
+        opponentTotalScore += oppDelta;
+        updateScoreLabels();
+
+        boolean isLast = (currentRound >= MAX_ROUNDS - 1);
+        String myRes  = myResult.validan  ? String.valueOf((int) Math.round(myResult.rezultat))  : "–";
+        String oppRes = oppResult.validan ? String.valueOf((int) Math.round(oppResult.rezultat)) : "–";
+
+        // Prikaži rezultat u statusnom tekstu i nastavi automatski nakon 5s.
+        // Automatski prelaz sprečava desinhronizaciju — oba igrača kreću u sledeću
+        // rundu u isto vreme bez čekanja na korisnički klik.
+        tvStatus.setText("Traženi: " + trazeniBroj
+                + " | Ti: " + myRes
+                + " | " + (opponentName != null ? opponentName : "?") + ": " + oppRes
+                + " | +" + myDelta + " bodova");
+        tvTimer.setText("5s");
+        pbTimer.setMax(5);
+        pbTimer.setProgress(5);
+
+        new CountDownTimer(5_000, 1_000) {
+            @Override
+            public void onTick(long ms) {
+                int s = (int) Math.ceil(ms / 1000.0);
+                pbTimer.setProgress(s);
+                tvTimer.setText(s + "s");
+            }
+            @Override
+            public void onFinish() {
+                pbTimer.setProgress(0);
+                tvTimer.setText("0s");
+                if (!gameEnded) {
+                    if (isLast) endGame();
+                    else pokreniRundu(currentRound + 1);
+                }
+            }
+        }.start();
+    }
+
+    private MojBrojLogic.IzrazRezultat exprToRezultat(MatchRepository.MojBrojExpression expr) {
+        MojBrojLogic.IzrazRezultat r = new MojBrojLogic.IzrazRezultat();
+        if (expr == null || !expr.submitted || !expr.isValid) {
+            r.validan  = false;
+            r.rezultat = 0;
+        } else {
+            r.validan  = true;
+            r.rezultat = expr.result;
+        }
+        return r;
     }
 
     // =========================================================================
-    // Završetak igre
+    // Kraj igre — prelazak na Korak po korak
     // =========================================================================
 
-    private void zavrsiIgru() {
-        Intent result = new Intent();
-        result.putExtra(EXTRA_BODOVI, ukupnoBodova);
-        setResult(RESULT_OK, result);
+    private void endGame() {
+        if (gameEnded) return;
+        gameEnded = true;
+
+        matchRepository.setGameResult(matchId, Constants.GAME_MOJ_BROJ, myUid, myTotalScore);
+
+        Intent intent = new Intent(this, KorakPoKorakActivity.class);
+        intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
+        intent.putExtra(Constants.EXTRA_IS_PLAYER_ONE, isPlayerOne);
+        intent.putExtra(Constants.EXTRA_OPPONENT_UID, opponentUid);
+        intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
+        intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
+        intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);
+        intent.putExtra(Constants.EXTRA_MY_SPOJNICE, mySpojniceScore);
+        intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, oppSpojniceScore);
+        intent.putExtra(Constants.EXTRA_MY_MOJ_BROJ, myTotalScore);
+        intent.putExtra(Constants.EXTRA_OPP_MOJ_BROJ, opponentTotalScore);
+        startActivity(intent);
         finish();
     }
 
     // =========================================================================
-    // Generisanje brojeva
+    // Predaja
     // =========================================================================
 
-    /**
-     * Generiše skup od 6 dostupnih brojeva:
-     * 4 jednocifrena (1–9), 1 iz {10,15,20}, 1 iz {25,50,75,100}.
-     */
+    private void confirmGiveUp() {
+        new AlertDialog.Builder(this)
+                .setTitle("Da li si siguran?")
+                .setMessage("Igra će biti izgubljena.")
+                .setPositiveButton("Predaj", (d, w) -> {
+                    gameEnded = true;
+                    matchRepository.leaveMatch(matchId, myUid);
+                    finish();
+                })
+                .setNegativeButton("Nastavi", null)
+                .show();
+    }
+
+    // =========================================================================
+    // Generisanje 6 brojeva (pozicije 0-3 = jednocifreni, 4 = mali, 5 = veliki)
+    // =========================================================================
+
     private int[] generisi6Brojeva() {
-        int[] mali   = {10, 15, 20};
-        int[] veliki = {25, 50, 75, 100};
-
-        List<Integer> lista = new ArrayList<>();
-        for (int i = 0; i < 4; i++) lista.add(1 + random.nextInt(9));
-        lista.add(mali[random.nextInt(mali.length)]);
-        lista.add(veliki[random.nextInt(veliki.length)]);
-        Collections.shuffle(lista, random);
-
-        int[] niz = new int[lista.size()];
-        for (int i = 0; i < lista.size(); i++) niz[i] = lista.get(i);
-        return niz;
-    }
-
-    private void prikaziBrojeve(int[] brojevi) {
-        for (int i = 0; i < tvBrojevi.length; i++) {
-            String v = String.valueOf(brojevi[i]);
-            tvBrojevi[i].setText(v);
-            btnBrojevi[i].setText(v);
-        }
+        int[] maliSet   = {10, 15, 20};
+        int[] velikiSet = {25, 50, 75, 100};
+        List<Integer> jed = new ArrayList<>();
+        for (int i = 0; i < 4; i++) jed.add(1 + random.nextInt(9));
+        Collections.shuffle(jed, random);
+        int[] result = new int[6];
+        for (int i = 0; i < 4; i++) result[i] = jed.get(i);
+        result[4] = maliSet[random.nextInt(maliSet.length)];
+        result[5] = velikiSet[random.nextInt(velikiSet.length)];
+        return result;
     }
 
     // =========================================================================
-    // Pomoćne metode
+    // UI helpers
     // =========================================================================
 
-    private void appendToIzraz(String token) {
-        if (faza != 2) return;
-        izraz.append(token);
-        osvežiIzraz();
+    private void updateScoreLabels() {
+        tvScore.setText("Bodovi: " + myTotalScore);
+        tvOpponentScore.setText((opponentName != null ? opponentName : "?") + ": " + opponentTotalScore);
     }
 
-    private void osvežiIzraz() {
-        etIzraz.setText(izraz.toString());
-    }
+    private void otkaziAutoStop()  { if (autoStopTimer != null) { autoStopTimer.cancel(); autoStopTimer = null; } }
+    private void otkaziRunduTimer() { if (rundaTimer    != null) { rundaTimer.cancel();    rundaTimer    = null; } }
+    private void otkaziTimere()    { otkaziAutoStop(); otkaziRunduTimer(); }
 
-    private void azurirajHeader() {
-        tvRound.setText(getString(R.string.moj_broj_round_label, trenutnaRunda));
-        azurirajScore();
-    }
-
-    private void azurirajScore() {
-        tvScore.setText(getString(R.string.moj_broj_score_label, ukupnoBodova));
-    }
-
-    private void otkaziAutoStop() {
-        if (autoStopTimer != null) {
-            autoStopTimer.cancel();
-            autoStopTimer = null;
-        }
-    }
-
-    private void otkaziRunduTimer() {
-        if (rundaTimer != null) {
-            rundaTimer.cancel();
-            rundaTimer = null;
-        }
-    }
-
-    private void otkaziTimere() {
-        otkaziAutoStop();
-        otkaziRunduTimer();
+    private void detachAll() {
+        if (roundDataDetacher   != null) { roundDataDetacher.run();   roundDataDetacher   = null; }
+        if (expressionsDetacher != null) { expressionsDetacher.run(); expressionsDetacher = null; }
+        for (Runnable d : matchDetachers) d.run();
+        matchDetachers.clear();
     }
 }
