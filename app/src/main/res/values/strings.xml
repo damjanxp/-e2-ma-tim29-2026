@@ -317,6 +317,13 @@
     <string name="notification_channel_reward_desc">Dnevne i posebne nagrade</string>
     <string name="notification_channel_general_name">Opšta</string>
     <string name="notification_channel_general_desc">Opšta obaveštenja aplikacije</string>
+    <string name="notification_channel_friend_name">Prijatelji</string>
+    <string name="notification_channel_friend_desc">Zahtevi za prijateljstvo i pozivnice</string>
+    <string name="notification_channel_league_name">Liga</string>
+    <string name="notification_channel_league_desc">Napredak u ligi i promene ranga</string>
+    <string name="notifications_btn_test">Testiraj obaveštenja</string>
+    <string name="notifications_test_sending">Slanje test obaveštenja…</string>
+    <string name="notifications_permission_denied">Dozvola odbijena — obaveštenja se neće prikazivati u traci, ali će biti vidljiva ovde.</string>
 
     <!-- ============ Student 2 — KT2 (profil + 1v1 igre) ============ -->
 

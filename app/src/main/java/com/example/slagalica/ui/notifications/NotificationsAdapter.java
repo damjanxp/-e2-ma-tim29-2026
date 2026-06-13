@@ -62,13 +62,14 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
         holder.tvType.setText(getTypeLabel(context, notification.getType()));
         holder.tvType.setTextColor(ContextCompat.getColor(context, getTypeColor(notification.getType())));
-        holder.tvTitle.setText(context.getString(notification.getTitleResId()));
-        holder.tvMessage.setText(context.getString(notification.getMessageResId()));
+        holder.tvTitle.setText(notification.getTitle());
+        holder.tvMessage.setText(notification.getMessage());
         holder.tvTimestamp.setText(DateUtils.formatTimestamp(notification.getTimestampMillis()));
 
-        if (notification.getActionResId() != null) {
+        String action = notification.getActionLabel();
+        if (action != null && !action.isEmpty()) {
             holder.tvAction.setVisibility(View.VISIBLE);
-            holder.tvAction.setText(context.getString(notification.getActionResId()));
+            holder.tvAction.setText(action);
         } else {
             holder.tvAction.setVisibility(View.GONE);
         }
