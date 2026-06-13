@@ -30,6 +30,11 @@
     <color name="skocko_hint_empty">#FFBDBDBD</color>
     <color name="skocko_symbol_tint">#FF1565C0</color>
 
+    <!-- Asocijacije — stanja ćelija -->
+    <color name="asoc_cell_revealed">#FFE3F2FD</color>
+    <color name="asoc_col_solved">#FFC8E6C9</color>
+    <color name="asoc_final_solved">#FFFFF9C4</color>
+
     <!-- Notifikacije -->
     <color name="notification_unread_bg">#FFE3F2FD</color>
     <color name="notification_read_bg">#FFFFFFFF</color>

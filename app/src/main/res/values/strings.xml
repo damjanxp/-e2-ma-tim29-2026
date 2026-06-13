@@ -204,8 +204,20 @@
     <string name="skocko_symbol_circle">Krug</string>
     <string name="skocko_symbol_heart">Srce</string>
     <string name="skocko_symbol_triangle">Trougao</string>
+    <string name="skocko_symbol_star">Zvezda</string>
     <string name="skocko_slot_desc">Polje pokušaja</string>
     <string name="skocko_solution_desc">Rešenje</string>
+    <string name="skocko_round">Runda %d/2</string>
+    <string name="skocko_score">Bodovi: %d</string>
+    <string name="skocko_btn_clear">← Briši</string>
+    <string name="skocko_phase_main">Pokušaj %d/6 — unesite kombinaciju</string>
+    <string name="skocko_phase_opponent">Protivnički pokušaj (10s)</string>
+    <string name="skocko_round_end_title">Kraj runde %d</string>
+    <string name="skocko_round_end_msg">Bodovi u ovoj rundi: %d</string>
+    <string name="skocko_btn_next_round">Sledeća runda</string>
+    <string name="skocko_game_over_title">Kraj igre</string>
+    <string name="skocko_game_over_msg">Runda 1: %d bod.\nRunda 2: %d bod.\nUkupno: %d bodova</string>
+    <string name="skocko_btn_finish">Završi</string>
 
     <!-- Regioni -->
     <string-array name="regions_array">
@@ -243,6 +255,28 @@
     <string name="asoc_d2">D2</string>
     <string name="asoc_d1">D1</string>
     <string name="asoc_btn_give_up">Predaj</string>
+    <string name="asoc_round">Runda %d/2</string>
+    <string name="asoc_score">Bodovi: %d</string>
+    <string name="asoc_cell_hidden">?</string>
+    <string name="asoc_col_label_a">A ?</string>
+    <string name="asoc_col_label_b">B ?</string>
+    <string name="asoc_col_label_c">C ?</string>
+    <string name="asoc_col_label_d">D ?</string>
+    <string name="asoc_final_label">\?\?\? FINALNO \?\?\?</string>
+    <string name="asoc_guess_col_title">Rešenje kolone %s</string>
+    <string name="asoc_guess_final_title">Finalno rešenje</string>
+    <string name="asoc_guess_hint">Upiši odgovor...</string>
+    <string name="asoc_correct_col">Tačno! +%d bodova (kolona %s)</string>
+    <string name="asoc_correct_final">Tačno! +%d bodova — Kraj runde!</string>
+    <string name="asoc_wrong">Netačno. Otkrij polje pre sledećeg pogađanja.</string>
+    <string name="asoc_must_reveal_first">Pogriješio/la si — prvo otkrij polje.</string>
+    <string name="asoc_round_end_title">Kraj runde %d</string>
+    <string name="asoc_round_end_msg">Bodovi u ovoj rundi: %d</string>
+    <string name="asoc_btn_next_round">Sledeća runda</string>
+    <string name="asoc_game_over_title">Kraj igre</string>
+    <string name="asoc_game_over_msg">Runda 1: %d bod.\nRunda 2: %d bod.\nUkupno: %d bodova</string>
+    <string name="asoc_btn_finish">Završi</string>
+    <string name="asoc_time_up">Vreme je isteklo!</string>
 
     <!-- Notifikacije -->
     <string name="notifications_title">Notifikacije</string>
