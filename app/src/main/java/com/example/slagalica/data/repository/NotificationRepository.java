@@ -2,7 +2,6 @@ package com.example.slagalica.data.repository;
 
 import androidx.annotation.NonNull;
 
-import com.example.slagalica.R;
 import com.example.slagalica.data.model.AppNotification;
 import com.example.slagalica.data.model.NotificationType;
 
@@ -12,28 +11,26 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Repository for in-app notifications. Currently in-memory only.
+ * In-memory store for in-app notifications.
+ *
+ * Porting path to persistence: replace addNotification / markAsRead / markAllAsRead
+ * with Firestore writes; replace getAllNotifications with a Firestore query listener.
+ * The rest of the codebase (NotificationPoster, NotificationsActivity) stays unchanged.
  */
 public class NotificationRepository {
 
-    /** Callback for loading notifications. */
     public interface NotificationListCallback {
         void onSuccess(@NonNull List<AppNotification> notifications);
-
         void onError(@NonNull String errorMessage);
     }
 
     private static NotificationRepository instance;
-
     private final List<AppNotification> notifications = new ArrayList<>();
 
     private NotificationRepository() {
         seedMockData();
     }
 
-    /**
-     * Returns the singleton instance of the repository.
-     */
     @NonNull
     public static synchronized NotificationRepository getInstance() {
         if (instance == null) {
@@ -42,91 +39,64 @@ public class NotificationRepository {
         return instance;
     }
 
-    /**
-     * Loads all notifications.
-     */
     public void getAllNotifications(@NonNull NotificationListCallback callback) {
         callback.onSuccess(new ArrayList<>(notifications));
     }
 
-    /**
-     * Adds a new notification to the history.
-     */
+    /** Called by NotificationPoster whenever a notification arrives (push or local). */
     public void addNotification(@NonNull AppNotification notification) {
         notifications.add(0, notification);
     }
 
-    /**
-     * Marks a single notification as read.
-     */
     public void markAsRead(@NonNull String notificationId) {
-        for (AppNotification notification : notifications) {
-            if (notificationId.equals(notification.getId())) {
-                notification.setRead(true);
-                break;
-            }
+        for (AppNotification n : notifications) {
+            if (notificationId.equals(n.getId())) { n.setRead(true); break; }
         }
     }
 
-    /**
-     * Marks all notifications as read.
-     */
     public void markAllAsRead() {
-        for (AppNotification notification : notifications) {
-            notification.setRead(true);
-        }
+        for (AppNotification n : notifications) n.setRead(true);
     }
+
+    // ── Seed data ─────────────────────────────────────────────────────────────
 
     private void seedMockData() {
         long now = System.currentTimeMillis();
-
-        notifications.add(new AppNotification(UUID.randomUUID().toString(),
-                R.string.notification_title_chat,
-                R.string.notification_message_chat,
+        notifications.add(make("Nova poruka",
+                "Marko Vam je poslao/la poruku",
                 NotificationType.CHAT,
-                now - TimeUnit.MINUTES.toMillis(5),
-                false,
-                null));
+                now - TimeUnit.MINUTES.toMillis(5), false, null));
 
-        notifications.add(new AppNotification(UUID.randomUUID().toString(),
-                R.string.notification_title_ranking,
-                R.string.notification_message_ranking,
+        notifications.add(make("Rang lista",
+                "Postali ste #5 na rang listi",
                 NotificationType.RANKING,
-                now - TimeUnit.HOURS.toMillis(2),
-                false,
-                null));
+                now - TimeUnit.HOURS.toMillis(2), false, null));
 
-        notifications.add(new AppNotification(UUID.randomUUID().toString(),
-                R.string.notification_title_reward,
-                R.string.notification_message_reward,
+        notifications.add(make("Dnevna nagrada",
+                "Otključali ste dnevnu nagradu",
                 NotificationType.REWARD,
-                now - TimeUnit.HOURS.toMillis(6),
-                true,
-                R.string.notification_action_claim));
+                now - TimeUnit.HOURS.toMillis(6), true, "Preuzmi"));
 
-        notifications.add(new AppNotification(UUID.randomUUID().toString(),
-                R.string.notification_title_general,
-                R.string.notification_message_general,
+        notifications.add(make("Liga",
+                "Dobrodošli u novu ligu",
                 NotificationType.GENERAL,
-                now - TimeUnit.DAYS.toMillis(1),
-                true,
-                null));
+                now - TimeUnit.DAYS.toMillis(1), true, null));
 
-        notifications.add(new AppNotification(UUID.randomUUID().toString(),
-                R.string.notification_title_friend_invite,
-                R.string.notification_message_friend_invite,
+        notifications.add(make("Zahtev za prijateljstvo",
+                "Ana Vam je poslala zahtev za prijateljstvo",
                 NotificationType.FRIEND_INVITE,
-                now - TimeUnit.DAYS.toMillis(2),
-                false,
-                R.string.notification_action_accept));
+                now - TimeUnit.DAYS.toMillis(2), false, "Prihvati"));
 
-        notifications.add(new AppNotification(UUID.randomUUID().toString(),
-                R.string.notification_title_league,
-                R.string.notification_message_league,
+        notifications.add(make("Nova liga",
+                "Uznapredovali ste do Srebrne lige!",
                 NotificationType.LEAGUE,
-                now - TimeUnit.DAYS.toMillis(4),
-                true,
-                null));
+                now - TimeUnit.DAYS.toMillis(4), true, null));
+    }
+
+    private static AppNotification make(String title, String message,
+                                        NotificationType type, long ts,
+                                        boolean read, String actionLabel) {
+        return new AppNotification(UUID.randomUUID().toString(),
+                title, message, type, ts, read, actionLabel);
     }
 }
-

@@ -4,6 +4,8 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Required on Android 13+ (API 33) to post system tray notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -95,6 +97,19 @@
             android:name=".ui.match.MatchResultActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
+
+        <!--
+            FCM service — receives push tokens and data messages.
+            MESSAGING_EVENT intent filter is required for firebase-messaging to work.
+            exported="false" is safe: FCM binds to it directly via the filter.
+        -->
+        <service
+            android:name=".data.repository.SlagalicaMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
     </application>
 
