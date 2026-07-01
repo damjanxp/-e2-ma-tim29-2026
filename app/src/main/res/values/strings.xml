@@ -389,4 +389,22 @@
         <item>Platinasta liga</item>
         <item>Dijamantska liga</item>
     </string-array>
+
+    <!-- Rang lista -->
+    <string name="ranking_title">Rang lista</string>
+    <string name="ranking_tab_weekly">Nedeljno</string>
+    <string name="ranking_tab_monthly">Mesečno</string>
+    <string name="ranking_period">Period: %1$s – %2$s</string>
+    <string name="ranking_empty">Trenutno nema igrača na rang listi.</string>
+    <string name="ranking_item_stars">%d ⭐</string>
+    <string name="ranking_error_load">Učitavanje rang liste nije uspelo.</string>
+    <string name="ranking_debug_section">Za testiranje</string>
+    <string name="ranking_btn_add_star">+1 zvezda (test)</string>
+    <string name="ranking_btn_conclude_cycle">Završi ciklus (test)</string>
+    <string name="ranking_star_added">Dodata 1 zvezda.</string>
+    <string name="ranking_conclude_confirm_title">Završi ciklus?</string>
+    <string name="ranking_conclude_confirm_message">Žetoni će biti dodeljeni prema trenutnom plasmanu (1–10. mesto), a zvezde svih igrača za ovaj ciklus će se resetovati na 0.</string>
+    <string name="ranking_conclude_confirm_yes">Završi</string>
+    <string name="ranking_conclude_confirm_no">Otkaži</string>
+    <string name="ranking_cycle_concluded">Ciklus je završen — nagrade su dodeljene!</string>
 </resources>

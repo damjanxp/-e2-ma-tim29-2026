@@ -14,6 +14,7 @@ public final class Constants {
     public static final String COLLECTION_USERS     = "users";
     public static final String COLLECTION_KO_ZNA_ZNA = "koZnaZna";
     public static final String COLLECTION_SPOJNICE  = "spojnice";
+    public static final String COLLECTION_LEADERBOARD_CYCLES = "leaderboardCycles";
 
     // ==== Realtime Database ====
     // Baza je u regionu europe-west1; google-services.json ne sadrži adresu baze,
@@ -80,4 +81,14 @@ public final class Constants {
     // ==== Profil ====
     public static final int AVATAR_COUNT = 6;
     public static final int LEAGUE_COUNT = 6; // nulta + 5 liga
+
+    // ==== Rang lista ====
+    public static final String LEADERBOARD_TYPE_WEEKLY  = "weekly";
+    public static final String LEADERBOARD_TYPE_MONTHLY = "monthly";
+    public static final int    LEADERBOARD_TOP_N = 10;
+    /** Rang lista se automatski osvežava dok je ekran otvoren. */
+    public static final long   LEADERBOARD_REFRESH_INTERVAL_MS = 120_000L; // 2 minuta
+    /** Nagrade u žetonima po plasmanu — indeks 0 = 1. mesto, ..., indeks 9 = 10. mesto. */
+    public static final int[] LEADERBOARD_WEEKLY_REWARDS  = {5, 3, 2, 1, 1, 1, 1, 1, 1, 1};
+    public static final int[] LEADERBOARD_MONTHLY_REWARDS = {10, 6, 4, 2, 2, 2, 2, 2, 2, 2};
 }

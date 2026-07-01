@@ -17,6 +17,10 @@ public class User {
     private String avatarUrl;
     private int tokens;
     private int totalStars;
+    /** Broj zvezda u tekućem nedeljnom ciklusu rang liste; resetuje se na 0 kada se ciklus završi. */
+    private int weeklyStars;
+    /** Broj zvezda u tekućem mesečnom ciklusu rang liste; resetuje se na 0 kada se ciklus završi. */
+    private int monthlyStars;
     private int currentLeague;
     /** Unix timestamp (ms) poslednjeg dodeljivanja dnevnih tokena. */
     private long lastTokenGrantTimestamp;
@@ -131,6 +135,14 @@ public class User {
         return totalStars;
     }
 
+    public int getWeeklyStars() {
+        return weeklyStars;
+    }
+
+    public int getMonthlyStars() {
+        return monthlyStars;
+    }
+
     public int getCurrentLeague() {
         return currentLeague;
     }
@@ -177,6 +189,14 @@ public class User {
 
     public void setTotalStars(int totalStars) {
         this.totalStars = totalStars;
+    }
+
+    public void setWeeklyStars(int weeklyStars) {
+        this.weeklyStars = weeklyStars;
+    }
+
+    public void setMonthlyStars(int monthlyStars) {
+        this.monthlyStars = monthlyStars;
     }
 
     public void setCurrentLeague(int currentLeague) {
