@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,11 +19,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.Korak;
 import com.example.slagalica.data.model.KorakState;
+import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.GameContentRepository;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.KorakPoKorakLogic;
 import com.example.slagalica.ui.match.MatchResultActivity;
+import com.example.slagalica.ui.widget.ScoreBarView;
+import com.example.slagalica.util.AvatarProvider;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -53,12 +55,9 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private static final int ROUND_DELAY_MS     = 1_800;
 
     // ─── Views ───────────────────────────────────────────────────────────────
-    private TextView         tvOpponentScore;
     private TextView         tvRoundLabel;
-    private TextView         tvScore;
-    private TextView         tvTimer;
     private TextView         tvTurnStatus;
-    private ProgressBar      pbTimer;
+    private ScoreBarView     scoreBar;
     private RecyclerView     rvKoraci;
     private TextInputLayout  tlGuess;
     private TextInputEditText etGuess;
@@ -158,12 +157,9 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        tvOpponentScore = findViewById(R.id.tvOpponentScore);
         tvRoundLabel    = findViewById(R.id.tvRoundLabel);
-        tvScore         = findViewById(R.id.tvScore);
-        tvTimer         = findViewById(R.id.tvTimer);
         tvTurnStatus    = findViewById(R.id.tvTurnStatus);
-        pbTimer         = findViewById(R.id.pbTimer);
+        scoreBar        = findViewById(R.id.scoreBar);
         rvKoraci        = findViewById(R.id.rvKoraci);
         tlGuess         = findViewById(R.id.tlGuess);
         etGuess         = findViewById(R.id.etGuess);
@@ -173,7 +169,35 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         rvKoraci.setLayoutManager(new LinearLayoutManager(this));
         setInputEnabled(false);
         tvTurnStatus.setText("Učitavanje zadatka...");
-        updateScoreLabels();
+        loadPlayerBar();
+    }
+
+    /** Popunjava traku sa rezultatom meča — nadimci, avatari i skor pre ove igre (sve prethodne igre). */
+    private void loadPlayerBar() {
+        scoreBar.setOpponentPlayer(AvatarProvider.getDrawableRes(0), opponentName != null ? opponentName : "?");
+        scoreBar.setScores(
+                myKzzScore + myAsocScore + mySkockoScore + myMojBrojScore + mySpojniceScore,
+                oppKzzScore + oppAsocScore + oppSkockoScore + oppMojBrojScore + oppSpojniceScore);
+
+        userRepository.getOrCreateUser(myUid, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(@NonNull User user) {
+                scoreBar.setMyPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()), user.getUsername());
+            }
+            @Override
+            public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+        });
+        if (opponentUid != null) {
+            userRepository.getOrCreateUser(opponentUid, new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(@NonNull User user) {
+                    scoreBar.setOpponentPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()),
+                            opponentName != null ? opponentName : user.getUsername());
+                }
+                @Override
+                public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+            });
+        }
     }
 
     private void setupListeners() {
@@ -267,16 +291,13 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         currentKoraci   = null;
 
         tvRoundLabel.setText("Runda " + (round + 1) + "/" + MAX_ROUNDS);
-        pbTimer.setMax(70);
-        pbTimer.setProgress(70);
-        tvTimer.setText("–");
+        scoreBar.setTimeText("–");
         tvTurnStatus.setText("Čeka se zadatak...");
         etGuess.setText("");
         setInputEnabled(false);
 
         // Reset adaptera sa praznim koracima
         initAdapter(null);
-        updateScoreLabels();
 
         if (roundStateDetacher != null) { roundStateDetacher.run(); roundStateDetacher = null; }
         if (zadatakDetacher    != null) { zadatakDetacher.run();    zadatakDetacher    = null; }
@@ -357,9 +378,6 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     // =========================================================================
 
     private void startActivePhaseTurn() {
-        pbTimer.setMax(70);
-        pbTimer.setProgress(70);
-
         boolean iAmActive = isActivePlayerForRound(currentRound);
 
         if (iAmActive) {
@@ -376,14 +394,12 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                         matchRepository.setKorakOpenedHints(matchId, currentRound, hintsOpened);
                     }
                     int s = (int) Math.ceil(ms / 1000.0);
-                    pbTimer.setProgress(Math.min(s, 70));
-                    tvTimer.setText(s + "s");
+                    scoreBar.setTimeLeft(Math.min(s, 70));
                 }
 
                 @Override
                 public void onFinish() {
-                    pbTimer.setProgress(0);
-                    tvTimer.setText("0s");
+                    scoreBar.setTimeLeft(0);
                     if (!guessGiven && !roundResolved) {
                         guessGiven = true;
                         matchRepository.setKorakPhase(matchId, currentRound, Constants.KORAK_PHASE_CHANCE);
@@ -398,10 +414,9 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                 @Override
                 public void onTick(long ms) {
                     int s = (int) Math.ceil(ms / 1000.0);
-                    pbTimer.setProgress(Math.min(s, 70));
-                    tvTimer.setText(s + "s");
+                    scoreBar.setTimeLeft(Math.min(s, 70));
                 }
-                @Override public void onFinish() { tvTimer.setText("…"); }
+                @Override public void onFinish() { scoreBar.setTimeText("…"); }
             }.start();
             setInputEnabled(false);
         }
@@ -412,9 +427,6 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     // =========================================================================
 
     private void startChancePhaseTurn() {
-        pbTimer.setMax(10);
-        pbTimer.setProgress(10);
-
         boolean iAmPassive = !isActivePlayerForRound(currentRound); // pasivni postaje aktivan za unos
 
         if (iAmPassive) {
@@ -423,13 +435,11 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                 @Override
                 public void onTick(long ms) {
                     int s = (int) Math.ceil(ms / 1000.0);
-                    pbTimer.setProgress(s);
-                    tvTimer.setText(s + "s");
+                    scoreBar.setTimeLeft(s);
                 }
                 @Override
                 public void onFinish() {
-                    pbTimer.setProgress(0);
-                    tvTimer.setText("0s");
+                    scoreBar.setTimeLeft(0);
                     if (!chanceGiven && !roundResolved) {
                         chanceGiven = true;
                         setInputEnabled(false);
@@ -445,10 +455,9 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                 @Override
                 public void onTick(long ms) {
                     int s = (int) Math.ceil(ms / 1000.0);
-                    pbTimer.setProgress(s);
-                    tvTimer.setText(s + "s");
+                    scoreBar.setTimeLeft(s);
                 }
-                @Override public void onFinish() { tvTimer.setText("0s"); }
+                @Override public void onFinish() { scoreBar.setTimeLeft(0); }
             }.start();
         }
     }
@@ -534,8 +543,6 @@ public class KorakPoKorakActivity extends AppCompatActivity {
             if (!iAmActiveThisRound) myTotalScore += pts;
             else opponentTotalScore += pts;
         }
-
-        updateScoreLabels();
 
         boolean isLast = (currentRound >= MAX_ROUNDS - 1);
         handler.postDelayed(() -> {
@@ -629,11 +636,6 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         }
         adapter = new KorakAdapter(list);
         rvKoraci.setAdapter(adapter);
-    }
-
-    private void updateScoreLabels() {
-        tvScore.setText("Bodovi: " + myTotalScore);
-        tvOpponentScore.setText((opponentName != null ? opponentName : "?") + ": " + opponentTotalScore);
     }
 
     private void otkaziSveTimere() {

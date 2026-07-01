@@ -6,7 +6,6 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,10 +18,13 @@ import androidx.core.content.ContextCompat;
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.SpojniceAttempt;
 import com.example.slagalica.data.model.SpojnicePuzzle;
+import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.SpojniceLogic;
 import com.example.slagalica.ui.games.KorakPoKorakActivity;
+import com.example.slagalica.ui.widget.ScoreBarView;
+import com.example.slagalica.util.AvatarProvider;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 
@@ -50,13 +52,10 @@ public class SpojniceActivity extends AppCompatActivity {
     // Views
     private final MaterialButton[] leftButtons  = new MaterialButton[Constants.SPOJNICE_PAIRS];
     private final MaterialButton[] rightButtons = new MaterialButton[Constants.SPOJNICE_PAIRS];
-    private TextView    tvOpponentScore;
     private TextView    tvRoundLabel;
-    private TextView    tvScore;
-    private TextView    tvTimer;
     private TextView    tvTurnStatus;
     private TextView    tvCriterion;
-    private ProgressBar pbTimer;
+    private ScoreBarView scoreBar;
 
     private ColorStateList defaultTint;
     private ColorStateList selectedTint;
@@ -121,13 +120,10 @@ public class SpojniceActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        tvOpponentScore = findViewById(R.id.tvOpponentScore);
         tvRoundLabel    = findViewById(R.id.tvRoundLabel);
-        tvScore         = findViewById(R.id.tvScore);
-        tvTimer         = findViewById(R.id.tvTimer);
         tvTurnStatus    = findViewById(R.id.tvTurnStatus);
         tvCriterion     = findViewById(R.id.tvCriterion);
-        pbTimer         = findViewById(R.id.pbTimer);
+        scoreBar        = findViewById(R.id.scoreBar);
 
         int[] leftIds  = {R.id.btnLeft0, R.id.btnLeft1, R.id.btnLeft2, R.id.btnLeft3, R.id.btnLeft4};
         int[] rightIds = {R.id.btnRight0, R.id.btnRight1, R.id.btnRight2, R.id.btnRight3, R.id.btnRight4};
@@ -143,8 +139,35 @@ public class SpojniceActivity extends AppCompatActivity {
 
         tvCriterion.setText(R.string.spojnice_waiting_content);
         tvTurnStatus.setText("");
-        updateScoreLabels();
         setAllButtonsEnabled(false);
+        loadPlayerBar();
+    }
+
+    /** Popunjava traku sa rezultatom meča — nadimci, avatari i skor pre ove igre (KZZ + Asocijacije + Skočko + Moj broj). */
+    private void loadPlayerBar() {
+        scoreBar.setOpponentPlayer(AvatarProvider.getDrawableRes(0), opponentName != null ? opponentName : "?");
+        scoreBar.setScores(myKzzScore + myAsocScore + mySkockoScore + myMojBrojScore,
+                opponentKzzScore + oppAsocScore + oppSkockoScore + oppMojBrojScore);
+
+        userRepository.getOrCreateUser(myUid, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(@NonNull User user) {
+                scoreBar.setMyPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()), user.getUsername());
+            }
+            @Override
+            public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+        });
+        if (opponentUid != null) {
+            userRepository.getOrCreateUser(opponentUid, new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(@NonNull User user) {
+                    scoreBar.setOpponentPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()),
+                            opponentName != null ? opponentName : user.getUsername());
+                }
+                @Override
+                public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+            });
+        }
     }
 
     private void setupListeners() {
@@ -254,7 +277,6 @@ public class SpojniceActivity extends AppCompatActivity {
             }
         }
 
-        updateScoreLabels();
         renderBoard();
 
         if (phase == SpojniceLogic.PHASE_DONE) {
@@ -455,22 +477,18 @@ public class SpojniceActivity extends AppCompatActivity {
     private void startPhaseTimer() {
         cancelPhaseTimer();
         int totalSeconds = Constants.SPOJNICE_ROUND_TIME_MS / 1000;
-        pbTimer.setMax(totalSeconds);
-        pbTimer.setProgress(totalSeconds);
-        tvTimer.setText(getString(R.string.spojnice_time_left, totalSeconds));
+        scoreBar.setTimeLeft(totalSeconds);
 
         phaseTimer = new CountDownTimer(Constants.SPOJNICE_ROUND_TIME_MS, 1_000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 int secondsLeft = (int) (millisUntilFinished / 1000) + 1;
-                pbTimer.setProgress(secondsLeft);
-                tvTimer.setText(getString(R.string.spojnice_time_left, secondsLeft));
+                scoreBar.setTimeLeft(secondsLeft);
             }
 
             @Override
             public void onFinish() {
-                pbTimer.setProgress(0);
-                tvTimer.setText(getString(R.string.spojnice_time_left, 0));
+                scoreBar.setTimeLeft(0);
                 // Istek vremena prijavljuje aktivni igrač; ako je aktivni igrač
                 // napustio meč, fazu zatvara preostali igrač
                 if (!roundFinished && (isMyTurn() || !opponentOnline)) {
@@ -576,12 +594,6 @@ public class SpojniceActivity extends AppCompatActivity {
             total += SpojniceLogic.pointsFor(uid, attempts);
         }
         return total;
-    }
-
-    private void updateScoreLabels() {
-        tvScore.setText(getString(R.string.spojnice_score_label, mySpojniceScore()));
-        tvOpponentScore.setText(getString(R.string.spojnice_opponent_score_label,
-                opponentName != null ? opponentName : "?", opponentSpojniceScore()));
     }
 
     private void setAllButtonsEnabled(boolean enabled) {

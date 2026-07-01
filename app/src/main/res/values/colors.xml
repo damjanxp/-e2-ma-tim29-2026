@@ -45,4 +45,12 @@
     <color name="notification_type_general">#FF546E7A</color>
     <color name="notification_type_friend">#FF43A047</color>
     <color name="notification_type_league">#FFFB8C00</color>
+
+    <!-- Traka sa rezultatom meča (ScoreBarView) -->
+    <color name="score_bar_bg">#FF16233F</color>
+    <color name="score_bar_bg_edge">#FF223460</color>
+    <color name="score_bar_accent_me">#FF29ABE2</color>
+    <color name="score_bar_accent_opponent">#FFE6533C</color>
+    <color name="score_bar_timer_bg">#FFFFF8E1</color>
+    <color name="score_bar_timer_stroke">#FFFFC107</color>
 </resources>

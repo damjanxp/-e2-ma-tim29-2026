@@ -9,7 +9,6 @@ import android.os.Looper;
 import android.text.InputType;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -21,9 +20,12 @@ import androidx.core.content.ContextCompat;
 
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.AsocijacijePuzzle;
+import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.AsocijacijeLogic;
+import com.example.slagalica.ui.widget.ScoreBarView;
+import com.example.slagalica.util.AvatarProvider;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -50,8 +52,8 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private static final String[] COL_LETTERS = {"A", "B", "C", "D"};
 
     // ── Views ─────────────────────────────────────────────────────────────────
-    private TextView        tvRound, tvScore, tvOpponentScore, tvTimer, tvTurnStatus;
-    private ProgressBar     pbTimer;
+    private TextView        tvRound, tvTurnStatus;
+    private ScoreBarView    scoreBar;
     private MaterialButton[][] clueButtons;
     private MaterialButton[]   colButtons;
     private MaterialButton  finalButton;
@@ -128,11 +130,8 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
     private void initViews() {
         tvRound         = findViewById(R.id.tvRound);
-        tvScore         = findViewById(R.id.tvScore);
-        tvOpponentScore = findViewById(R.id.tvOpponentScore);
-        tvTimer         = findViewById(R.id.tvTimer);
         tvTurnStatus    = findViewById(R.id.tvTurnStatus);
-        pbTimer         = findViewById(R.id.pbTimer);
+        scoreBar        = findViewById(R.id.scoreBar);
         btnGiveUp       = findViewById(R.id.btnGiveUp);
 
         clueButtons = new MaterialButton[][]{
@@ -153,6 +152,33 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
         tvTurnStatus.setText("Učitavanje...");
         btnGiveUp.setOnClickListener(v -> confirmGiveUp());
+        loadPlayerBar();
+    }
+
+    /** Popunjava traku sa rezultatom meča — nadimci, avatari i skor pre ove igre (samo KZZ). */
+    private void loadPlayerBar() {
+        scoreBar.setOpponentPlayer(AvatarProvider.getDrawableRes(0), opponentName != null ? opponentName : "?");
+        scoreBar.setScores(myKzzScore, oppKzzScore);
+
+        userRepository.getOrCreateUser(myUid, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(@NonNull User user) {
+                scoreBar.setMyPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()), user.getUsername());
+            }
+            @Override
+            public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+        });
+        if (opponentUid != null) {
+            userRepository.getOrCreateUser(opponentUid, new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(@NonNull User user) {
+                    scoreBar.setOpponentPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()),
+                            opponentName != null ? opponentName : user.getUsername());
+                }
+                @Override
+                public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+            });
+        }
     }
 
     private void resolveColors() {
@@ -216,7 +242,6 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
         tvRound.setText(getString(R.string.asoc_round, round + 1));
         tvTurnStatus.setText("Učitavanje...");
-        updateScoreHeader(null);
         clearBoard();
         cancelTimer();
 
@@ -270,8 +295,6 @@ public class AsocijacijeActivity extends AppCompatActivity {
         myTotalScore += myRoundScore;
         Integer oppScore = finalState.scores.get(opponentUid);
         opponentTotalScore += (oppScore != null ? oppScore : 0);
-
-        updateScoreHeader(finalState);
 
         boolean isLast = (currentRound >= NUM_ROUNDS - 1);
         handler.postDelayed(() -> {
@@ -365,8 +388,6 @@ public class AsocijacijeActivity extends AppCompatActivity {
         } else {
             tvTurnStatus.setText((opponentName != null ? opponentName : "?") + " je na potezu...");
         }
-
-        updateScoreHeader(state);
     }
 
     // =========================================================================
@@ -483,21 +504,17 @@ public class AsocijacijeActivity extends AppCompatActivity {
     // =========================================================================
 
     private void startTimer() {
-        pbTimer.setMax(TURN_SECONDS);
-        pbTimer.setProgress(TURN_SECONDS);
-        tvTimer.setText(getString(R.string.asoc_time_left, TURN_SECONDS));
+        scoreBar.setTimeLeft(TURN_SECONDS);
 
         timer = new CountDownTimer((long) TURN_SECONDS * 1000, 1000) {
             @Override
             public void onTick(long ms) {
                 int s = (int) (ms / 1000) + 1;
-                pbTimer.setProgress(s);
-                tvTimer.setText(getString(R.string.asoc_time_left, s));
+                scoreBar.setTimeLeft(s);
             }
             @Override
             public void onFinish() {
-                pbTimer.setProgress(0);
-                tvTimer.setText(getString(R.string.asoc_time_left, 0));
+                scoreBar.setTimeLeft(0);
                 if (!roundDone) {
                     Snackbar.make(finalButton, R.string.asoc_time_up, Snackbar.LENGTH_SHORT).show();
                     matchRepository.endAsocijacijeRound(matchId, currentRound);
@@ -513,18 +530,6 @@ public class AsocijacijeActivity extends AppCompatActivity {
     // =========================================================================
     // UI helpers
     // =========================================================================
-
-    private void updateScoreHeader(MatchRepository.AsocijacijeRoundState state) {
-        int myCumulative  = myKzzScore + myTotalScore + myRoundScore;
-        int oppCurrentRound = 0;
-        if (state != null) {
-            Integer v = state.scores.get(opponentUid);
-            if (v != null) oppCurrentRound = v;
-        }
-        int oppCumulative = oppKzzScore + opponentTotalScore + oppCurrentRound;
-        tvScore.setText("Ja: " + myCumulative);
-        tvOpponentScore.setText((opponentName != null ? opponentName : "?") + ": " + oppCumulative);
-    }
 
     private void setTint(MaterialButton btn, int color) {
         btn.setBackgroundTintList(ColorStateList.valueOf(color));

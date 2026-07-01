@@ -7,7 +7,6 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,9 +19,12 @@ import androidx.core.content.ContextCompat;
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.KzzAnswer;
 import com.example.slagalica.data.model.KzzQuestion;
+import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.KoZnaZnaLogic;
+import com.example.slagalica.ui.widget.ScoreBarView;
+import com.example.slagalica.util.AvatarProvider;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 
@@ -47,13 +49,10 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     private final UserRepository userRepository = UserRepository.getInstance();
 
     // Views
-    private TextView       tvOpponentScore;
+    private ScoreBarView   scoreBar;
     private TextView       tvQuestionNumber;
-    private TextView       tvScore;
-    private TextView       tvTimer;
     private TextView       tvStatus;
     private TextView       tvQuestion;
-    private ProgressBar    pbTimer;
     private MaterialButton[] answerButtons;
     private ColorStateList defaultButtonTint;
 
@@ -104,13 +103,10 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        tvOpponentScore  = findViewById(R.id.tvOpponentScore);
+        scoreBar         = findViewById(R.id.scoreBar);
         tvQuestionNumber = findViewById(R.id.tvQuestionNumber);
-        tvScore          = findViewById(R.id.tvScore);
-        tvTimer          = findViewById(R.id.tvTimer);
         tvStatus         = findViewById(R.id.tvStatus);
         tvQuestion       = findViewById(R.id.tvQuestion);
-        pbTimer          = findViewById(R.id.pbTimer);
 
         answerButtons = new MaterialButton[]{
                 findViewById(R.id.btnAnswer1),
@@ -120,9 +116,35 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         };
         defaultButtonTint = answerButtons[0].getBackgroundTintList();
 
-        updateScoreLabels();
+        loadPlayerBar();
         tvStatus.setText(R.string.kzz_waiting_content);
         disableAllAnswers();
+    }
+
+    /** Popunjava traku sa rezultatom meča — nadimci, avatari i skor pre ove igre (0, jer je ovo prva igra u lancu). */
+    private void loadPlayerBar() {
+        scoreBar.setOpponentPlayer(AvatarProvider.getDrawableRes(0), opponentName != null ? opponentName : "?");
+        scoreBar.setScores(0, 0);
+
+        userRepository.getOrCreateUser(myUid, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(@NonNull User user) {
+                scoreBar.setMyPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()), user.getUsername());
+            }
+            @Override
+            public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+        });
+        if (opponentUid != null) {
+            userRepository.getOrCreateUser(opponentUid, new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(@NonNull User user) {
+                    scoreBar.setOpponentPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()),
+                            opponentName != null ? opponentName : user.getUsername());
+                }
+                @Override
+                public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+            });
+        }
     }
 
     private void setupListeners() {
@@ -248,22 +270,18 @@ public class KoZnaZnaActivity extends AppCompatActivity {
 
     private void startQuestionTimer() {
         int totalSeconds = Constants.KZZ_QUESTION_TIME_MS / 1000;
-        pbTimer.setMax(totalSeconds);
-        pbTimer.setProgress(totalSeconds);
-        tvTimer.setText(getString(R.string.kzz_time_left, totalSeconds));
+        scoreBar.setTimeLeft(totalSeconds);
 
         questionTimer = new CountDownTimer(Constants.KZZ_QUESTION_TIME_MS, 1_000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 int secondsLeft = (int) (millisUntilFinished / 1000) + 1;
-                pbTimer.setProgress(secondsLeft);
-                tvTimer.setText(getString(R.string.kzz_time_left, secondsLeft));
+                scoreBar.setTimeLeft(secondsLeft);
             }
 
             @Override
             public void onFinish() {
-                pbTimer.setProgress(0);
-                tvTimer.setText(getString(R.string.kzz_time_left, 0));
+                scoreBar.setTimeLeft(0);
                 if (!answerGiven) {
                     answerGiven = true;
                     disableAllAnswers();
@@ -307,7 +325,6 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         int opponentDelta = KoZnaZnaLogic.pointsFor(opponentUid, answers);
         myScore += myDelta;
         opponentScore += opponentDelta;
-        updateScoreLabels();
         showResolutionFeedback(answers, myDelta);
 
         handler.postDelayed(() -> showQuestion(currentQuestion + 1), FEEDBACK_DELAY_MS);
@@ -375,12 +392,6 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     // =========================================================================
     // Pomoćne metode i lifecycle
     // =========================================================================
-
-    private void updateScoreLabels() {
-        tvScore.setText(getString(R.string.kzz_score_label, myScore));
-        tvOpponentScore.setText(getString(R.string.kzz_opponent_score_label,
-                opponentName != null ? opponentName : "?", opponentScore));
-    }
 
     private void disableAllAnswers() {
         for (MaterialButton btn : answerButtons) {

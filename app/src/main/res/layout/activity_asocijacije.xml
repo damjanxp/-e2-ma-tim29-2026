@@ -29,46 +29,12 @@
             android:textAppearance="?attr/textAppearanceBodyMedium" />
     </LinearLayout>
 
-    <!-- Header row 2: my cumulative score | opponent cumulative score -->
-    <LinearLayout
+    <!-- ===== REZULTAT MEČA ===== -->
+    <com.example.slagalica.ui.widget.ScoreBarView
+        android:id="@+id/scoreBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="4dp">
-
-        <TextView
-            android:id="@+id/tvScore"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/tvOpponentScore"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="end"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <!-- Timer -->
-    <ProgressBar
-        android:id="@+id/pbTimer"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:max="120"
-        android:progress="120" />
-
-    <TextView
-        android:id="@+id/tvTimer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textAppearance="?attr/textAppearanceLabelMedium" />
+        android:layout_marginBottom="4dp" />
 
     <TextView
         android:id="@+id/tvTurnStatus"

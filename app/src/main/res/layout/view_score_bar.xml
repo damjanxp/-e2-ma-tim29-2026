@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_score_bar"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="10dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="10dp"
+    android:paddingBottom="8dp">
+
+    <!-- ===== Ja ===== -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center_vertical|start"
+        android:orientation="horizontal">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/barMyAvatar"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:scaleType="centerCrop"
+            app:shapeAppearance="@style/ShapeAppearance.Avatar.Circle"
+            app:strokeColor="@color/white"
+            app:strokeWidth="2dp"
+            tools:src="@drawable/avatar_0" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:gravity="start"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/barMyScore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                tools:text="0" />
+
+            <TextView
+                android:id="@+id/barMyName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:maxWidth="90dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/score_bar_accent_me"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="Lazar" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ===== Odbrojavanje ===== -->
+    <FrameLayout
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        android:background="@drawable/bg_score_bar_timer">
+
+        <TextView
+            android:id="@+id/barTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="@color/score_bar_bg"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            tools:text="45" />
+    </FrameLayout>
+
+    <!-- ===== Protivnik ===== -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center_vertical|end"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/barOpponentScore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                tools:text="0" />
+
+            <TextView
+                android:id="@+id/barOpponentName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:maxWidth="90dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/score_bar_accent_opponent"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                tools:text="Milica" />
+
+        </LinearLayout>
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/barOpponentAvatar"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:scaleType="centerCrop"
+            app:shapeAppearance="@style/ShapeAppearance.Avatar.Circle"
+            app:strokeColor="@color/white"
+            app:strokeWidth="2dp"
+            tools:src="@drawable/avatar_1" />
+    </LinearLayout>
+
+</LinearLayout>

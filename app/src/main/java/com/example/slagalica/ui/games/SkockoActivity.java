@@ -8,7 +8,6 @@ import android.os.Looper;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,9 +18,12 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.SkockoLogic;
+import com.example.slagalica.ui.widget.ScoreBarView;
+import com.example.slagalica.util.AvatarProvider;
 import com.example.slagalica.util.Constants;
 
 import java.util.ArrayList;
@@ -63,8 +65,8 @@ public class SkockoActivity extends AppCompatActivity {
     private static final int HINT_DRAW_EMPTY  = R.drawable.bg_skocko_hint_empty;
 
     // ─── Views ───────────────────────────────────────────────────────────────
-    private TextView     tvRound, tvScore, tvOpponentScore, tvTurnStatus, tvInstruction, tvTimer;
-    private ProgressBar  pbTimer;
+    private TextView     tvRound, tvTurnStatus, tvInstruction;
+    private ScoreBarView scoreBar;
     private ImageView[][] slotViews;   // [row 0-5][col 0-3]
     private View[][]      hintViews;   // [row 0-5][hint 0-3]
     private ImageView[]  opponentSlots;
@@ -155,12 +157,9 @@ public class SkockoActivity extends AppCompatActivity {
 
     private void initViews() {
         tvRound          = findViewById(R.id.tvRound);
-        tvScore          = findViewById(R.id.tvScore);
-        tvOpponentScore  = findViewById(R.id.tvOpponentScore);
         tvTurnStatus     = findViewById(R.id.tvTurnStatus);
         tvInstruction    = findViewById(R.id.tvInstruction);
-        tvTimer          = findViewById(R.id.tvTimer);
-        pbTimer          = findViewById(R.id.pbTimer);
+        scoreBar         = findViewById(R.id.scoreBar);
         rowOpponentGuess = findViewById(R.id.rowOpponentGuess);
 
         slotViews = new ImageView[][]{
@@ -211,6 +210,33 @@ public class SkockoActivity extends AppCompatActivity {
 
         setInputEnabled(false);
         tvTurnStatus.setText(R.string.skocko_waiting);
+        loadPlayerBar();
+    }
+
+    /** Popunjava traku sa rezultatom meča — nadimci, avatari i skor pre ove igre (KZZ + Asocijacije). */
+    private void loadPlayerBar() {
+        scoreBar.setOpponentPlayer(AvatarProvider.getDrawableRes(0), opponentName != null ? opponentName : "?");
+        scoreBar.setScores(myKzzScore + myAsocScore, oppKzzScore + oppAsocScore);
+
+        userRepository.getOrCreateUser(myUid, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(@NonNull User user) {
+                scoreBar.setMyPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()), user.getUsername());
+            }
+            @Override
+            public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+        });
+        if (opponentUid != null) {
+            userRepository.getOrCreateUser(opponentUid, new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(@NonNull User user) {
+                    scoreBar.setOpponentPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()),
+                            opponentName != null ? opponentName : user.getUsername());
+                }
+                @Override
+                public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+            });
+        }
     }
 
     private ImageView iv(int id) { return findViewById(id); }
@@ -270,7 +296,6 @@ public class SkockoActivity extends AppCompatActivity {
         tvTurnStatus.setText(R.string.skocko_waiting);
         tvInstruction.setText(R.string.skocko_waiting);
         resetBoard();
-        updateScoreDisplay();
         setInputEnabled(false);
 
         if (roundStateDetacher != null) { roundStateDetacher.run(); roundStateDetacher = null; }
@@ -357,23 +382,18 @@ public class SkockoActivity extends AppCompatActivity {
     // =========================================================================
 
     private void startMainPhaseTimer() {
-        pbTimer.setMax(MAIN_SECONDS);
-        pbTimer.setProgress(MAIN_SECONDS);
-
         boolean iAmActive = isActivePlayerForRound(currentRound);
         if (iAmActive) {
             turnTimer = new CountDownTimer((long) MAIN_SECONDS * 1000, 1000) {
                 @Override
                 public void onTick(long ms) {
                     int s = (int) (ms / 1000) + 1;
-                    pbTimer.setProgress(Math.min(s, MAIN_SECONDS));
-                    tvTimer.setText(getString(R.string.skocko_time_left, s));
+                    scoreBar.setTimeLeft(Math.min(s, MAIN_SECONDS));
                 }
 
                 @Override
                 public void onFinish() {
-                    pbTimer.setProgress(0);
-                    tvTimer.setText(getString(R.string.skocko_time_left, 0));
+                    scoreBar.setTimeLeft(0);
                     if (!guessGiven && !roundResolved) {
                         guessGiven = true;
                         setInputEnabled(false);
@@ -386,13 +406,11 @@ public class SkockoActivity extends AppCompatActivity {
                 @Override
                 public void onTick(long ms) {
                     int s = (int) (ms / 1000) + 1;
-                    pbTimer.setProgress(Math.min(s, MAIN_SECONDS));
-                    tvTimer.setText(getString(R.string.skocko_time_left, s));
+                    scoreBar.setTimeLeft(Math.min(s, MAIN_SECONDS));
                 }
                 @Override
                 public void onFinish() {
-                    pbTimer.setProgress(0);
-                    tvTimer.setText(getString(R.string.skocko_time_left, 0));
+                    scoreBar.setTimeLeft(0);
                 }
             }.start();
         }
@@ -403,23 +421,18 @@ public class SkockoActivity extends AppCompatActivity {
     // =========================================================================
 
     private void startChancePhaseTimer() {
-        pbTimer.setMax(CHANCE_SECONDS);
-        pbTimer.setProgress(CHANCE_SECONDS);
-
         boolean iAmPassive = !isActivePlayerForRound(currentRound);
         if (iAmPassive) {
             turnTimer = new CountDownTimer((long) CHANCE_SECONDS * 1000, 250) {
                 @Override
                 public void onTick(long ms) {
                     int s = (int) Math.ceil(ms / 1000.0);
-                    pbTimer.setProgress(Math.min(s, CHANCE_SECONDS));
-                    tvTimer.setText(getString(R.string.skocko_time_left, s));
+                    scoreBar.setTimeLeft(Math.min(s, CHANCE_SECONDS));
                 }
 
                 @Override
                 public void onFinish() {
-                    pbTimer.setProgress(0);
-                    tvTimer.setText(getString(R.string.skocko_time_left, 0));
+                    scoreBar.setTimeLeft(0);
                     if (!chanceGiven && !roundResolved) {
                         chanceGiven = true;
                         setInputEnabled(false);
@@ -432,13 +445,11 @@ public class SkockoActivity extends AppCompatActivity {
                 @Override
                 public void onTick(long ms) {
                     int s = (int) Math.ceil(ms / 1000.0);
-                    pbTimer.setProgress(Math.min(s, CHANCE_SECONDS));
-                    tvTimer.setText(getString(R.string.skocko_time_left, s));
+                    scoreBar.setTimeLeft(Math.min(s, CHANCE_SECONDS));
                 }
                 @Override
                 public void onFinish() {
-                    pbTimer.setProgress(0);
-                    tvTimer.setText(getString(R.string.skocko_time_left, 0));
+                    scoreBar.setTimeLeft(0);
                 }
             }.start();
         }
@@ -548,7 +559,6 @@ public class SkockoActivity extends AppCompatActivity {
             int pts = SkockoLogic.OPPONENT_SCORE;
             if (!iAmActive) myTotalScore += pts; else opponentTotalScore += pts;
         }
-        updateScoreDisplay();
         revealSolution();
         tvTurnStatus.setText(R.string.skocko_round_done);
 
@@ -674,11 +684,6 @@ public class SkockoActivity extends AppCompatActivity {
             }
             views[i].setBackgroundResource(drawable);
         }
-    }
-
-    private void updateScoreDisplay() {
-        tvScore.setText(getString(R.string.skocko_score, myTotalScore));
-        tvOpponentScore.setText((opponentName != null ? opponentName : "?") + ": " + opponentTotalScore);
     }
 
     private void setInputEnabled(boolean enabled) {
