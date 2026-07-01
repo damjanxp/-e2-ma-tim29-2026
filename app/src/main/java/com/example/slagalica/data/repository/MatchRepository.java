@@ -747,6 +747,405 @@ public class MatchRepository {
     }
 
     // =========================================================================
+    // Asocijacije — callback interfejsi
+    // =========================================================================
+
+    public interface AsocijacijePuzzleListener {
+        void onPuzzle(@NonNull com.example.slagalica.data.model.AsocijacijePuzzle puzzle);
+        void onError(@NonNull String message);
+    }
+
+    public interface AsocijacijeScoreListener {
+        void onScore(int score);
+    }
+
+    // =========================================================================
+    // Asocijacije — metode
+    // =========================================================================
+
+    /** Player1 upisuje obe slagalice (za rundu 0 i 1) u meč. */
+    public void writeAsocijacijePuzzles(@NonNull String matchId,
+                                         @NonNull com.example.slagalica.data.model.AsocijacijePuzzle p0,
+                                         @NonNull com.example.slagalica.data.model.AsocijacijePuzzle p1,
+                                         @Nullable SimpleCallback cb) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("asocijacije/puzzles/0", puzzleToMap(p0));
+        updates.put("asocijacije/puzzles/1", puzzleToMap(p1));
+        matchRef(matchId).updateChildren(updates)
+                .addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
+                .addOnFailureListener(e -> { if (cb != null) cb.onError("Upis slagalica nije uspeo."); });
+    }
+
+    /** Jednokratni listener koji čeka slagalicu za zadatu rundu. */
+    public Runnable listenAsocijacijePuzzle(@NonNull String matchId, int round,
+                                              @NonNull AsocijacijePuzzleListener listener) {
+        DatabaseReference ref = matchRef(matchId).child("asocijacije")
+                .child("puzzles").child(String.valueOf(round));
+        ValueEventListener vel = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snap) {
+                if (!snap.exists()) return;
+                com.example.slagalica.data.model.AsocijacijePuzzle p = puzzleFromSnapshot(snap);
+                if (p == null) return;
+                ref.removeEventListener(this);
+                listener.onPuzzle(p);
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError e) {
+                listener.onError("Greška pri učitavanju slagalice.");
+            }
+        };
+        ref.addValueEventListener(vel);
+        return () -> ref.removeEventListener(vel);
+    }
+
+    /** Aktivni igrač upisuje rezultat kada završi svoju rundu. */
+    public void submitAsocijacijeScore(@NonNull String matchId, int round,
+                                        @NonNull String uid, int score) {
+        matchRef(matchId).child("asocijacije").child("score")
+                .child(String.valueOf(round)).child(uid).setValue(score);
+    }
+
+    /**
+     * Oba igrača slušaju rezultat runde. Okida se čim aktivni igrač upiše rezultat
+     * (jednokratno — posle toga pasivni igrač zna da može da počne svoju rundu).
+     */
+    public Runnable listenAsocijacijeScore(@NonNull String matchId, int round,
+                                            @NonNull AsocijacijeScoreListener listener) {
+        DatabaseReference ref = matchRef(matchId).child("asocijacije")
+                .child("score").child(String.valueOf(round));
+        ValueEventListener vel = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snap) {
+                if (!snap.hasChildren()) return;
+                for (DataSnapshot child : snap.getChildren()) {
+                    Long score = child.getValue(Long.class);
+                    if (score != null) {
+                        ref.removeEventListener(this);
+                        listener.onScore(score.intValue());
+                        return;
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError e) {}
+        };
+        ref.addValueEventListener(vel);
+        return () -> ref.removeEventListener(vel);
+    }
+
+    // =========================================================================
+    // Asocijacije — live round state (turn-based multiplayer)
+    // =========================================================================
+
+    public interface AsocijacijeRoundListener {
+        void onRoundState(@NonNull AsocijacijeRoundState state);
+    }
+
+    public static class AsocijacijeRoundState {
+        public String turn;
+        public boolean mustReveal;
+        public String phase = "PLAYING";
+        public boolean[][] revealed = new boolean[4][4];
+        public String[] colSolvedBy = new String[4];
+        public int[] colScores = new int[4];
+        public boolean finalSolved;
+        public String finalSolvedBy;
+        public int finalScore;
+        public Map<String, Integer> scores = new HashMap<>();
+    }
+
+    public void initAsocijacijeRound(@NonNull String matchId, int round, @NonNull String firstTurnUid) {
+        Map<String, Object> init = new HashMap<>();
+        init.put("turn", firstTurnUid);
+        init.put("mustReveal", false);
+        init.put("phase", "PLAYING");
+        asocRoundRef(matchId, round).updateChildren(init);
+    }
+
+    public void revealAsocijacijeCell(@NonNull String matchId, int round, int col, int row, boolean clearMustReveal) {
+        Map<String, Object> update = new HashMap<>();
+        update.put("revealed/" + col + "/" + row, true);
+        if (clearMustReveal) update.put("mustReveal", false);
+        asocRoundRef(matchId, round).updateChildren(update);
+    }
+
+    public void solveAsocijacijeColumn(@NonNull String matchId, int round, int col,
+                                        @NonNull String solverUid, int colScore, int newTotalScore) {
+        Map<String, Object> update = new HashMap<>();
+        update.put("colSolved/" + col, solverUid);
+        update.put("colScores/" + col, colScore);
+        update.put("scores/" + solverUid, newTotalScore);
+        asocRoundRef(matchId, round).updateChildren(update);
+    }
+
+    public void solveAsocijacijeFinal(@NonNull String matchId, int round,
+                                       @NonNull String solverUid, int finalScore, int newTotalScore) {
+        Map<String, Object> update = new HashMap<>();
+        update.put("finalSolved", true);
+        update.put("finalSolvedBy", solverUid);
+        update.put("finalScore", finalScore);
+        update.put("scores/" + solverUid, newTotalScore);
+        update.put("phase", "DONE");
+        asocRoundRef(matchId, round).updateChildren(update);
+    }
+
+    public void passAsocijacijeTurn(@NonNull String matchId, int round, @NonNull String nextTurnUid) {
+        Map<String, Object> update = new HashMap<>();
+        update.put("turn", nextTurnUid);
+        update.put("mustReveal", true);
+        asocRoundRef(matchId, round).updateChildren(update);
+    }
+
+    public void endAsocijacijeRound(@NonNull String matchId, int round) {
+        asocRoundRef(matchId, round).child("phase").setValue("DONE");
+    }
+
+    public Runnable listenAsocijacijeRoundState(@NonNull String matchId, int round,
+                                                 @NonNull AsocijacijeRoundListener listener) {
+        DatabaseReference ref = asocRoundRef(matchId, round);
+        ValueEventListener vel = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snap) {
+                AsocijacijeRoundState state = new AsocijacijeRoundState();
+                state.turn = snap.child("turn").getValue(String.class);
+                Boolean mr = snap.child("mustReveal").getValue(Boolean.class);
+                state.mustReveal = Boolean.TRUE.equals(mr);
+                String ph = snap.child("phase").getValue(String.class);
+                state.phase = ph != null ? ph : "PLAYING";
+
+                for (DataSnapshot colSnap : snap.child("revealed").getChildren()) {
+                    int c = safeParseInt(colSnap.getKey(), -1);
+                    if (c < 0 || c >= 4) continue;
+                    for (DataSnapshot rowSnap : colSnap.getChildren()) {
+                        int r = safeParseInt(rowSnap.getKey(), -1);
+                        if (r < 0 || r >= 4) continue;
+                        if (Boolean.TRUE.equals(rowSnap.getValue(Boolean.class))) state.revealed[c][r] = true;
+                    }
+                }
+                for (DataSnapshot cs : snap.child("colSolved").getChildren()) {
+                    int c = safeParseInt(cs.getKey(), -1);
+                    if (c < 0 || c >= 4) continue;
+                    state.colSolvedBy[c] = cs.getValue(String.class);
+                }
+                for (DataSnapshot cs : snap.child("colScores").getChildren()) {
+                    int c = safeParseInt(cs.getKey(), -1);
+                    if (c < 0 || c >= 4) continue;
+                    Long v = cs.getValue(Long.class);
+                    if (v != null) state.colScores[c] = v.intValue();
+                }
+                Boolean fs = snap.child("finalSolved").getValue(Boolean.class);
+                state.finalSolved = Boolean.TRUE.equals(fs);
+                state.finalSolvedBy = snap.child("finalSolvedBy").getValue(String.class);
+                Long fsc = snap.child("finalScore").getValue(Long.class);
+                state.finalScore = fsc != null ? fsc.intValue() : 0;
+                for (DataSnapshot sc : snap.child("scores").getChildren()) {
+                    if (sc.getKey() == null) continue;
+                    Long v = sc.getValue(Long.class);
+                    if (v != null) state.scores.put(sc.getKey(), v.intValue());
+                }
+                listener.onRoundState(state);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError e) {}
+        };
+        ref.addValueEventListener(vel);
+        return () -> ref.removeEventListener(vel);
+    }
+
+    private int safeParseInt(@Nullable String s, int fallback) {
+        if (s == null) return fallback;
+        try { return Integer.parseInt(s); } catch (NumberFormatException e) { return fallback; }
+    }
+
+    private DatabaseReference asocRoundRef(@NonNull String matchId, int round) {
+        return matchRef(matchId).child("asocijacije").child("rounds").child(String.valueOf(round));
+    }
+
+    private Map<String, Object> puzzleToMap(com.example.slagalica.data.model.AsocijacijePuzzle p) {
+        List<String> clueFlat = new ArrayList<>(16);
+        for (int c = 0; c < 4; c++)
+            for (int r = 0; r < 4; r++)
+                clueFlat.add(p.getClue(c, r));
+        List<String> colSols = new ArrayList<>(4);
+        for (int c = 0; c < 4; c++) colSols.add(p.getColSolution(c));
+        Map<String, Object> m = new HashMap<>();
+        m.put("clues", clueFlat);
+        m.put("colSolutions", colSols);
+        m.put("finalSolution", p.getFinalSolution());
+        return m;
+    }
+
+    @Nullable
+    private com.example.slagalica.data.model.AsocijacijePuzzle puzzleFromSnapshot(
+            @NonNull DataSnapshot snap) {
+        String finalSol = snap.child("finalSolution").getValue(String.class);
+        if (finalSol == null) return null;
+        String[] clueFlat = new String[16];
+        int i = 0;
+        for (DataSnapshot c : snap.child("clues").getChildren()) {
+            if (i >= 16) break;
+            String v = c.getValue(String.class);
+            clueFlat[i++] = v != null ? v : "?";
+        }
+        if (i < 16) return null;
+        String[][] clues = new String[4][4];
+        for (int c = 0; c < 4; c++)
+            for (int r = 0; r < 4; r++)
+                clues[c][r] = clueFlat[c * 4 + r];
+        String[] colSols = new String[4];
+        i = 0;
+        for (DataSnapshot s : snap.child("colSolutions").getChildren()) {
+            if (i >= 4) break;
+            String v = s.getValue(String.class);
+            colSols[i++] = v != null ? v : "?";
+        }
+        if (i < 4) return null;
+        return new com.example.slagalica.data.model.AsocijacijePuzzle(clues, colSols, finalSol);
+    }
+
+    // =========================================================================
+    // Skočko — model klase
+    // =========================================================================
+
+    /** Jedan pokušaj igrača — guess[4] i hints[4] kao mape sa string ključevima. */
+    public static class SkockoAttemptData {
+        public Map<String, Integer> guess;
+        public Map<String, Integer> hints;
+
+        public SkockoAttemptData() {}
+
+        public SkockoAttemptData(int[] g, int[] h) {
+            guess = new HashMap<>();
+            hints = new HashMap<>();
+            for (int i = 0; i < g.length; i++) {
+                guess.put(String.valueOf(i), g[i]);
+                hints.put(String.valueOf(i), h[i]);
+            }
+        }
+
+        // Napomena: ove metode NAMERNO nisu imenovane getGuessArray()/getHintsArray() —
+        // Firebase-ov CustomClassMapper tretira svaki public getXxx() kao bean-property
+        // pri serializaciji (setValue()) i pokušava da serijalizuje int[], što baca
+        // "Serializing Arrays is not supported" jer RTDB ne podržava nizove kao tip.
+        public int[] guessArray() {
+            int[] a = new int[4];
+            for (int i = 0; i < 4; i++) {
+                Integer v = guess != null ? guess.get(String.valueOf(i)) : null;
+                a[i] = v != null ? v : 0;
+            }
+            return a;
+        }
+
+        public int[] hintsArray() {
+            int[] a = new int[4];
+            for (int i = 0; i < 4; i++) {
+                Integer v = hints != null ? hints.get(String.valueOf(i)) : null;
+                a[i] = v != null ? v : 0;
+            }
+            return a;
+        }
+    }
+
+    // =========================================================================
+    // Skočko — callback interfejsi
+    // =========================================================================
+
+    public interface SkockoStateListener {
+        void onState(@Nullable int[] secret, @NonNull String phase,
+                     @NonNull Map<Integer, SkockoAttemptData> mainAttempts,
+                     @Nullable SkockoAttemptData opponentAttempt);
+    }
+
+    // =========================================================================
+    // Skočko — metode
+    // =========================================================================
+
+    /** Aktivni igrač upisuje tajnu kombinaciju na početku runde. */
+    public void writeSkockoSecret(@NonNull String matchId, int round, @NonNull int[] secret) {
+        Map<String, Integer> m = new HashMap<>();
+        for (int i = 0; i < secret.length; i++) m.put(String.valueOf(i), secret[i]);
+        skockoRoundRef(matchId, round).child("secret").setValue(m);
+    }
+
+    /** Postavlja fazu Skočko runde. */
+    public void setSkockoPhase(@NonNull String matchId, int round, @NonNull String phase) {
+        skockoRoundRef(matchId, round).child("phase").setValue(phase);
+    }
+
+    /** Aktivni igrač upisuje pokušaj (guess + hints) na indeksu {@code attemptIdx}. */
+    public void submitSkockoMainAttempt(@NonNull String matchId, int round, int attemptIdx,
+                                          @NonNull int[] guess, @NonNull int[] hints) {
+        skockoRoundRef(matchId, round).child("mainAttempts")
+                .child(String.valueOf(attemptIdx))
+                .setValue(new SkockoAttemptData(guess, hints));
+    }
+
+    /** Pasivni igrač upisuje svoj jedini pokušaj u fazi OPPONENT_CHANCE. */
+    public void submitSkockoOpponentAttempt(@NonNull String matchId, int round,
+                                              @NonNull int[] guess, @NonNull int[] hints) {
+        skockoRoundRef(matchId, round).child("opponentAttempt")
+                .setValue(new SkockoAttemptData(guess, hints));
+    }
+
+    /** Oba igrača slušaju celo stanje Skočko runde u realnom vremenu. */
+    public Runnable listenSkockoState(@NonNull String matchId, int round,
+                                       @NonNull SkockoStateListener listener) {
+        DatabaseReference ref = skockoRoundRef(matchId, round);
+        ValueEventListener vel = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snap) {
+                int[] secret = null;
+                if (snap.hasChild("secret")) {
+                    secret = new int[4];
+                    for (int i = 0; i < 4; i++) {
+                        Long v = snap.child("secret").child(String.valueOf(i)).getValue(Long.class);
+                        secret[i] = v != null ? v.intValue() : 0;
+                    }
+                }
+                String phase = snap.child("phase").getValue(String.class);
+                if (phase == null) phase = "";
+
+                Map<Integer, SkockoAttemptData> mainAttempts = new HashMap<>();
+                for (DataSnapshot aSnap : snap.child("mainAttempts").getChildren()) {
+                    if (aSnap.getKey() == null) continue;
+                    int idx;
+                    try { idx = Integer.parseInt(aSnap.getKey()); } catch (NumberFormatException e) { continue; }
+                    mainAttempts.put(idx, attemptFromSnapshot(aSnap));
+                }
+
+                SkockoAttemptData oppAttempt = null;
+                if (snap.hasChild("opponentAttempt")) {
+                    oppAttempt = attemptFromSnapshot(snap.child("opponentAttempt"));
+                }
+
+                listener.onState(secret, phase, mainAttempts, oppAttempt);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError e) {}
+        };
+        ref.addValueEventListener(vel);
+        return () -> ref.removeEventListener(vel);
+    }
+
+    private SkockoAttemptData attemptFromSnapshot(@NonNull DataSnapshot snap) {
+        SkockoAttemptData d = new SkockoAttemptData();
+        d.guess = new HashMap<>();
+        d.hints = new HashMap<>();
+        for (DataSnapshot g : snap.child("guess").getChildren()) {
+            Long v = g.getValue(Long.class);
+            if (g.getKey() != null && v != null) d.guess.put(g.getKey(), v.intValue());
+        }
+        for (DataSnapshot h : snap.child("hints").getChildren()) {
+            Long v = h.getValue(Long.class);
+            if (h.getKey() != null && v != null) d.hints.put(h.getKey(), v.intValue());
+        }
+        return d;
+    }
+
+    // =========================================================================
     // Pomoćne reference
     // =========================================================================
 
@@ -764,5 +1163,9 @@ public class MatchRepository {
 
     private DatabaseReference korakRoundRef(String matchId, int round) {
         return matchRef(matchId).child("korakPoKorak").child("rounds").child(String.valueOf(round));
+    }
+
+    private DatabaseReference skockoRoundRef(String matchId, int round) {
+        return matchRef(matchId).child("skocko").child("rounds").child(String.valueOf(round));
     }
 }

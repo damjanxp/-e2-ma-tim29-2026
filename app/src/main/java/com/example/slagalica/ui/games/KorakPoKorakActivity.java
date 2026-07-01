@@ -78,8 +78,10 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private boolean opponentOnline = true;
 
     private int myKzzScore, oppKzzScore;
-    private int mySpojniceScore, oppSpojniceScore;
+    private int myAsocScore, oppAsocScore;
+    private int mySkockoScore, oppSkockoScore;
     private int myMojBrojScore, oppMojBrojScore;
+    private int mySpojniceScore, oppSpojniceScore;
 
     // ─── Stanje igre ─────────────────────────────────────────────────────────
     private int     currentRound   = 0;
@@ -142,12 +144,16 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         opponentUid      = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName     = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne      = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
-        myKzzScore       = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
-        oppKzzScore      = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
+        myKzzScore      = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
+        oppKzzScore     = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
+        myAsocScore     = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
+        oppAsocScore    = getIntent().getIntExtra(Constants.EXTRA_OPP_ASOCIJACIJE, 0);
+        mySkockoScore   = getIntent().getIntExtra(Constants.EXTRA_MY_SKOCKO, 0);
+        oppSkockoScore  = getIntent().getIntExtra(Constants.EXTRA_OPP_SKOCKO, 0);
+        myMojBrojScore  = getIntent().getIntExtra(Constants.EXTRA_MY_MOJ_BROJ, 0);
+        oppMojBrojScore = getIntent().getIntExtra(Constants.EXTRA_OPP_MOJ_BROJ, 0);
         mySpojniceScore  = getIntent().getIntExtra(Constants.EXTRA_MY_SPOJNICE, 0);
         oppSpojniceScore = getIntent().getIntExtra(Constants.EXTRA_OPP_SPOJNICE, 0);
-        myMojBrojScore   = getIntent().getIntExtra(Constants.EXTRA_MY_MOJ_BROJ, 0);
-        oppMojBrojScore  = getIntent().getIntExtra(Constants.EXTRA_OPP_MOJ_BROJ, 0);
         myUid            = userRepository.getCurrentUid();
     }
 
@@ -552,10 +558,14 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
         intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
         intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);
-        intent.putExtra(Constants.EXTRA_MY_SPOJNICE, mySpojniceScore);
-        intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, oppSpojniceScore);
+        intent.putExtra(Constants.EXTRA_MY_ASOCIJACIJE, myAsocScore);
+        intent.putExtra(Constants.EXTRA_OPP_ASOCIJACIJE, oppAsocScore);
+        intent.putExtra(Constants.EXTRA_MY_SKOCKO, mySkockoScore);
+        intent.putExtra(Constants.EXTRA_OPP_SKOCKO, oppSkockoScore);
         intent.putExtra(Constants.EXTRA_MY_MOJ_BROJ, myMojBrojScore);
         intent.putExtra(Constants.EXTRA_OPP_MOJ_BROJ, oppMojBrojScore);
+        intent.putExtra(Constants.EXTRA_MY_SPOJNICE, mySpojniceScore);
+        intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, oppSpojniceScore);
         intent.putExtra(Constants.EXTRA_MY_KORAK, myTotalScore);
         intent.putExtra(Constants.EXTRA_OPP_KORAK, opponentTotalScore);
         startActivity(intent);

@@ -41,11 +41,24 @@ public final class Constants {
     public static final String EXTRA_MY_KORAK     = "extra_my_korak";
     public static final String EXTRA_OPP_KORAK    = "extra_opp_korak";
 
+    // Kumulativni bodovi koji se prenose kroz lanac igara
+    public static final String EXTRA_MY_ASOCIJACIJE  = "extra_my_asocijacije";
+    public static final String EXTRA_OPP_ASOCIJACIJE = "extra_opp_asocijacije";
+    public static final String EXTRA_MY_SKOCKO       = "extra_my_skocko";
+    public static final String EXTRA_OPP_SKOCKO      = "extra_opp_skocko";
+
     // ==== Identifikatori igara (za setGameResult) ====
-    public static final String GAME_KZZ      = "kzz";
-    public static final String GAME_SPOJNICE = "spojnice";
-    public static final String GAME_MOJ_BROJ = "mojBroj";
-    public static final String GAME_KORAK    = "korakPoKorak";
+    public static final String GAME_KZZ        = "kzz";
+    public static final String GAME_SPOJNICE   = "spojnice";
+    public static final String GAME_MOJ_BROJ   = "mojBroj";
+    public static final String GAME_KORAK      = "korakPoKorak";
+    public static final String GAME_ASOCIJACIJE = "asocijacije";
+    public static final String GAME_SKOCKO     = "skocko";
+
+    // ==== Skočko — faze runde ====
+    public static final String SKOCKO_PHASE_MAIN   = "MAIN";
+    public static final String SKOCKO_PHASE_CHANCE = "OPPONENT_CHANCE";
+    public static final String SKOCKO_PHASE_DONE   = "DONE";
 
     // ==== Korak po korak — faze runde ====
     public static final String KORAK_PHASE_ACTIVE  = "ACTIVE";

@@ -130,7 +130,7 @@
     <string name="game_moj_broj_name">Moj broj</string>
     <string name="game_moj_broj_desc">Izrazi traženi broj sa 6 datih brojeva · 2 runde · 60s po rundi</string>
     <string name="game_skocko_name">Skočko</string>
-    <string name="game_skocko_desc">Pogodi kombinaciju 4 simbola · 6 pokušaja · 30s</string>
+    <string name="game_skocko_desc">Pogodi kombinaciju 4 simbola · 6 pokušaja · 2 runde · 50s po rundi</string>
     <string name="game_asoc_name">Asocijacije</string>
     <string name="game_asoc_desc">Pogodi asocijacije kroz polja A-D · 120s</string>
 
@@ -212,12 +212,13 @@
     <string name="skocko_btn_clear">← Briši</string>
     <string name="skocko_phase_main">Pokušaj %d/6 — unesite kombinaciju</string>
     <string name="skocko_phase_opponent">Protivnički pokušaj (10s)</string>
-    <string name="skocko_round_end_title">Kraj runde %d</string>
-    <string name="skocko_round_end_msg">Bodovi u ovoj rundi: %d</string>
-    <string name="skocko_btn_next_round">Sledeća runda</string>
-    <string name="skocko_game_over_title">Kraj igre</string>
-    <string name="skocko_game_over_msg">Runda 1: %d bod.\nRunda 2: %d bod.\nUkupno: %d bodova</string>
-    <string name="skocko_btn_finish">Završi</string>
+    <string name="skocko_phase_watching">Prati protivnikove pokušaje…</string>
+    <string name="skocko_waiting">Priprema runde…</string>
+    <string name="skocko_turn_mine">Ti pogađaš!</string>
+    <string name="skocko_turn_opponent">%s pogađa…</string>
+    <string name="skocko_turn_chance_mine">Tvoja šansa! (10s)</string>
+    <string name="skocko_turn_chance_opponent">Šansa za %s…</string>
+    <string name="skocko_round_done">Runda završena</string>
 
     <!-- Regioni -->
     <string-array name="regions_array">
@@ -370,6 +371,8 @@
     <string name="result_lose">Poraz</string>
     <string name="result_draw">Nerešeno</string>
     <string name="result_game_kzz">Ko zna zna</string>
+    <string name="result_game_asocijacije">Asocijacije</string>
+    <string name="result_game_skocko">Skočko</string>
     <string name="result_game_spojnice">Spojnice</string>
     <string name="result_score_row">%1$d : %2$d</string>
     <string name="result_total">Ukupno</string>

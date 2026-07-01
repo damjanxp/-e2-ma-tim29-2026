@@ -22,7 +22,7 @@ import com.example.slagalica.data.model.SpojnicePuzzle;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.SpojniceLogic;
-import com.example.slagalica.ui.games.MojBrojActivity;
+import com.example.slagalica.ui.games.KorakPoKorakActivity;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 
@@ -72,6 +72,9 @@ public class SpojniceActivity extends AppCompatActivity {
     private boolean opponentOnline = true;
     private int myKzzScore;
     private int opponentKzzScore;
+    private int myAsocScore, oppAsocScore;
+    private int mySkockoScore, oppSkockoScore;
+    private int myMojBrojScore, oppMojBrojScore;
 
     // Stanje igre
     private List<SpojnicePuzzle> rounds;
@@ -106,8 +109,14 @@ public class SpojniceActivity extends AppCompatActivity {
         opponentUid      = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName     = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne      = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
-        myKzzScore       = getIntent().getIntExtra(Constants.EXTRA_MY_SCORE, 0);
-        opponentKzzScore = getIntent().getIntExtra(Constants.EXTRA_OPPONENT_SCORE, 0);
+        myKzzScore       = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
+        opponentKzzScore = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
+        myAsocScore      = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
+        oppAsocScore     = getIntent().getIntExtra(Constants.EXTRA_OPP_ASOCIJACIJE, 0);
+        mySkockoScore    = getIntent().getIntExtra(Constants.EXTRA_MY_SKOCKO, 0);
+        oppSkockoScore   = getIntent().getIntExtra(Constants.EXTRA_OPP_SKOCKO, 0);
+        myMojBrojScore   = getIntent().getIntExtra(Constants.EXTRA_MY_MOJ_BROJ, 0);
+        oppMojBrojScore  = getIntent().getIntExtra(Constants.EXTRA_OPP_MOJ_BROJ, 0);
         myUid            = userRepository.getCurrentUid();
     }
 
@@ -494,13 +503,19 @@ public class SpojniceActivity extends AppCompatActivity {
         matchRepository.setGameResult(matchId, MatchRepository.GAME_SPOJNICE, myUid, myScore);
         userRepository.recordSpojniceResult(myUid, myConnectedCount, myMissedCount, myScore);
 
-        Intent intent = new Intent(this, MojBrojActivity.class);
+        Intent intent = new Intent(this, KorakPoKorakActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
         intent.putExtra(Constants.EXTRA_IS_PLAYER_ONE, isPlayerOne);
         intent.putExtra(Constants.EXTRA_OPPONENT_UID, opponentUid);
         intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
         intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
         intent.putExtra(Constants.EXTRA_OPP_KZZ, opponentKzzScore);
+        intent.putExtra(Constants.EXTRA_MY_ASOCIJACIJE, myAsocScore);
+        intent.putExtra(Constants.EXTRA_OPP_ASOCIJACIJE, oppAsocScore);
+        intent.putExtra(Constants.EXTRA_MY_SKOCKO, mySkockoScore);
+        intent.putExtra(Constants.EXTRA_OPP_SKOCKO, oppSkockoScore);
+        intent.putExtra(Constants.EXTRA_MY_MOJ_BROJ, myMojBrojScore);
+        intent.putExtra(Constants.EXTRA_OPP_MOJ_BROJ, oppMojBrojScore);
         intent.putExtra(Constants.EXTRA_MY_SPOJNICE, myScore);
         intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, opponentScore);
         startActivity(intent);

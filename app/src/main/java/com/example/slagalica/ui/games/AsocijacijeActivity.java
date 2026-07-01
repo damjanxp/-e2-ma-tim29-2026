@@ -1,142 +1,289 @@
 package com.example.slagalica.ui.games;
 
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.InputType;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.AsocijacijePuzzle;
+import com.example.slagalica.data.repository.MatchRepository;
+import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.AsocijacijeLogic;
+import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Igra "Asocijacije" — dve runde za istog igrača.
+ * Igra "Asocijacije" — KT2, multiplayer 1v1.
  *
- * Za prelaz na 1v1: zameni {@link AsocijacijePuzzle#samplePuzzles()} pozivom
- * GameContentRepository-ja i prosledi bodove igrača nazad Intent-om.
+ * Oba igrača igraju ISTU slagalicu po rundi zajedno — vidе live šta se dešava.
+ * Igrač koji ima potez otkriva polja i pogađa; pogrešna pogodba predaje potez.
+ * Runda 0: player1 ide prvi. Runda 1: player2 ide prvi.
  */
 public class AsocijacijeActivity extends AppCompatActivity {
 
-    private static final int TURN_SECONDS = 120;
-    private static final int NUM_ROUNDS   = 2;
-    private static final int NUM_COLS     = AsocijacijeLogic.NUM_COLS;
-    private static final int NUM_ROWS     = AsocijacijeLogic.NUM_ROWS;
+    private static final int TURN_SECONDS   = 120;
+    private static final int NUM_ROUNDS     = 2;
+    private static final int NUM_COLS       = AsocijacijeLogic.NUM_COLS;
+    private static final int NUM_ROWS       = AsocijacijeLogic.NUM_ROWS;
+    private static final int ROUND_DELAY_MS = 2_000;
+    private static final String PHASE_DONE  = "DONE";
+
+    private static final String[] COL_LETTERS = {"A", "B", "C", "D"};
 
     // ── Views ─────────────────────────────────────────────────────────────────
-    private TextView        tvRound, tvScore, tvTimer;
+    private TextView        tvRound, tvScore, tvOpponentScore, tvTimer, tvTurnStatus;
     private ProgressBar     pbTimer;
-    // clueButtons[col 0-3][row 0-3]
     private MaterialButton[][] clueButtons;
-    // colButtons[col 0-3] — column solution buttons
-    private MaterialButton[] colButtons;
+    private MaterialButton[]   colButtons;
     private MaterialButton  finalButton;
+    private MaterialButton  btnGiveUp;
+
+    // ── Match ─────────────────────────────────────────────────────────────────
+    private final MatchRepository matchRepository = MatchRepository.getInstance();
+    private final UserRepository  userRepository  = UserRepository.getInstance();
+    private String  matchId, myUid, opponentUid, opponentName;
+    private boolean isPlayerOne;
+    private boolean opponentOnline = true;
+    private int     myKzzScore, oppKzzScore;
 
     // ── Game state ────────────────────────────────────────────────────────────
-    private AsocijacijePuzzle   puzzle;
-    private boolean[][]         revealed;     // [col][row]
-    private boolean[]           colSolved;    // [col]
-    private boolean             finalSolved;
-    private boolean             mustReveal;   // must reveal a clue before next guess
-    private int                 score;
-    private int                 currentRound;
-    private final int[]         roundScores = new int[NUM_ROUNDS];
-    private CountDownTimer      timer;
+    private AsocijacijePuzzle puzzle;
+    private int  currentRound       = 0;
+    private int  myTotalScore       = 0;
+    private int  opponentTotalScore = 0;
+    private int  myRoundScore       = 0;
+    private boolean roundDone       = false;
+    private boolean gameEnded       = false;
 
-    // Column label letters for display
-    private static final String[] COL_LETTERS = {"A", "B", "C", "D"};
+    // ── Live RTDB state ───────────────────────────────────────────────────────
+    private String  currentTurn     = null;
+    private boolean localMustReveal = false;
+    private MatchRepository.AsocijacijeRoundState latestState = null;
+
+    // ── Infra ─────────────────────────────────────────────────────────────────
+    private CountDownTimer        timer;
+    private final Handler         handler        = new Handler(Looper.getMainLooper());
+    private final List<Runnable>  matchDetachers = new ArrayList<>();
+    private Runnable              puzzleDetacher;
+    private Runnable              roundStateDetacher;
+
+    // ── Colors ────────────────────────────────────────────────────────────────
+    private int colorHidden, colorRevealed, colorColSolvedMine, colorColSolvedTheirs, colorFinalSolved;
+
+    // =========================================================================
+    // Lifecycle
+    // =========================================================================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_asocijacije);
+        readExtras();
         initViews();
-        startRound(1);
+        resolveColors();
+        setupBackHandler();
+        joinMatch();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        handler.removeCallbacksAndMessages(null);
         cancelTimer();
+        detachAll();
     }
 
-    // ── Initialisation ────────────────────────────────────────────────────────
+    // =========================================================================
+    // Init
+    // =========================================================================
+
+    private void readExtras() {
+        matchId      = getIntent().getStringExtra(Constants.EXTRA_MATCH_ID);
+        opponentUid  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
+        opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
+        isPlayerOne  = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        myKzzScore   = getIntent().getIntExtra(Constants.EXTRA_MY_SCORE, 0);
+        oppKzzScore  = getIntent().getIntExtra(Constants.EXTRA_OPPONENT_SCORE, 0);
+        myUid        = userRepository.getCurrentUid();
+    }
 
     private void initViews() {
-        tvRound  = findViewById(R.id.tvRound);
-        tvScore  = findViewById(R.id.tvScore);
-        tvTimer  = findViewById(R.id.tvTimer);
-        pbTimer  = findViewById(R.id.pbTimer);
+        tvRound         = findViewById(R.id.tvRound);
+        tvScore         = findViewById(R.id.tvScore);
+        tvOpponentScore = findViewById(R.id.tvOpponentScore);
+        tvTimer         = findViewById(R.id.tvTimer);
+        tvTurnStatus    = findViewById(R.id.tvTurnStatus);
+        pbTimer         = findViewById(R.id.pbTimer);
+        btnGiveUp       = findViewById(R.id.btnGiveUp);
 
         clueButtons = new MaterialButton[][]{
-            {
-                findViewById(R.id.btnA1), findViewById(R.id.btnA2),
-                findViewById(R.id.btnA3), findViewById(R.id.btnA4)
-            },
-            {
-                findViewById(R.id.btnB1), findViewById(R.id.btnB2),
-                findViewById(R.id.btnB3), findViewById(R.id.btnB4)
-            },
-            {
-                findViewById(R.id.btnC1), findViewById(R.id.btnC2),
-                findViewById(R.id.btnC3), findViewById(R.id.btnC4)
-            },
-            {
-                findViewById(R.id.btnD1), findViewById(R.id.btnD2),
-                findViewById(R.id.btnD3), findViewById(R.id.btnD4)
-            }
+            { findViewById(R.id.btnA1), findViewById(R.id.btnA2),
+              findViewById(R.id.btnA3), findViewById(R.id.btnA4) },
+            { findViewById(R.id.btnB1), findViewById(R.id.btnB2),
+              findViewById(R.id.btnB3), findViewById(R.id.btnB4) },
+            { findViewById(R.id.btnC1), findViewById(R.id.btnC2),
+              findViewById(R.id.btnC3), findViewById(R.id.btnC4) },
+            { findViewById(R.id.btnD1), findViewById(R.id.btnD2),
+              findViewById(R.id.btnD3), findViewById(R.id.btnD4) }
         };
-
         colButtons = new MaterialButton[]{
-            findViewById(R.id.btnA),
-            findViewById(R.id.btnB),
-            findViewById(R.id.btnC),
-            findViewById(R.id.btnD)
+            findViewById(R.id.btnA), findViewById(R.id.btnB),
+            findViewById(R.id.btnC), findViewById(R.id.btnD)
         };
-
         finalButton = findViewById(R.id.btnCenter);
 
-        findViewById(R.id.btnGiveUp).setOnClickListener(v -> endRound(true));
+        tvTurnStatus.setText("Učitavanje...");
+        btnGiveUp.setOnClickListener(v -> confirmGiveUp());
     }
 
-    // ── Round lifecycle ────────────────────────────────────────────────────────
+    private void resolveColors() {
+        colorHidden          = ContextCompat.getColor(this, R.color.asoc_cell_hidden);
+        colorRevealed        = ContextCompat.getColor(this, R.color.asoc_cell_revealed);
+        colorColSolvedMine   = ContextCompat.getColor(this, R.color.asoc_col_solved);
+        colorColSolvedTheirs = ContextCompat.getColor(this, R.color.asoc_cell_revealed);
+        colorFinalSolved     = ContextCompat.getColor(this, R.color.asoc_final_solved);
+    }
+
+    private void setupBackHandler() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override public void handleOnBackPressed() { confirmGiveUp(); }
+        });
+    }
+
+    // =========================================================================
+    // Match joining
+    // =========================================================================
+
+    private void joinMatch() {
+        if (matchId == null || myUid == null) {
+            Toast.makeText(this, "Greška pri učitavanju meča.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        matchRepository.setPresence(matchId, myUid);
+        matchDetachers.add(matchRepository.listenOpponentPresence(matchId, opponentUid,
+                online -> {
+                    boolean wasOnline = opponentOnline;
+                    opponentOnline = online;
+                    if (wasOnline && !online) {
+                        Toast.makeText(this, opponentName + " je napustio igru.",
+                                Toast.LENGTH_SHORT).show();
+                        // If it's opponent's turn and round is not done, force end
+                        if (!roundDone && currentTurn != null && currentTurn.equals(opponentUid)) {
+                            matchRepository.endAsocijacijeRound(matchId, currentRound);
+                        }
+                    }
+                }));
+
+        if (isPlayerOne) {
+            AsocijacijePuzzle[] samples = AsocijacijePuzzle.samplePuzzles();
+            matchRepository.writeAsocijacijePuzzles(matchId, samples[0], samples[1], null);
+        }
+        startRound(0);
+    }
+
+    // =========================================================================
+    // Round management
+    // =========================================================================
 
     private void startRound(int round) {
-        currentRound = round;
-        puzzle       = AsocijacijePuzzle.samplePuzzles()[round - 1];
-        revealed     = new boolean[NUM_COLS][NUM_ROWS];
-        colSolved    = new boolean[NUM_COLS];
-        finalSolved  = false;
-        mustReveal   = false;
-        score        = 0;
+        currentRound    = round;
+        puzzle          = null;
+        roundDone       = false;
+        myRoundScore    = 0;
+        currentTurn     = null;
+        localMustReveal = false;
+        latestState     = null;
 
-        tvRound.setText(getString(R.string.asoc_round, round));
-        updateScoreDisplay();
-        bindBoard();
-        startTimer();
-    }
-
-    private void endRound(boolean gaveUp) {
+        tvRound.setText(getString(R.string.asoc_round, round + 1));
+        tvTurnStatus.setText("Učitavanje...");
+        updateScoreHeader(null);
+        clearBoard();
         cancelTimer();
-        roundScores[currentRound - 1] = score;
 
-        if (currentRound < NUM_ROUNDS) {
-            showRoundSummary();
-        } else {
-            showGameOver();
+        if (puzzleDetacher != null) { puzzleDetacher.run(); puzzleDetacher = null; }
+        if (roundStateDetacher != null) { roundStateDetacher.run(); roundStateDetacher = null; }
+
+        // First mover writes the initial round state
+        if (isFirstMoverForRound(round)) {
+            matchRepository.initAsocijacijeRound(matchId, round, myUid);
         }
+
+        // Load the puzzle (one-shot listener)
+        puzzleDetacher = matchRepository.listenAsocijacijePuzzle(matchId, round,
+                new MatchRepository.AsocijacijePuzzleListener() {
+            @Override
+            public void onPuzzle(@NonNull AsocijacijePuzzle p) {
+                if (gameEnded || roundDone) return;
+                puzzle = p;
+                bindBoard();
+                startTimer();
+                // Apply any state already received before puzzle arrived
+                if (latestState != null) applyRoundState(latestState);
+            }
+            @Override
+            public void onError(@NonNull String msg) {
+                Toast.makeText(AsocijacijeActivity.this, msg, Toast.LENGTH_LONG).show();
+                finish();
+            }
+        });
+
+        // Both players listen to the live round state (persistent)
+        roundStateDetacher = matchRepository.listenAsocijacijeRoundState(matchId, round,
+                state -> {
+                    if (gameEnded) return;
+                    latestState     = state;
+                    currentTurn     = state.turn;
+                    localMustReveal = state.mustReveal;
+
+                    if (puzzle != null) applyRoundState(state);
+
+                    if (PHASE_DONE.equals(state.phase) && !roundDone) {
+                        onRoundDone(state);
+                    }
+                });
     }
 
-    // ── Board binding ─────────────────────────────────────────────────────────
+    private void onRoundDone(@NonNull MatchRepository.AsocijacijeRoundState finalState) {
+        roundDone = true;
+        cancelTimer();
+
+        myTotalScore += myRoundScore;
+        Integer oppScore = finalState.scores.get(opponentUid);
+        opponentTotalScore += (oppScore != null ? oppScore : 0);
+
+        updateScoreHeader(finalState);
+
+        boolean isLast = (currentRound >= NUM_ROUNDS - 1);
+        handler.postDelayed(() -> {
+            if (gameEnded) return;
+            if (isLast) endGame();
+            else startRound(currentRound + 1);
+        }, ROUND_DELAY_MS);
+    }
+
+    // =========================================================================
+    // Board rendering — driven entirely by RTDB state
+    // =========================================================================
 
     private void bindBoard() {
         for (int col = 0; col < NUM_COLS; col++) {
@@ -144,125 +291,250 @@ public class AsocijacijeActivity extends AppCompatActivity {
                 final int c = col, r = row;
                 MaterialButton btn = clueButtons[col][row];
                 btn.setText("?");
-                btn.setEnabled(true);
-                setButtonTint(btn, null);
+                setTint(btn, colorHidden);
                 btn.setOnClickListener(v -> onClueTapped(c, r));
             }
-
             MaterialButton colBtn = colButtons[col];
             colBtn.setText(COL_LETTERS[col] + " ?");
-            colBtn.setEnabled(true);
-            setButtonTint(colBtn, null);
+            setTint(colBtn, colorHidden);
             final int fc = col;
             colBtn.setOnClickListener(v -> onColSolutionTapped(fc));
         }
-
         finalButton.setText(getString(R.string.asoc_final_label));
-        finalButton.setEnabled(true);
-        setButtonTint(finalButton, null);
+        setTint(finalButton, colorHidden);
         finalButton.setOnClickListener(v -> onFinalTapped());
     }
 
-    // ── Interaction handlers ──────────────────────────────────────────────────
+    private void clearBoard() {
+        for (int col = 0; col < NUM_COLS; col++) {
+            for (int row = 0; row < NUM_ROWS; row++) {
+                clueButtons[col][row].setText("?");
+                setTint(clueButtons[col][row], colorHidden);
+                clueButtons[col][row].setOnClickListener(null);
+            }
+            colButtons[col].setText(COL_LETTERS[col] + " ?");
+            setTint(colButtons[col], colorHidden);
+            colButtons[col].setOnClickListener(null);
+        }
+        finalButton.setText(getString(R.string.asoc_final_label));
+        setTint(finalButton, colorHidden);
+        finalButton.setOnClickListener(null);
+    }
+
+    private void applyRoundState(@NonNull MatchRepository.AsocijacijeRoundState state) {
+        if (puzzle == null) return;
+
+        for (int col = 0; col < NUM_COLS; col++) {
+            // Clue cells
+            for (int row = 0; row < NUM_ROWS; row++) {
+                MaterialButton btn = clueButtons[col][row];
+                if (state.revealed[col][row]) {
+                    btn.setText(puzzle.getClue(col, row));
+                    setTint(btn, colorRevealed);
+                } else {
+                    btn.setText("?");
+                    setTint(btn, colorHidden);
+                }
+            }
+            // Column solution button
+            MaterialButton colBtn = colButtons[col];
+            if (state.colSolvedBy[col] != null) {
+                colBtn.setText(puzzle.getColSolution(col));
+                boolean mine = myUid.equals(state.colSolvedBy[col]);
+                setTint(colBtn, mine ? colorColSolvedMine : colorColSolvedTheirs);
+            } else {
+                colBtn.setText(COL_LETTERS[col] + " ?");
+                setTint(colBtn, colorHidden);
+            }
+        }
+
+        // Final button
+        if (state.finalSolved) {
+            finalButton.setText(puzzle.getFinalSolution());
+            setTint(finalButton, colorFinalSolved);
+        } else {
+            finalButton.setText(getString(R.string.asoc_final_label));
+            setTint(finalButton, colorHidden);
+        }
+
+        // Turn status
+        if (PHASE_DONE.equals(state.phase)) {
+            tvTurnStatus.setText("Runda završena.");
+        } else if (isMyTurn()) {
+            tvTurnStatus.setText(localMustReveal ? "Tvoj red — prvo otkrij polje!" : "Tvoj red!");
+        } else {
+            tvTurnStatus.setText((opponentName != null ? opponentName : "?") + " je na potezu...");
+        }
+
+        updateScoreHeader(state);
+    }
+
+    // =========================================================================
+    // Player interactions
+    // =========================================================================
 
     private void onClueTapped(int col, int row) {
-        if (revealed[col][row]) return;
-
-        revealed[col][row] = true;
-        mustReveal = false;
-
-        MaterialButton btn = clueButtons[col][row];
-        btn.setText(puzzle.getClue(col, row));
-        btn.setEnabled(false);
-        setButtonTint(btn, ContextCompat.getColor(this, R.color.asoc_cell_revealed));
+        if (roundDone || puzzle == null) return;
+        if (latestState != null && latestState.revealed[col][row]) return;
+        if (!isMyTurn()) {
+            Snackbar.make(finalButton, "Nije tvoj red!", Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+        matchRepository.revealAsocijacijeCell(matchId, currentRound, col, row, localMustReveal);
     }
 
     private void onColSolutionTapped(int col) {
-        if (colSolved[col]) return;
-        if (mustReveal) {
+        if (roundDone || puzzle == null) return;
+        if (latestState != null && latestState.colSolvedBy[col] != null) return;
+        if (!isMyTurn()) {
+            Snackbar.make(finalButton, "Nije tvoj red!", Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+        if (localMustReveal) {
             Snackbar.make(finalButton, R.string.asoc_must_reveal_first, Snackbar.LENGTH_SHORT).show();
             return;
         }
-        showGuessDialog(
-            getString(R.string.asoc_guess_col_title, COL_LETTERS[col]),
-            answer -> {
-                String correct = puzzle.getColSolution(col).trim().toUpperCase();
-                if (answer.trim().toUpperCase().equals(correct)) {
-                    int pts = AsocijacijeLogic.columnScore(countRevealed(col));
-                    score += pts;
-                    colSolved[col] = true;
-                    mustReveal = false;
-                    updateScoreDisplay();
-                    markColumnSolved(col);
-                    Snackbar.make(finalButton,
-                        getString(R.string.asoc_correct_col, pts, COL_LETTERS[col]),
-                        Snackbar.LENGTH_SHORT).show();
-                } else {
-                    mustReveal = true;
-                    Snackbar.make(finalButton, R.string.asoc_wrong, Snackbar.LENGTH_SHORT).show();
-                }
+        showGuessDialog(getString(R.string.asoc_guess_col_title, COL_LETTERS[col]), answer -> {
+            if (roundDone) return;
+            String correct = puzzle.getColSolution(col).trim().toUpperCase();
+            if (answer.trim().toUpperCase().equals(correct)) {
+                int pts = AsocijacijeLogic.columnScore(countRevealedInState(col));
+                myRoundScore += pts;
+                matchRepository.solveAsocijacijeColumn(matchId, currentRound, col, myUid, pts, myRoundScore);
+                Snackbar.make(finalButton,
+                    getString(R.string.asoc_correct_col, pts, COL_LETTERS[col]),
+                    Snackbar.LENGTH_SHORT).show();
+            } else {
+                Snackbar.make(finalButton, R.string.asoc_wrong, Snackbar.LENGTH_SHORT).show();
+                matchRepository.passAsocijacijeTurn(matchId, currentRound, opponentUid);
             }
-        );
+        });
     }
 
     private void onFinalTapped() {
-        if (finalSolved) return;
-        if (mustReveal) {
+        if (roundDone || puzzle == null) return;
+        if (latestState != null && latestState.finalSolved) return;
+        if (!isMyTurn()) {
+            Snackbar.make(finalButton, "Nije tvoj red!", Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+        if (localMustReveal) {
             Snackbar.make(finalButton, R.string.asoc_must_reveal_first, Snackbar.LENGTH_SHORT).show();
             return;
         }
-        showGuessDialog(
-            getString(R.string.asoc_guess_final_title),
-            answer -> {
-                String correct = puzzle.getFinalSolution().trim().toUpperCase();
-                if (answer.trim().toUpperCase().equals(correct)) {
-                    int pts = AsocijacijeLogic.finalScore(revealedCountsPerCol(), colSolved);
-                    score += pts;
-                    finalSolved = true;
-                    updateScoreDisplay();
-                    setButtonTint(finalButton,
-                        ContextCompat.getColor(this, R.color.asoc_final_solved));
-                    finalButton.setText(puzzle.getFinalSolution());
-                    finalButton.setEnabled(false);
-                    Snackbar.make(finalButton,
-                        getString(R.string.asoc_correct_final, pts),
-                        Snackbar.LENGTH_SHORT).show();
-                    // Short delay so the player can read the snackbar before the summary
-                    finalButton.postDelayed(() -> endRound(false), 1500);
-                } else {
-                    mustReveal = true;
-                    Snackbar.make(finalButton, R.string.asoc_wrong, Snackbar.LENGTH_SHORT).show();
+        showGuessDialog(getString(R.string.asoc_guess_final_title), answer -> {
+            if (roundDone) return;
+            String correct = puzzle.getFinalSolution().trim().toUpperCase();
+            if (answer.trim().toUpperCase().equals(correct)) {
+                int pts = AsocijacijeLogic.finalScore(revealedCountsFromState(), colSolvedFromState());
+                myRoundScore += pts;
+                matchRepository.solveAsocijacijeFinal(matchId, currentRound, myUid, pts, myRoundScore);
+                Snackbar.make(finalButton,
+                    getString(R.string.asoc_correct_final, pts),
+                    Snackbar.LENGTH_SHORT).show();
+            } else {
+                Snackbar.make(finalButton, R.string.asoc_wrong, Snackbar.LENGTH_SHORT).show();
+                matchRepository.passAsocijacijeTurn(matchId, currentRound, opponentUid);
+            }
+        });
+    }
+
+    // =========================================================================
+    // End game
+    // =========================================================================
+
+    private void endGame() {
+        if (gameEnded) return;
+        gameEnded = true;
+        matchRepository.setGameResult(matchId, Constants.GAME_ASOCIJACIJE, myUid, myTotalScore);
+
+        Intent intent = new Intent(this, SkockoActivity.class);
+        intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
+        intent.putExtra(Constants.EXTRA_IS_PLAYER_ONE, isPlayerOne);
+        intent.putExtra(Constants.EXTRA_OPPONENT_UID, opponentUid);
+        intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
+        intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
+        intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);
+        intent.putExtra(Constants.EXTRA_MY_ASOCIJACIJE, myTotalScore);
+        intent.putExtra(Constants.EXTRA_OPP_ASOCIJACIJE, opponentTotalScore);
+        startActivity(intent);
+        finish();
+    }
+
+    // =========================================================================
+    // Give up
+    // =========================================================================
+
+    private void confirmGiveUp() {
+        new AlertDialog.Builder(this)
+            .setTitle("Da li si siguran?")
+            .setMessage("Igra će biti izgubljena.")
+            .setPositiveButton("Predaj", (d, w) -> {
+                gameEnded = true;
+                matchRepository.leaveMatch(matchId, myUid);
+                finish();
+            })
+            .setNegativeButton("Nastavi", null)
+            .show();
+    }
+
+    // =========================================================================
+    // Timer
+    // =========================================================================
+
+    private void startTimer() {
+        pbTimer.setMax(TURN_SECONDS);
+        pbTimer.setProgress(TURN_SECONDS);
+        tvTimer.setText(getString(R.string.asoc_time_left, TURN_SECONDS));
+
+        timer = new CountDownTimer((long) TURN_SECONDS * 1000, 1000) {
+            @Override
+            public void onTick(long ms) {
+                int s = (int) (ms / 1000) + 1;
+                pbTimer.setProgress(s);
+                tvTimer.setText(getString(R.string.asoc_time_left, s));
+            }
+            @Override
+            public void onFinish() {
+                pbTimer.setProgress(0);
+                tvTimer.setText(getString(R.string.asoc_time_left, 0));
+                if (!roundDone) {
+                    Snackbar.make(finalButton, R.string.asoc_time_up, Snackbar.LENGTH_SHORT).show();
+                    matchRepository.endAsocijacijeRound(matchId, currentRound);
                 }
             }
-        );
+        }.start();
     }
 
-    // ── UI helpers ────────────────────────────────────────────────────────────
-
-    private void markColumnSolved(int col) {
-        setButtonTint(colButtons[col],
-            ContextCompat.getColor(this, R.color.asoc_col_solved));
-        colButtons[col].setText(puzzle.getColSolution(col));
-        colButtons[col].setEnabled(false);
+    private void cancelTimer() {
+        if (timer != null) { timer.cancel(); timer = null; }
     }
 
-    private void updateScoreDisplay() {
-        tvScore.setText(getString(R.string.asoc_score, score));
-    }
+    // =========================================================================
+    // UI helpers
+    // =========================================================================
 
-    private void setButtonTint(MaterialButton btn, Integer color) {
-        if (color == null) {
-            btn.setBackgroundTintList(null);
-        } else {
-            btn.setBackgroundTintList(ColorStateList.valueOf(color));
+    private void updateScoreHeader(MatchRepository.AsocijacijeRoundState state) {
+        int myCumulative  = myKzzScore + myTotalScore + myRoundScore;
+        int oppCurrentRound = 0;
+        if (state != null) {
+            Integer v = state.scores.get(opponentUid);
+            if (v != null) oppCurrentRound = v;
         }
+        int oppCumulative = oppKzzScore + opponentTotalScore + oppCurrentRound;
+        tvScore.setText("Ja: " + myCumulative);
+        tvOpponentScore.setText((opponentName != null ? opponentName : "?") + ": " + oppCumulative);
     }
 
-    // ── Guess dialog ──────────────────────────────────────────────────────────
-
-    interface AnswerCallback {
-        void onAnswer(String answer);
+    private void setTint(MaterialButton btn, int color) {
+        btn.setBackgroundTintList(ColorStateList.valueOf(color));
     }
+
+    // =========================================================================
+    // Guess dialog
+    // =========================================================================
+
+    interface AnswerCallback { void onAnswer(String answer); }
 
     private void showGuessDialog(String title, AnswerCallback cb) {
         EditText input = new EditText(this);
@@ -281,7 +553,6 @@ public class AsocijacijeActivity extends AppCompatActivity {
             .setNegativeButton(android.R.string.cancel, null)
             .create();
 
-        // Also allow confirming via keyboard Done action
         input.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String ans = input.getText() != null ? input.getText().toString() : "";
@@ -291,90 +562,46 @@ public class AsocijacijeActivity extends AppCompatActivity {
             }
             return false;
         });
-
         dialog.show();
     }
 
-    // ── Timer ─────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // Helpers
+    // =========================================================================
 
-    private void startTimer() {
-        pbTimer.setMax(TURN_SECONDS);
-        pbTimer.setProgress(TURN_SECONDS);
-        tvTimer.setText(getString(R.string.asoc_time_left, TURN_SECONDS));
-
-        timer = new CountDownTimer((long) TURN_SECONDS * 1000, 1000) {
-            @Override
-            public void onTick(long ms) {
-                int s = (int) (ms / 1000) + 1;
-                pbTimer.setProgress(s);
-                tvTimer.setText(getString(R.string.asoc_time_left, s));
-            }
-
-            @Override
-            public void onFinish() {
-                pbTimer.setProgress(0);
-                tvTimer.setText(getString(R.string.asoc_time_left, 0));
-                Snackbar.make(finalButton, R.string.asoc_time_up, Snackbar.LENGTH_SHORT).show();
-                finalButton.postDelayed(() -> endRound(false), 1000);
-            }
-        }.start();
+    private boolean isMyTurn() {
+        return myUid != null && myUid.equals(currentTurn);
     }
 
-    private void cancelTimer() {
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
+    private boolean isFirstMoverForRound(int round) {
+        return (isPlayerOne && round == 0) || (!isPlayerOne && round == 1);
     }
 
-    // ── Round / game-over dialogs ─────────────────────────────────────────────
-
-    private void showRoundSummary() {
-        disableBoard();
-        new AlertDialog.Builder(this)
-            .setTitle(getString(R.string.asoc_round_end_title, currentRound))
-            .setMessage(getString(R.string.asoc_round_end_msg, roundScores[currentRound - 1]))
-            .setCancelable(false)
-            .setPositiveButton(R.string.asoc_btn_next_round, (d, w) -> startRound(currentRound + 1))
-            .show();
-    }
-
-    private void showGameOver() {
-        disableBoard();
-        int total = roundScores[0] + roundScores[1];
-        new AlertDialog.Builder(this)
-            .setTitle(R.string.asoc_game_over_title)
-            .setMessage(getString(R.string.asoc_game_over_msg, roundScores[0], roundScores[1], total))
-            .setCancelable(false)
-            .setPositiveButton(R.string.asoc_btn_finish, (d, w) -> finish())
-            .show();
-    }
-
-    private void disableBoard() {
-        for (int col = 0; col < NUM_COLS; col++) {
-            for (int row = 0; row < NUM_ROWS; row++) {
-                clueButtons[col][row].setEnabled(false);
-            }
-            colButtons[col].setEnabled(false);
-        }
-        finalButton.setEnabled(false);
-    }
-
-    // ── Scoring helpers ───────────────────────────────────────────────────────
-
-    private int countRevealed(int col) {
+    private int countRevealedInState(int col) {
+        if (latestState == null) return 0;
         int count = 0;
-        for (int r = 0; r < NUM_ROWS; r++) {
-            if (revealed[col][r]) count++;
-        }
+        for (int r = 0; r < NUM_ROWS; r++) if (latestState.revealed[col][r]) count++;
         return count;
     }
 
-    private int[] revealedCountsPerCol() {
+    private int[] revealedCountsFromState() {
         int[] counts = new int[NUM_COLS];
-        for (int c = 0; c < NUM_COLS; c++) {
-            counts[c] = countRevealed(c);
-        }
+        if (latestState != null)
+            for (int c = 0; c < NUM_COLS; c++) counts[c] = countRevealedInState(c);
         return counts;
+    }
+
+    private boolean[] colSolvedFromState() {
+        boolean[] solved = new boolean[NUM_COLS];
+        if (latestState != null)
+            for (int c = 0; c < NUM_COLS; c++) solved[c] = (latestState.colSolvedBy[c] != null);
+        return solved;
+    }
+
+    private void detachAll() {
+        if (puzzleDetacher != null) { puzzleDetacher.run(); puzzleDetacher = null; }
+        if (roundStateDetacher != null) { roundStateDetacher.run(); roundStateDetacher = null; }
+        for (Runnable d : matchDetachers) d.run();
+        matchDetachers.clear();
     }
 }

@@ -346,7 +346,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
 
         Toast.makeText(this, getString(R.string.kzz_round_end, myScore), Toast.LENGTH_SHORT).show();
 
-        Intent intent = new Intent(this, SpojniceActivity.class);
+        Intent intent = new Intent(this, AsocijacijeActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
         intent.putExtra(Constants.EXTRA_IS_PLAYER_ONE, isPlayerOne);
         intent.putExtra(Constants.EXTRA_OPPONENT_UID, opponentUid);
