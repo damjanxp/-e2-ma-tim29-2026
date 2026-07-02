@@ -326,6 +326,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         int opponentDelta = KoZnaZnaLogic.pointsFor(opponentUid, answers);
         myScore += myDelta;
         opponentScore += opponentDelta;
+        scoreBar.setScores(myScore, opponentScore);
         showResolutionFeedback(answers, myDelta);
 
         handler.postDelayed(() -> showQuestion(currentQuestion + 1), FEEDBACK_DELAY_MS);
