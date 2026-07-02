@@ -89,6 +89,11 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ui.ranking.RankingActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".ui.match.MatchmakingActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
@@ -140,6 +145,16 @@
 
         <activity
             android:name=".ui.challenge.ChallengeSoloKorakActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloAsocijacijeActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloSkockoActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

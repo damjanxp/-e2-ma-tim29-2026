@@ -16,6 +16,7 @@ import com.example.slagalica.ui.chat.ChatActivity;
 import com.example.slagalica.ui.games.GameMenuActivity;
 import com.example.slagalica.ui.notifications.NotificationsActivity;
 import com.example.slagalica.ui.profile.ProfileActivity;
+import com.example.slagalica.ui.ranking.RankingActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -88,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
         btnPlay.setOnClickListener(v ->
                 startActivity(new Intent(this, GameMenuActivity.class)));
         btnLeaderboard.setOnClickListener(v ->
-                showComingSoon(getString(R.string.main_btn_leaderboard)));
+                startActivity(new Intent(this, RankingActivity.class)));
         btnFriends.setOnClickListener(v ->
                 showComingSoon(getString(R.string.main_btn_friends)));
         btnRegion.setOnClickListener(v ->

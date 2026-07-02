@@ -30,10 +30,10 @@ import android.widget.TextView;
  */
 public class MatchResultActivity extends AppCompatActivity {
 
-    public static final String EXTRA_MY_KZZ       = Constants.EXTRA_MY_KZZ;
-    public static final String EXTRA_OPP_KZZ      = Constants.EXTRA_OPP_KZZ;
-    public static final String EXTRA_MY_SPOJNICE  = Constants.EXTRA_MY_SPOJNICE;
-    public static final String EXTRA_OPP_SPOJNICE = Constants.EXTRA_OPP_SPOJNICE;
+    public static final String EXTRA_MY_KZZ        = Constants.EXTRA_MY_KZZ;
+    public static final String EXTRA_OPP_KZZ       = Constants.EXTRA_OPP_KZZ;
+    public static final String EXTRA_MY_SPOJNICE   = Constants.EXTRA_MY_SPOJNICE;
+    public static final String EXTRA_OPP_SPOJNICE  = Constants.EXTRA_OPP_SPOJNICE;
 
     private final UserRepository userRepository = UserRepository.getInstance();
 
@@ -44,21 +44,25 @@ public class MatchResultActivity extends AppCompatActivity {
 
         int myKzz       = getIntent().getIntExtra(EXTRA_MY_KZZ, 0);
         int oppKzz      = getIntent().getIntExtra(EXTRA_OPP_KZZ, 0);
-        int mySpojnice  = getIntent().getIntExtra(EXTRA_MY_SPOJNICE, 0);
-        int oppSpojnice = getIntent().getIntExtra(EXTRA_OPP_SPOJNICE, 0);
+        int myAsoc      = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
+        int oppAsoc     = getIntent().getIntExtra(Constants.EXTRA_OPP_ASOCIJACIJE, 0);
+        int mySkocko    = getIntent().getIntExtra(Constants.EXTRA_MY_SKOCKO, 0);
+        int oppSkocko   = getIntent().getIntExtra(Constants.EXTRA_OPP_SKOCKO, 0);
         int myMojBroj   = getIntent().getIntExtra(Constants.EXTRA_MY_MOJ_BROJ, 0);
         int oppMojBroj  = getIntent().getIntExtra(Constants.EXTRA_OPP_MOJ_BROJ, 0);
+        int mySpojnice  = getIntent().getIntExtra(EXTRA_MY_SPOJNICE, 0);
+        int oppSpojnice = getIntent().getIntExtra(EXTRA_OPP_SPOJNICE, 0);
         int myKorak     = getIntent().getIntExtra(Constants.EXTRA_MY_KORAK, 0);
         int oppKorak    = getIntent().getIntExtra(Constants.EXTRA_OPP_KORAK, 0);
         String opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
 
-        int myTotal  = myKzz + mySpojnice + myMojBroj + myKorak;
-        int oppTotal = oppKzz + oppSpojnice + oppMojBroj + oppKorak;
+        int myTotal  = myKzz + myAsoc + mySkocko + myMojBroj + mySpojnice + myKorak;
+        int oppTotal = oppKzz + oppAsoc + oppSkocko + oppMojBroj + oppSpojnice + oppKorak;
         boolean isFriendly = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
 
-        bindResult(myKzz, oppKzz, mySpojnice, oppSpojnice,
-                myMojBroj, oppMojBroj, myKorak, oppKorak,
-                myTotal, oppTotal, opponentName);
+        bindResult(myKzz, oppKzz, myAsoc, oppAsoc, mySkocko, oppSkocko,
+                myMojBroj, oppMojBroj, mySpojnice, oppSpojnice,
+                myKorak, oppKorak, myTotal, oppTotal, opponentName);
 
         if (isFriendly) {
             // Prijateljska partija: bez statistike, zvezda i žetona.
@@ -103,16 +107,19 @@ public class MatchResultActivity extends AppCompatActivity {
         });
     }
 
-    private void bindResult(int myKzz, int oppKzz, int mySpojnice, int oppSpojnice,
-                            int myMojBroj, int oppMojBroj, int myKorak, int oppKorak,
+    private void bindResult(int myKzz, int oppKzz, int myAsoc, int oppAsoc,
+                            int mySkocko, int oppSkocko, int myMojBroj, int oppMojBroj,
+                            int mySpojnice, int oppSpojnice, int myKorak, int oppKorak,
                             int myTotal, int oppTotal, String opponentName) {
-        TextView tvOutcome = findViewById(R.id.tvOutcome);
-        TextView tvPlayers = findViewById(R.id.tvPlayers);
-        TextView tvKzzScore = findViewById(R.id.tvKzzScore);
-        TextView tvSpojniceScore = findViewById(R.id.tvSpojniceScore);
+        TextView tvOutcome      = findViewById(R.id.tvOutcome);
+        TextView tvPlayers      = findViewById(R.id.tvPlayers);
+        TextView tvKzzScore     = findViewById(R.id.tvKzzScore);
+        TextView tvAsocScore    = findViewById(R.id.tvAsocScore);
+        TextView tvSkockoScore  = findViewById(R.id.tvSkockoScore);
         TextView tvMojBrojScore = findViewById(R.id.tvMojBrojScore);
-        TextView tvKorakScore = findViewById(R.id.tvKorakScore);
-        TextView tvTotalScore = findViewById(R.id.tvTotalScore);
+        TextView tvSpojniceScore = findViewById(R.id.tvSpojniceScore);
+        TextView tvKorakScore   = findViewById(R.id.tvKorakScore);
+        TextView tvTotalScore   = findViewById(R.id.tvTotalScore);
 
         if (myTotal > oppTotal) {
             tvOutcome.setText(R.string.result_win);
@@ -126,8 +133,10 @@ public class MatchResultActivity extends AppCompatActivity {
                 opponentName != null ? opponentName : "?"));
 
         tvKzzScore.setText(getString(R.string.result_score_row, myKzz, oppKzz));
-        tvSpojniceScore.setText(getString(R.string.result_score_row, mySpojnice, oppSpojnice));
+        tvAsocScore.setText(getString(R.string.result_score_row, myAsoc, oppAsoc));
+        tvSkockoScore.setText(getString(R.string.result_score_row, mySkocko, oppSkocko));
         tvMojBrojScore.setText(getString(R.string.result_score_row, myMojBroj, oppMojBroj));
+        tvSpojniceScore.setText(getString(R.string.result_score_row, mySpojnice, oppSpojnice));
         tvKorakScore.setText(getString(R.string.result_score_row, myKorak, oppKorak));
         tvTotalScore.setText(getString(R.string.result_score_row, myTotal, oppTotal));
     }

@@ -11,8 +11,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.slagalica.R;
 import com.example.slagalica.data.repository.ChallengeRepository;
 import com.example.slagalica.data.repository.UserRepository;
-import com.example.slagalica.ui.games.AsocijacijeActivity;
-import com.example.slagalica.ui.games.SkockoActivity;
 import com.example.slagalica.util.Constants;
 
 /**
@@ -20,17 +18,16 @@ import com.example.slagalica.util.Constants;
  * svaku igru redom u solo modu, sabira bodove i na kraju šalje ukupan
  * rezultat kroz {@link ChallengeRepository#submitScore}.
  *
- * <p>"Ko zna zna", "Spojnice", "Korak po korak" i "Moj broj" imaju posebne
- * solo verzije (nema čekanja na protivnika); "Asocijacije" i "Skočko" su već
- * jednoigračke igre, pa se pokreću direktno sa {@link Constants#EXTRA_SOLO}.</p>
+ * <p>Sve igre imaju posebne solo verzije (bez čekanja na protivnika i bez
+ * RTDB meča) jer su njihove standardne aktivnosti live 1v1 multiplayer.</p>
  */
 public class ChallengeSoloRunnerActivity extends AppCompatActivity {
 
     private static final Class<?>[] GAME_ORDER = {
             ChallengeSoloKzzActivity.class,
             ChallengeSoloSpojniceActivity.class,
-            AsocijacijeActivity.class,
-            SkockoActivity.class,
+            ChallengeSoloAsocijacijeActivity.class,
+            ChallengeSoloSkockoActivity.class,
             ChallengeSoloKorakActivity.class,
             ChallengeSoloMojBrojActivity.class,
     };
@@ -75,7 +72,6 @@ public class ChallengeSoloRunnerActivity extends AppCompatActivity {
             return;
         }
         Intent intent = new Intent(this, GAME_ORDER[gameIndex]);
-        intent.putExtra(Constants.EXTRA_SOLO, true);
         gameLauncher.launch(intent);
     }
 

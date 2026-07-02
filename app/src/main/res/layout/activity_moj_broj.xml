@@ -7,64 +7,21 @@
     android:orientation="vertical"
     android:padding="12dp">
 
-    <!-- ===== HEADER ===== -->
-    <LinearLayout
+    <!-- ===== REZULTAT MEČA ===== -->
+    <com.example.slagalica.ui.widget.ScoreBarView
+        android:id="@+id/scoreBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:id="@+id/tvOpponentScore"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="start"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textStyle="bold"
-            tools:text="Marko: 0" />
-
-        <TextView
-            android:id="@+id/tvRoundLabel"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:textStyle="bold"
-            tools:text="Runda 1/2" />
-
-        <TextView
-            android:id="@+id/tvScore"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="end"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textStyle="bold"
-            tools:text="Bodovi: 0" />
-
-    </LinearLayout>
-
-    <!-- ===== TAJMER ===== -->
-    <ProgressBar
-        android:id="@+id/pbTimer"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="8dp"
-        android:layout_marginTop="6dp"
-        android:max="60"
-        android:progress="60" />
+        android:layout_height="wrap_content" />
 
     <TextView
-        android:id="@+id/tvTimer"
+        android:id="@+id/tvRoundLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
         android:gravity="center"
-        android:layout_marginTop="2dp"
-        android:textAppearance="?attr/textAppearanceTitleLarge"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
         android:textStyle="bold"
-        tools:text="60 s" />
+        tools:text="Runda 1/2" />
 
     <TextView
         android:id="@+id/tvStatus"

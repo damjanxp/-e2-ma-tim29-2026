@@ -26,26 +26,42 @@
             android:id="@+id/tvRound"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <TextView
+            android:id="@+id/tvScore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- ===== REZULTAT MEČA ===== -->
-    <com.example.slagalica.ui.widget.ScoreBarView
-        android:id="@+id/scoreBar"
+    <ProgressBar
+        android:id="@+id/pbTimer"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="8dp"
         android:layout_marginTop="6dp"
-        android:layout_marginBottom="4dp" />
+        android:max="30"
+        android:progress="30" />
 
-    <TextView
-        android:id="@+id/tvTurnStatus"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_marginBottom="2dp"
-        android:textAppearance="?attr/textAppearanceLabelLarge"
-        android:textStyle="bold"
-        tools:text="Ti pogađaš!" />
+        android:gravity="center_horizontal"
+        android:orientation="horizontal"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="4dp">
+
+        <TextView
+            android:id="@+id/tvTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold"
+            tools:text="30 s" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvInstruction"

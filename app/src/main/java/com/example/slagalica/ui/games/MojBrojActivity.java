@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.Looper;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,11 +14,14 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.MojBrojLogic;
-import com.example.slagalica.ui.games.KorakPoKorakActivity;
+import com.example.slagalica.ui.games.SpojniceActivity;
 import com.example.slagalica.ui.main.MainActivity;
+import com.example.slagalica.ui.widget.ScoreBarView;
+import com.example.slagalica.util.AvatarProvider;
 import com.example.slagalica.util.Constants;
 import com.example.slagalica.util.ShakeDetector;
 import com.google.android.material.button.MaterialButton;
@@ -61,14 +63,11 @@ public class MojBrojActivity extends AppCompatActivity {
     private enum LastType { EMPTY, NUMBER_OR_CLOSE, OP_OR_OPEN }
 
     // ─── Views ───────────────────────────────────────────────────────────────
-    private TextView        tvOpponentScore;
     private TextView        tvRoundLabel;
-    private TextView        tvScore;
-    private TextView        tvTimer;
     private TextView        tvStatus;
     private TextView        tvTrazeniBroj;
     private TextView        tvIzraz;
-    private ProgressBar     pbTimer;
+    private ScoreBarView    scoreBar;
     private MaterialButton  btnStopPotvrdi;
     private MaterialButton  btnDel;
     private MaterialButton  btnGiveUp;
@@ -89,7 +88,8 @@ public class MojBrojActivity extends AppCompatActivity {
 
     // Bodovi iz prethodnih igara (prenose se kroz lanac)
     private int myKzzScore, oppKzzScore;
-    private int mySpojniceScore, oppSpojniceScore;
+    private int myAsocScore, oppAsocScore;
+    private int mySkockoScore, oppSkockoScore;
 
     // ─── Stanje igre ─────────────────────────────────────────────────────────
     private int     currentRound         = 0;
@@ -158,22 +158,21 @@ public class MojBrojActivity extends AppCompatActivity {
         opponentUid  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne  = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
-        myKzzScore      = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
-        oppKzzScore     = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
-        mySpojniceScore  = getIntent().getIntExtra(Constants.EXTRA_MY_SPOJNICE, 0);
-        oppSpojniceScore = getIntent().getIntExtra(Constants.EXTRA_OPP_SPOJNICE, 0);
+        myKzzScore    = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
+        oppKzzScore   = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
+        myAsocScore   = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
+        oppAsocScore  = getIntent().getIntExtra(Constants.EXTRA_OPP_ASOCIJACIJE, 0);
+        mySkockoScore = getIntent().getIntExtra(Constants.EXTRA_MY_SKOCKO, 0);
+        oppSkockoScore = getIntent().getIntExtra(Constants.EXTRA_OPP_SKOCKO, 0);
         myUid        = userRepository.getCurrentUid();
     }
 
     private void initViews() {
-        tvOpponentScore = findViewById(R.id.tvOpponentScore);
         tvRoundLabel    = findViewById(R.id.tvRoundLabel);
-        tvScore         = findViewById(R.id.tvScore);
-        tvTimer         = findViewById(R.id.tvTimer);
         tvStatus        = findViewById(R.id.tvStatus);
         tvTrazeniBroj   = findViewById(R.id.tvTrazeniBroj);
         tvIzraz         = findViewById(R.id.tvIzraz);
-        pbTimer         = findViewById(R.id.pbTimer);
+        scoreBar        = findViewById(R.id.scoreBar);
         btnStopPotvrdi  = findViewById(R.id.btnStopPotvrdi);
         btnDel          = findViewById(R.id.btnDel);
         btnGiveUp       = findViewById(R.id.btnGiveUp);
@@ -190,8 +189,35 @@ public class MojBrojActivity extends AppCompatActivity {
             findViewById(R.id.btnNum4), findViewById(R.id.btnNum5)
         };
 
-        updateScoreLabels();
         tvStatus.setText("Povezivanje na meč...");
+        loadPlayerBar();
+    }
+
+    /** Popunjava traku sa rezultatom meča — nadimci, avatari i skor pre ove igre (KZZ + Asocijacije + Skočko). */
+    private void loadPlayerBar() {
+        scoreBar.setOpponentPlayer(AvatarProvider.getDrawableRes(0), opponentName != null ? opponentName : "?");
+        scoreBar.setScores(myKzzScore + myAsocScore + mySkockoScore,
+                oppKzzScore + oppAsocScore + oppSkockoScore);
+
+        userRepository.getOrCreateUser(myUid, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(@NonNull User user) {
+                scoreBar.setMyPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()), user.getUsername());
+            }
+            @Override
+            public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+        });
+        if (opponentUid != null) {
+            userRepository.getOrCreateUser(opponentUid, new UserRepository.UserCallback() {
+                @Override
+                public void onSuccess(@NonNull User user) {
+                    scoreBar.setOpponentPlayer(AvatarProvider.getDrawableForStored(user.getAvatarUrl()),
+                            opponentName != null ? opponentName : user.getUsername());
+                }
+                @Override
+                public void onError(@NonNull String message) { /* zadrži podrazumevani prikaz */ }
+            });
+        }
     }
 
     private void setupListeners() {
@@ -274,9 +300,7 @@ public class MojBrojActivity extends AppCompatActivity {
         tvRoundLabel.setText("Runda " + (round + 1) + "/" + MAX_ROUNDS);
         tvTrazeniBroj.setText("Traženi: ?");
         tvIzraz.setText("");
-        pbTimer.setMax(60);
-        pbTimer.setProgress(60);
-        tvTimer.setText("–");
+        scoreBar.setTimeText("–");
         btnStopPotvrdi.setText("STOP");
         for (MaterialButton btn : btnBrojevi) btn.setText("?");
         setGamepadEnabled(false);
@@ -295,7 +319,6 @@ public class MojBrojActivity extends AppCompatActivity {
         }
 
         if (expressionsDetacher != null) { expressionsDetacher.run(); expressionsDetacher = null; }
-        updateScoreLabels();
     }
 
     private void listenForRoundData(int round) {
@@ -377,9 +400,7 @@ public class MojBrojActivity extends AppCompatActivity {
         btnStopPotvrdi.setText("POTVRDI");
         btnStopPotvrdi.setEnabled(true);
         setGamepadEnabled(true);
-        pbTimer.setMax(60);
-        pbTimer.setProgress(60);
-        tvTimer.setText("60s");
+        scoreBar.setTimeLeft(60);
         pokreniTimer60s();
 
         expressionsDetacher = matchRepository.listenMojBrojExpressions(
@@ -400,13 +421,11 @@ public class MojBrojActivity extends AppCompatActivity {
             @Override
             public void onTick(long ms) {
                 int s = (int) Math.ceil(ms / 1000.0);
-                pbTimer.setProgress(s);
-                tvTimer.setText(s + "s");
+                scoreBar.setTimeLeft(s);
             }
             @Override
             public void onFinish() {
-                pbTimer.setProgress(0);
-                tvTimer.setText("0s");
+                scoreBar.setTimeLeft(0);
                 if (!myExpressionSubmitted) submitMojIzraz();
             }
         }.start();
@@ -565,7 +584,6 @@ public class MojBrojActivity extends AppCompatActivity {
 
         myTotalScore       += myDelta;
         opponentTotalScore += oppDelta;
-        updateScoreLabels();
 
         boolean isLast = (currentRound >= MAX_ROUNDS - 1);
         String myRes  = myResult.validan  ? String.valueOf((int) Math.round(myResult.rezultat))  : "–";
@@ -578,21 +596,17 @@ public class MojBrojActivity extends AppCompatActivity {
                 + " | Ti: " + myRes
                 + " | " + (opponentName != null ? opponentName : "?") + ": " + oppRes
                 + " | +" + myDelta + " bodova");
-        tvTimer.setText("5s");
-        pbTimer.setMax(5);
-        pbTimer.setProgress(5);
+        scoreBar.setTimeLeft(5);
 
         new CountDownTimer(5_000, 1_000) {
             @Override
             public void onTick(long ms) {
                 int s = (int) Math.ceil(ms / 1000.0);
-                pbTimer.setProgress(s);
-                tvTimer.setText(s + "s");
+                scoreBar.setTimeLeft(s);
             }
             @Override
             public void onFinish() {
-                pbTimer.setProgress(0);
-                tvTimer.setText("0s");
+                scoreBar.setTimeLeft(0);
                 if (!gameEnded) {
                     if (isLast) endGame();
                     else pokreniRundu(currentRound + 1);
@@ -623,15 +637,17 @@ public class MojBrojActivity extends AppCompatActivity {
 
         matchRepository.setGameResult(matchId, Constants.GAME_MOJ_BROJ, myUid, myTotalScore);
 
-        Intent intent = new Intent(this, KorakPoKorakActivity.class);
+        Intent intent = new Intent(this, SpojniceActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
         intent.putExtra(Constants.EXTRA_IS_PLAYER_ONE, isPlayerOne);
         intent.putExtra(Constants.EXTRA_OPPONENT_UID, opponentUid);
         intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
         intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
         intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);
-        intent.putExtra(Constants.EXTRA_MY_SPOJNICE, mySpojniceScore);
-        intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, oppSpojniceScore);
+        intent.putExtra(Constants.EXTRA_MY_ASOCIJACIJE, myAsocScore);
+        intent.putExtra(Constants.EXTRA_OPP_ASOCIJACIJE, oppAsocScore);
+        intent.putExtra(Constants.EXTRA_MY_SKOCKO, mySkockoScore);
+        intent.putExtra(Constants.EXTRA_OPP_SKOCKO, oppSkockoScore);
         intent.putExtra(Constants.EXTRA_MY_MOJ_BROJ, myTotalScore);
         intent.putExtra(Constants.EXTRA_OPP_MOJ_BROJ, opponentTotalScore);
         startActivity(intent);
@@ -685,11 +701,6 @@ public class MojBrojActivity extends AppCompatActivity {
     // =========================================================================
     // UI helpers
     // =========================================================================
-
-    private void updateScoreLabels() {
-        tvScore.setText("Bodovi: " + myTotalScore);
-        tvOpponentScore.setText((opponentName != null ? opponentName : "?") + ": " + opponentTotalScore);
-    }
 
     private void otkaziAutoStop()  { if (autoStopTimer != null) { autoStopTimer.cancel(); autoStopTimer = null; } }
     private void otkaziRunduTimer() { if (rundaTimer    != null) { rundaTimer.cancel();    rundaTimer    = null; } }

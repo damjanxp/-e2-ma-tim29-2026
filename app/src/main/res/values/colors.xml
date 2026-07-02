@@ -31,6 +31,7 @@
     <color name="skocko_symbol_tint">#FF1565C0</color>
 
     <!-- Asocijacije — stanja ćelija -->
+    <color name="asoc_cell_hidden">#FFE8EAF6</color>
     <color name="asoc_cell_revealed">#FFE3F2FD</color>
     <color name="asoc_col_solved">#FFC8E6C9</color>
     <color name="asoc_final_solved">#FFFFF9C4</color>
@@ -44,4 +45,25 @@
     <color name="notification_type_general">#FF546E7A</color>
     <color name="notification_type_friend">#FF43A047</color>
     <color name="notification_type_league">#FFFB8C00</color>
+
+    <!-- Traka sa rezultatom meča (ScoreBarView) -->
+    <color name="score_bar_bg">#FF16233F</color>
+    <color name="score_bar_bg_edge">#FF223460</color>
+    <color name="score_bar_accent_me">#FF29ABE2</color>
+    <color name="score_bar_accent_opponent">#FFE6533C</color>
+    <color name="score_bar_timer_bg">#FFFFF8E1</color>
+    <color name="score_bar_timer_stroke">#FFFFC107</color>
+
+    <!-- Rang lista — top 3 mesta -->
+    <color name="rank_gold_start">#FFFFE08A</color>
+    <color name="rank_gold_end">#FFFFC107</color>
+    <color name="rank_gold_border">#FFB8860B</color>
+    <color name="rank_silver_start">#FFF1F3F5</color>
+    <color name="rank_silver_end">#FFC0C7CE</color>
+    <color name="rank_silver_border">#FF8C97A1</color>
+    <color name="rank_bronze_start">#FFE8B98A</color>
+    <color name="rank_bronze_end">#FFCD7F32</color>
+    <color name="rank_bronze_border">#FF8C5323</color>
+    <color name="rank_default_bg">#FFFFFFFF</color>
+    <color name="rank_badge_bg">#FF16233F</color>
 </resources>

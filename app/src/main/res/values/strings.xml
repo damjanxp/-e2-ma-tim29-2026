@@ -131,7 +131,7 @@
     <string name="game_moj_broj_name">Moj broj</string>
     <string name="game_moj_broj_desc">Izrazi traženi broj sa 6 datih brojeva · 2 runde · 60s po rundi</string>
     <string name="game_skocko_name">Skočko</string>
-    <string name="game_skocko_desc">Pogodi kombinaciju 4 simbola · 6 pokušaja · 30s</string>
+    <string name="game_skocko_desc">Pogodi kombinaciju 4 simbola · 6 pokušaja · 2 runde · 50s po rundi</string>
     <string name="game_asoc_name">Asocijacije</string>
     <string name="game_asoc_desc">Pogodi asocijacije kroz polja A-D · 120s</string>
 
@@ -213,6 +213,13 @@
     <string name="skocko_btn_clear">← Briši</string>
     <string name="skocko_phase_main">Pokušaj %d/6 — unesite kombinaciju</string>
     <string name="skocko_phase_opponent">Protivnički pokušaj (10s)</string>
+    <string name="skocko_phase_watching">Prati protivnikove pokušaje…</string>
+    <string name="skocko_waiting">Priprema runde…</string>
+    <string name="skocko_turn_mine">Ti pogađaš!</string>
+    <string name="skocko_turn_opponent">%s pogađa…</string>
+    <string name="skocko_turn_chance_mine">Tvoja šansa! (10s)</string>
+    <string name="skocko_turn_chance_opponent">Šansa za %s…</string>
+    <string name="skocko_round_done">Runda završena</string>
     <string name="skocko_round_end_title">Kraj runde %d</string>
     <string name="skocko_round_end_msg">Bodovi u ovoj rundi: %d</string>
     <string name="skocko_btn_next_round">Sledeća runda</string>
@@ -435,6 +442,8 @@
     <string name="result_lose">Poraz</string>
     <string name="result_draw">Nerešeno</string>
     <string name="result_game_kzz">Ko zna zna</string>
+    <string name="result_game_asocijacije">Asocijacije</string>
+    <string name="result_game_skocko">Skočko</string>
     <string name="result_game_spojnice">Spojnice</string>
     <string name="result_score_row">%1$d : %2$d</string>
     <string name="result_total">Ukupno</string>
@@ -458,4 +467,22 @@
         <item>Platinasta liga</item>
         <item>Dijamantska liga</item>
     </string-array>
+
+    <!-- Rang lista -->
+    <string name="ranking_title">Rang lista</string>
+    <string name="ranking_tab_weekly">Nedeljno</string>
+    <string name="ranking_tab_monthly">Mesečno</string>
+    <string name="ranking_period">Period: %1$s – %2$s</string>
+    <string name="ranking_empty">Trenutno nema igrača na rang listi.</string>
+    <string name="ranking_item_stars">%d ⭐</string>
+    <string name="ranking_error_load">Učitavanje rang liste nije uspelo.</string>
+    <string name="ranking_debug_section">Za testiranje</string>
+    <string name="ranking_btn_add_star">+1 zvezda (test)</string>
+    <string name="ranking_btn_conclude_cycle">Završi ciklus (test)</string>
+    <string name="ranking_star_added">Dodata 1 zvezda.</string>
+    <string name="ranking_conclude_confirm_title">Završi ciklus?</string>
+    <string name="ranking_conclude_confirm_message">Žetoni će biti dodeljeni prema trenutnom plasmanu (1–10. mesto), a zvezde svih igrača za ovaj ciklus će se resetovati na 0.</string>
+    <string name="ranking_conclude_confirm_yes">Završi</string>
+    <string name="ranking_conclude_confirm_no">Otkaži</string>
+    <string name="ranking_cycle_concluded">Ciklus je završen — nagrade su dodeljene!</string>
 </resources>

@@ -21,7 +21,7 @@ public class GameMenuActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> finish());
 
         // Sve 1v1 igre idu kroz matchmaking koji uparuje igrače
-        // pa pokreće celi lanac: KoZnaZna → Spojnice → MojBroj → KorakPoKorak
+        // pa pokreće celi lanac: KoZnaZna → Asocijacije → Skočko → MojBroj → Spojnice → KorakPoKorak
         findViewById(R.id.btnKoZnaZna).setOnClickListener(v ->
                 startActivity(new Intent(this, MatchmakingActivity.class)));
 
@@ -35,9 +35,9 @@ public class GameMenuActivity extends AppCompatActivity {
                 startActivity(new Intent(this, MatchmakingActivity.class)));
 
         findViewById(R.id.btnSkocko).setOnClickListener(v ->
-                startActivity(new Intent(this, SkockoActivity.class)));
+                startActivity(new Intent(this, MatchmakingActivity.class)));
 
         findViewById(R.id.btnAsocijacije).setOnClickListener(v ->
-                startActivity(new Intent(this, AsocijacijeActivity.class)));
+                startActivity(new Intent(this, MatchmakingActivity.class)));
     }
 }
