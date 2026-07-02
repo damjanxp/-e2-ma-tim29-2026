@@ -141,6 +141,12 @@ const testKorisnici = [
         password: 'Korisnik123',
         username: 'korisnik2',
         region: 'Novi Sad'
+    },
+    {
+        email: 'korisnik3@gmail.com',
+        password: 'Korisnik123',
+        username: 'korisnik3',
+        region: 'Beograd'
     }
 ];
 

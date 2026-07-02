@@ -19,6 +19,7 @@ import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.MojBrojLogic;
 import com.example.slagalica.ui.games.KorakPoKorakActivity;
+import com.example.slagalica.ui.main.MainActivity;
 import com.example.slagalica.util.Constants;
 import com.example.slagalica.util.ShakeDetector;
 import com.google.android.material.button.MaterialButton;
@@ -241,6 +242,12 @@ public class MojBrojActivity extends AppCompatActivity {
                         } else if (faza >= 2 && myExpressionSubmitted) {
                             if (lastExpressions != null) onExpressionsChanged(lastExpressions);
                             else onExpressionsChanged(new HashMap<>());
+                        } else if (!amIStarter && faza < 2) {
+                            // Starter je napustio partiju pre nego što je generisao
+                            // rundu (traženi broj + 6 brojeva) — bez ovoga bi čekanje
+                            // trajalo unedogled. Preuzimamo generisanje (spec. 3f:
+                            // čekanje na igrača koji je napustio partiju svesti na minimum).
+                            takeOverRoundGeneration();
                         }
                     }
                 }));
@@ -307,6 +314,21 @@ public class MojBrojActivity extends AppCompatActivity {
                     Toast.makeText(MojBrojActivity.this, message, Toast.LENGTH_SHORT).show();
                 }
             });
+    }
+
+    /**
+     * Preuzima generisanje runde (traženi broj + 6 dostupnih brojeva) kada je
+     * starter napustio partiju pre nego što je stigao da ih upiše u RTDB.
+     * Već zakačen {@link #listenForRoundData} slušalac normalno prihvata
+     * upisane podatke i nastavlja tok igre kao da ih je napisao starter.
+     */
+    private void takeOverRoundGeneration() {
+        if (faza >= 2 || gameEnded || roundResolved) {
+            return;
+        }
+        trazeniBroj = 100 + random.nextInt(900);
+        dostupniBrojevi = generisi6Brojeva();
+        matchRepository.writeMojBrojRound(matchId, currentRound, trazeniBroj, dostupniBrojevi, null);
     }
 
     // =========================================================================
@@ -622,15 +644,25 @@ public class MojBrojActivity extends AppCompatActivity {
 
     private void confirmGiveUp() {
         new AlertDialog.Builder(this)
-                .setTitle("Da li si siguran?")
-                .setMessage("Igra će biti izgubljena.")
-                .setPositiveButton("Predaj", (d, w) -> {
-                    gameEnded = true;
-                    matchRepository.leaveMatch(matchId, myUid);
-                    finish();
-                })
-                .setNegativeButton("Nastavi", null)
+                .setTitle(R.string.dialog_give_up_title)
+                .setMessage(R.string.dialog_give_up_message)
+                .setPositiveButton(R.string.dialog_yes, (d, w) -> giveUp())
+                .setNegativeButton(R.string.dialog_no, null)
                 .show();
+    }
+
+    private void giveUp() {
+        gameEnded = true;
+        matchRepository.leaveMatch(matchId, myUid);
+        goToMainActivity();
+    }
+
+    /** Predaja partije uvek vodi na glavni ekran (specifikacija: napuštanje = poraz). */
+    private void goToMainActivity() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     // =========================================================================

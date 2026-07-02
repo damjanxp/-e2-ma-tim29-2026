@@ -23,6 +23,7 @@ import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.SpojniceLogic;
 import com.example.slagalica.ui.games.MojBrojActivity;
+import com.example.slagalica.ui.main.MainActivity;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 
@@ -519,6 +520,14 @@ public class SpojniceActivity extends AppCompatActivity {
     private void giveUp() {
         gameEnded = true;
         matchRepository.leaveMatch(matchId, myUid);
+        goToMainActivity();
+    }
+
+    /** Predaja partije uvek vodi na glavni ekran (specifikacija: napuštanje = poraz). */
+    private void goToMainActivity() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
         finish();
     }
 

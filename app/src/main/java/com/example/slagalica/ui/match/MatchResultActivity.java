@@ -8,7 +8,9 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.UserRepository;
+import com.example.slagalica.logic.match.MatchRewardCalculator;
 import com.example.slagalica.ui.main.MainActivity;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
@@ -52,12 +54,53 @@ public class MatchResultActivity extends AppCompatActivity {
 
         int myTotal  = myKzz + mySpojnice + myMojBroj + myKorak;
         int oppTotal = oppKzz + oppSpojnice + oppMojBroj + oppKorak;
+        boolean isFriendly = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
 
         bindResult(myKzz, oppKzz, mySpojnice, oppSpojnice,
                 myMojBroj, oppMojBroj, myKorak, oppKorak,
                 myTotal, oppTotal, opponentName);
-        recordStatistics(myTotal, oppTotal);
+
+        if (isFriendly) {
+            // Prijateljska partija: bez statistike, zvezda i žetona.
+            TextView tvReward = findViewById(R.id.tvReward);
+            tvReward.setText(R.string.result_reward_friendly);
+        } else {
+            recordStatistics(myTotal, oppTotal);
+            applyRewards(myTotal, oppTotal);
+        }
         setupNavigation();
+    }
+
+    /** Dodeljuje zvezde/žetone po pravilima i prikazuje ih ispod rezultata. */
+    private void applyRewards(int myTotal, int oppTotal) {
+        String uid = userRepository.getCurrentUid();
+        if (uid == null) {
+            return;
+        }
+        boolean won = myTotal > oppTotal;
+        TextView tvReward = findViewById(R.id.tvReward);
+        userRepository.applyMatchRewards(uid, won, myTotal, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(User user) {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                int delta = won
+                        ? MatchRewardCalculator.starsForWinner(myTotal)
+                        : MatchRewardCalculator.starsDeltaForLoser(myTotal);
+                String head = delta >= 0
+                        ? getString(R.string.result_reward_gain, delta)
+                        : getString(R.string.result_reward_loss, -delta);
+                String totals = getString(R.string.result_reward_totals,
+                        user.getTotalStars(), user.getTokens());
+                tvReward.setText(head + "\n" + totals);
+            }
+
+            @Override
+            public void onError(String message) {
+                // Tiho — ako upis nagrada ne uspe, rezultat je i dalje prikazan.
+            }
+        });
     }
 
     private void bindResult(int myKzz, int oppKzz, int mySpojnice, int oppSpojnice,

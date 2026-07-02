@@ -11,6 +11,8 @@ import com.example.slagalica.R;
 import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.ui.auth.LoginActivity;
+import com.example.slagalica.ui.challenge.ChallengeListActivity;
+import com.example.slagalica.ui.chat.ChatActivity;
 import com.example.slagalica.ui.games.GameMenuActivity;
 import com.example.slagalica.ui.notifications.NotificationsActivity;
 import com.example.slagalica.ui.profile.ProfileActivity;
@@ -40,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton btnRegion;
     private MaterialButton btnNotifications;
     private MaterialButton btnChat;
+    private MaterialButton btnChallenge;
     private MaterialButton btnLogout;
 
     @Override
@@ -70,6 +73,7 @@ public class MainActivity extends AppCompatActivity {
         btnRegion = findViewById(R.id.btnRegion);
         btnNotifications = findViewById(R.id.btnNotifications);
         btnChat = findViewById(R.id.btnChat);
+        btnChallenge = findViewById(R.id.btnChallenge);
         btnLogout = findViewById(R.id.btnLogout);
     }
 
@@ -92,7 +96,9 @@ public class MainActivity extends AppCompatActivity {
         btnNotifications.setOnClickListener(v ->
                 startActivity(new Intent(this, NotificationsActivity.class)));
         btnChat.setOnClickListener(v ->
-                showComingSoon(getString(R.string.main_btn_chat)));
+                startActivity(new Intent(this, ChatActivity.class)));
+        btnChallenge.setOnClickListener(v ->
+                startActivity(new Intent(this, ChallengeListActivity.class)));
         btnLogout.setOnClickListener(v -> onLogoutClicked());
     }
 
@@ -114,6 +120,15 @@ public class MainActivity extends AppCompatActivity {
                         chipTokens.setText(getString(R.string.main_chip_tokens, user.getTokens()));
                         chipStars.setText(getString(R.string.main_chip_stars, user.getTotalStars()));
                         chipLeague.setText(getString(R.string.main_chip_league, user.getCurrentLeague()));
+
+                        // Dnevna dodela žetona (tiho; osvežava se pri sledećem ulasku na ekran).
+                        userRepository.grantDailyTokensIfDue(uid, new UserRepository.SimpleCallback() {
+                            @Override
+                            public void onSuccess() { /* bez UI-ja */ }
+
+                            @Override
+                            public void onError(String message) { /* bez UI-ja */ }
+                        });
                     }
 
                     @Override

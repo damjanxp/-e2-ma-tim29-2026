@@ -111,6 +111,7 @@
     <string name="main_btn_region">Region</string>
     <string name="main_btn_notifications">Notifikacije</string>
     <string name="main_btn_chat">Čet</string>
+    <string name="main_btn_challenge">Izazov</string>
     <string name="main_btn_logout">Odjava</string>
     <string name="main_chip_tokens">Žetoni: %d</string>
     <string name="main_chip_stars">Zvezde: %d</string>
@@ -278,6 +279,70 @@
     <string name="asoc_btn_finish">Završi</string>
     <string name="asoc_time_up">Vreme je isteklo!</string>
 
+    <!-- Čet -->
+    <string name="chat_title">Čet</string>
+    <string name="chat_hint_message">Poruka…</string>
+    <string name="chat_btn_send">Pošalji</string>
+
+    <!-- Izazov -->
+    <string name="challenge_list_title">Izazovi</string>
+    <string name="challenge_btn_new">Novi izazov</string>
+    <string name="challenge_list_empty">Nema otvorenih izazova u tvom regionu</string>
+    <string name="challenge_stake_format">Ulog: %1$d zvezda, %2$d žetona</string>
+    <string name="challenge_participants_format">Učesnici: %1$d/%2$d</string>
+    <string name="challenge_dialog_title">Novi izazov</string>
+    <string name="challenge_dialog_stars_label">Zvezde: %d</string>
+    <string name="challenge_dialog_tokens_label">Žetoni: %d</string>
+    <string name="challenge_btn_create">Kreiraj</string>
+    <string name="challenge_btn_cancel">Otkaži</string>
+    <string name="challenge_error_load_region">Učitavanje regiona nije uspelo.</string>
+    <string name="challenge_created_success">Izazov je kreiran.</string>
+
+    <string name="challenge_lobby_title">Lobi izazova</string>
+    <string name="challenge_lobby_stake">Ulog po igraču: %1$d zvezda, %2$d žetona</string>
+    <string name="challenge_lobby_participants_title">Učesnici (%1$d/%2$d)</string>
+    <string name="challenge_btn_join">Pridruži se</string>
+    <string name="challenge_btn_start">Pokreni</string>
+    <string name="challenge_status_open">Čeka se početak</string>
+    <string name="challenge_status_playing">Izazov je u toku</string>
+    <string name="challenge_status_finished">Izazov je završen</string>
+    <string name="challenge_participant_you">%s (ti)</string>
+    <string name="challenge_participant_host">%s (domaćin)</string>
+    <string name="challenge_participant_score_format">%d bod.</string>
+
+    <string name="challenge_result_title">Rezultat izazova</string>
+    <string name="challenge_result_winner_label">Pobednik</string>
+    <string name="challenge_result_score_format">%1$s — %2$d bod.</string>
+    <string name="challenge_result_reward_winner">+%1$d zvezda, +%2$d žetona</string>
+    <string name="challenge_result_reward_refund">Ulog vraćen: %1$d zvezda, %2$d žetona</string>
+    <string name="challenge_result_reward_none">Bez nagrade</string>
+    <string name="challenge_result_status_waiting">Izazov je u toku — završilo %1$d/%2$d učesnika</string>
+    <string name="challenge_result_status_finished">Izazov je završen!</string>
+    <string name="challenge_btn_back_to_list">Nazad na izazove</string>
+
+    <string name="challenge_solo_question_progress">Pitanje %1$d/%2$d</string>
+    <string name="challenge_solo_timer_seconds">%d s</string>
+    <string name="challenge_solo_score">Bodovi: %d</string>
+    <string name="challenge_solo_error_content">Učitavanje sadržaja nije uspelo. Pokušaj ponovo.</string>
+
+    <string name="challenge_solo_spojnice_title">Poveži pojmove</string>
+    <string name="challenge_solo_spojnice_selected">Izabrano: %s</string>
+
+    <string name="challenge_solo_mojbroj_target">Traženi broj: %d</string>
+    <string name="challenge_solo_mojbroj_hint">Izraz</string>
+    <string name="challenge_solo_mojbroj_btn_confirm">Potvrdi</string>
+    <string name="challenge_solo_mojbroj_error_invalid">%s</string>
+
+    <string name="challenge_solo_korak_progress">Otvoreno %1$d/%2$d koraka</string>
+    <string name="challenge_solo_korak_hint">Tvoj odgovor</string>
+    <string name="challenge_solo_korak_btn_guess">Pogodi</string>
+    <string name="challenge_solo_korak_btn_reveal">Otvori sledeći korak</string>
+    <string name="challenge_solo_korak_wrong">Netačno. Otvori sledeći korak ili pokušaj ponovo.</string>
+    <string name="challenge_solo_korak_correct">Tačno! +%d bodova</string>
+
+    <string name="challenge_solo_starting">Priprema izazova…</string>
+    <string name="challenge_solo_finished_toast">Izazov je odigran, bodovi su poslati.</string>
+
     <!-- Notifikacije -->
     <string name="notifications_title">Notifikacije</string>
     <string name="notifications_filter_all">Sve</string>
@@ -376,6 +441,13 @@
     <string name="result_btn_home">Nazad na početni ekran</string>
     <string name="result_players">%1$s  protiv  %2$s</string>
     <string name="result_you">Ti</string>
+
+    <!-- Igranje partija — žetoni i nagrade (Student 1, KO) -->
+    <string name="error_no_tokens">Nemaš dovoljno žetona za partiju.</string>
+    <string name="result_reward_gain">Osvojio si +%1$d zvezda</string>
+    <string name="result_reward_loss">Izgubio si %1$d zvezda</string>
+    <string name="result_reward_totals">Ukupno: %1$d ⭐  •  %2$d žetona</string>
+    <string name="result_reward_friendly">Prijateljska partija — bez zvezda i žetona.</string>
 
     <!-- Lige -->
     <string-array name="leagues_array">

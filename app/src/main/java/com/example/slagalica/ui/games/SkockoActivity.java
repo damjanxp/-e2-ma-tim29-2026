@@ -1,5 +1,6 @@
 package com.example.slagalica.ui.games;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.widget.ImageView;
@@ -12,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
 import com.example.slagalica.logic.games.SkockoLogic;
+import com.example.slagalica.util.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +28,8 @@ import java.util.Random;
 public class SkockoActivity extends AppCompatActivity {
 
     private static final int MAIN_SECONDS = 30;
+    /** Da li je igra pokrenuta kao deo solo runde Izazova (vidi Constants.EXTRA_SOLO). */
+    private boolean isSolo;
     private static final int OPP_SECONDS  = 10;
     private static final int NUM_ROUNDS   = 2;
 
@@ -70,6 +74,7 @@ public class SkockoActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_skocko);
+        isSolo = getIntent().getBooleanExtra(Constants.EXTRA_SOLO, false);
         initViews();
         startRound(1);
     }
@@ -360,7 +365,14 @@ public class SkockoActivity extends AppCompatActivity {
             .setTitle(R.string.skocko_game_over_title)
             .setMessage(getString(R.string.skocko_game_over_msg, roundScores[0], roundScores[1], total))
             .setCancelable(false)
-            .setPositiveButton(R.string.skocko_btn_finish, (d, w) -> finish())
+            .setPositiveButton(R.string.skocko_btn_finish, (d, w) -> {
+                if (isSolo) {
+                    Intent result = new Intent();
+                    result.putExtra(Constants.EXTRA_MY_SCORE, total);
+                    setResult(RESULT_OK, result);
+                }
+                finish();
+            })
             .show();
     }
 }

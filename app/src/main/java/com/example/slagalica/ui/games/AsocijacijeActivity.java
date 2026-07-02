@@ -1,5 +1,6 @@
 package com.example.slagalica.ui.games;
 
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -16,6 +17,7 @@ import androidx.core.content.ContextCompat;
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.AsocijacijePuzzle;
 import com.example.slagalica.logic.games.AsocijacijeLogic;
+import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 
@@ -28,6 +30,8 @@ import com.google.android.material.snackbar.Snackbar;
 public class AsocijacijeActivity extends AppCompatActivity {
 
     private static final int TURN_SECONDS = 120;
+    /** Da li je igra pokrenuta kao deo solo runde Izazova (vidi Constants.EXTRA_SOLO). */
+    private boolean isSolo;
     private static final int NUM_ROUNDS   = 2;
     private static final int NUM_COLS     = AsocijacijeLogic.NUM_COLS;
     private static final int NUM_ROWS     = AsocijacijeLogic.NUM_ROWS;
@@ -59,6 +63,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_asocijacije);
+        isSolo = getIntent().getBooleanExtra(Constants.EXTRA_SOLO, false);
         initViews();
         startRound(1);
     }
@@ -346,7 +351,14 @@ public class AsocijacijeActivity extends AppCompatActivity {
             .setTitle(R.string.asoc_game_over_title)
             .setMessage(getString(R.string.asoc_game_over_msg, roundScores[0], roundScores[1], total))
             .setCancelable(false)
-            .setPositiveButton(R.string.asoc_btn_finish, (d, w) -> finish())
+            .setPositiveButton(R.string.asoc_btn_finish, (d, w) -> {
+                if (isSolo) {
+                    Intent result = new Intent();
+                    result.putExtra(Constants.EXTRA_MY_SCORE, total);
+                    setResult(RESULT_OK, result);
+                }
+                finish();
+            })
             .show();
     }
 
