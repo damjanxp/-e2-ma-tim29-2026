@@ -205,6 +205,23 @@
 
             </LinearLayout>
 
+            <!-- Red 5: Izazov -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChallenge"
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp"
+                    android:text="@string/main_btn_challenge"
+                    android:textAllCaps="false"
+                    app:cornerRadius="12dp" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
     </ScrollView>

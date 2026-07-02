@@ -38,11 +38,14 @@ public class MatchmakingActivity extends AppCompatActivity {
 
     private String myUid;
     private boolean searching = false;
+    private boolean isFriendly = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_matchmaking);
+
+        isFriendly = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
 
         tvStatus = findViewById(R.id.tvStatus);
         btnCancel = findViewById(R.id.btnCancel);
@@ -80,7 +83,33 @@ public class MatchmakingActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Za rankiranu partiju prvo skida 1 žeton (ulaz u partiju), pa tek onda
+     * ulazi u red. Prijateljske partije ne troše žeton.
+     */
     private void joinQueue(String username) {
+        if (isFriendly) {
+            enterQueue(username);
+            return;
+        }
+        userRepository.consumeTokenForMatch(myUid, new UserRepository.SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                enterQueue(username);
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(MatchmakingActivity.this, message, Toast.LENGTH_LONG).show();
+                finish();
+            }
+        });
+    }
+
+    private void enterQueue(String username) {
         searching = true;
         tvStatus.setText(R.string.matchmaking_searching);
         matchRepository.joinQueue(myUid, username, new MatchRepository.MatchmakingListener() {

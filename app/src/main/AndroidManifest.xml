@@ -103,6 +103,61 @@
             android:exported="false"
             android:screenOrientation="portrait" />
 
+        <activity
+            android:name=".ui.chat.ChatActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeLobbyActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeResultActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloRunnerActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloKzzActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloSpojniceActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloMojBrojActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloKorakActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloAsocijacijeActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.challenge.ChallengeSoloSkockoActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!--
             FCM service — receives push tokens and data messages.
             MESSAGING_EVENT intent filter is required for firebase-messaging to work.

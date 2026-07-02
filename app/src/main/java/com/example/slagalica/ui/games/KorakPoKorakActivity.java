@@ -24,6 +24,7 @@ import com.example.slagalica.data.repository.GameContentRepository;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.KorakPoKorakLogic;
+import com.example.slagalica.ui.main.MainActivity;
 import com.example.slagalica.ui.match.MatchResultActivity;
 import com.example.slagalica.ui.widget.ScoreBarView;
 import com.example.slagalica.util.AvatarProvider;
@@ -233,6 +234,12 @@ public class KorakPoKorakActivity extends AppCompatActivity {
                         // Preskoči čekanje na protivnika
                         if (!roundResolved && isOpponentActiveCurrent()) {
                             advancePhase();
+                        } else if (!isPlayerOne && currentResenje == null) {
+                            // Player1 je napustio partiju pre nego što je stigao da
+                            // upiše zadatke u RTDB — bez ovoga bi čekanje trajalo
+                            // unedogled. Preuzimamo upis (spec. 3f: čekanje na
+                            // igrača koji je napustio partiju svesti na minimum).
+                            ucitajIUpisiZadatke();
                         }
                     }
                 }));
@@ -585,15 +592,25 @@ public class KorakPoKorakActivity extends AppCompatActivity {
 
     private void confirmGiveUp() {
         new AlertDialog.Builder(this)
-                .setTitle("Da li si siguran?")
-                .setMessage("Igra će biti izgubljena.")
-                .setPositiveButton("Predaj", (d, w) -> {
-                    gameEnded = true;
-                    matchRepository.leaveMatch(matchId, myUid);
-                    finish();
-                })
-                .setNegativeButton("Nastavi", null)
+                .setTitle(R.string.dialog_give_up_title)
+                .setMessage(R.string.dialog_give_up_message)
+                .setPositiveButton(R.string.dialog_yes, (d, w) -> giveUp())
+                .setNegativeButton(R.string.dialog_no, null)
                 .show();
+    }
+
+    private void giveUp() {
+        gameEnded = true;
+        matchRepository.leaveMatch(matchId, myUid);
+        goToMainActivity();
+    }
+
+    /** Predaja partije uvek vodi na glavni ekran (specifikacija: napuštanje = poraz). */
+    private void goToMainActivity() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     // =========================================================================

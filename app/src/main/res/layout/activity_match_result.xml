@@ -216,6 +216,15 @@
 
     </com.google.android.material.card.MaterialCardView>
 
+    <TextView
+        android:id="@+id/tvReward"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        tools:text="Osvojio si +13 zvezda&#10;Ukupno: 42 ⭐  •  3 žetona" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnHome"
         android:layout_width="match_parent"

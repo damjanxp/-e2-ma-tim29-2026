@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.slagalica.data.model.User;
+import com.example.slagalica.logic.match.MatchRewardCalculator;
 import com.example.slagalica.util.AvatarProvider;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;
@@ -13,8 +14,11 @@ import com.google.firebase.auth.FirebaseAuthInvalidUserException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.HashMap;
@@ -33,6 +37,18 @@ import java.util.Map;
 public class UserRepository {
 
     private static final String COLLECTION_USERS = "users";
+
+    /** Broj milisekundi u 24 sata — prag za dnevnu dodelu žetona. */
+    private static final long DAY_MS = 24L * 60 * 60 * 1000;
+
+    /** Broj žetona koji se dodeljuje svakog dana. */
+    private static final int DAILY_TOKENS = 5;
+
+    /** Interni marker greške u transakciji kada igrač nema žetona. */
+    private static final String NO_TOKENS_MARKER = "NO_TOKENS";
+
+    /** Interni marker greške u transakciji kada igrač nema dovoljno uloga za izazov. */
+    private static final String NO_STAKE_MARKER = "NO_STAKE";
 
     // -------------------------------------------------------------------------
     // Singleton
@@ -475,9 +491,197 @@ public class UserRepository {
         mDb.collection(COLLECTION_USERS).document(uid).update(updates);
     }
 
+    // =========================================================================
+    // Žetoni i nagrade za partiju (Student 1 — 3. Igranje partija)
+    // =========================================================================
+
+    /**
+     * Skida 1 žeton kao ulaz u rankiranu partiju, atomično kroz Firestore
+     * transakciju (sprečava trošenje ispod nule pri istovremenim partijama).
+     *
+     * <p>Ako igrač nema žetona, vraća {@link SimpleCallback#onError(String)} sa
+     * porukom o nedostatku žetona. Prijateljske partije <b>ne</b> pozivaju ovu
+     * metodu (ne troše žetone).</p>
+     *
+     * @param uid UID igrača
+     * @param cb  callback: uspeh kad je žeton skinut, greška inače
+     */
+    public void consumeTokenForMatch(@NonNull String uid, @NonNull SimpleCallback cb) {
+        DocumentReference ref = mDb.collection(COLLECTION_USERS).document(uid);
+        mDb.runTransaction(transaction -> {
+            DocumentSnapshot snap = transaction.get(ref);
+            Long tokens = snap.getLong("tokens");
+            long current = tokens != null ? tokens : 0;
+            if (current <= 0) {
+                throw new FirebaseFirestoreException(NO_TOKENS_MARKER,
+                        FirebaseFirestoreException.Code.ABORTED);
+            }
+            transaction.update(ref, "tokens", current - 1);
+            return null;
+        }).addOnSuccessListener(v -> cb.onSuccess())
+          .addOnFailureListener(e -> {
+              if (e.getMessage() != null && e.getMessage().contains(NO_TOKENS_MARKER)) {
+                  cb.onError("Nemaš dovoljno žetona za partiju.");
+              } else {
+                  cb.onError("Trošenje žetona nije uspelo. Proveri internet konekciju.");
+              }
+          });
+    }
+
+    /**
+     * Dodeljuje dnevnih {@value #DAILY_TOKENS} žetona ako je od poslednje dodele
+     * prošlo najmanje 24 sata; u suprotnom ne menja ništa.
+     *
+     * <p>Poziva se tiho pri ulasku na glavni ekran; uspeh se vraća i kada nije
+     * bilo dodele (nije istekao dan).</p>
+     *
+     * @param uid UID igrača
+     * @param cb  callback (uspeh i kada nema promene)
+     */
+    public void grantDailyTokensIfDue(@NonNull String uid, @NonNull SimpleCallback cb) {
+        DocumentReference ref = mDb.collection(COLLECTION_USERS).document(uid);
+        ref.get().addOnSuccessListener(snap -> {
+            if (!snap.exists()) {
+                cb.onSuccess();
+                return;
+            }
+            Long last = snap.getLong("lastTokenGrantTimestamp");
+            long lastTs = last != null ? last : 0;
+            long now = System.currentTimeMillis();
+            if (now - lastTs < DAY_MS) {
+                cb.onSuccess();
+                return;
+            }
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("tokens", FieldValue.increment(DAILY_TOKENS));
+            updates.put("lastTokenGrantTimestamp", now);
+            ref.update(updates)
+                    .addOnSuccessListener(v -> cb.onSuccess())
+                    .addOnFailureListener(e -> cb.onError("Dodela dnevnih žetona nije uspela."));
+        }).addOnFailureListener(e ->
+                cb.onError("Učitavanje profila nije uspelo. Proveri internet konekciju."));
+    }
+
+    /**
+     * Primenjuje nagrade nakon završene <b>rankirane</b> partije po pravilima
+     * specifikacije (vidi {@link MatchRewardCalculator}):
+     * <ul>
+     *   <li>izračuna novu vrednost zvezda (uz donju granicu na nuli),</li>
+     *   <li>izračuna nove žetone jer je pređen prag od 50 zvezda,</li>
+     *   <li>upiše {@code totalStars} i uveća {@code tokens} u Firestore.</li>
+     * </ul>
+     *
+     * <p><b>Ne</b> poziva se za prijateljske partije.</p>
+     *
+     * @param uid      UID igrača
+     * @param won      da li je igrač pobedio u partiji
+     * @param myPoints ukupan broj bodova igrača u partiji
+     * @param cb       callback sa ažuriranim {@link User} objektom pri uspehu
+     */
+    public void applyMatchRewards(@NonNull String uid, boolean won, int myPoints,
+                                  @NonNull UserCallback cb) {
+        DocumentReference ref = mDb.collection(COLLECTION_USERS).document(uid);
+        ref.get().addOnSuccessListener(snap -> {
+            User user = snap.toObject(User.class);
+            if (user == null) {
+                cb.onError("Greška pri čitanju korisničkog profila.");
+                return;
+            }
+            int oldStars = user.getTotalStars();
+            int delta = won
+                    ? MatchRewardCalculator.starsForWinner(myPoints)
+                    : MatchRewardCalculator.starsDeltaForLoser(myPoints);
+            int newStars = MatchRewardCalculator.applyStarFloor(oldStars, delta);
+            int newTokens = MatchRewardCalculator.tokensFromStars(oldStars, newStars);
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("totalStars", newStars);
+            if (newTokens > 0) {
+                updates.put("tokens", FieldValue.increment(newTokens));
+            }
+            ref.update(updates).addOnSuccessListener(v -> {
+                user.setTotalStars(newStars);
+                user.setTokens(user.getTokens() + newTokens);
+                cb.onSuccess(user);
+            }).addOnFailureListener(e -> cb.onError("Upis nagrada nije uspeo."));
+        }).addOnFailureListener(e ->
+                cb.onError("Učitavanje profila nije uspelo. Proveri internet konekciju."));
+    }
+
     /** Odjava (alias za {@link #logout()} — koristi ga Student 2 kod profila). */
     public void signOut() {
         mAuth.signOut();
+    }
+
+    // =========================================================================
+    // Izazov — ulog i nagrade (Student 1 — 9. Izazov)
+    // =========================================================================
+
+    /**
+     * Skida ulog (zvezde i žetone) za učešće u izazovu, atomično kroz Firestore
+     * transakciju (sprečava skidanje ispod nule pri istovremenim izazovima).
+     *
+     * <p>Ako igrač nema dovoljno zvezda ili žetona, vraća
+     * {@link SimpleCallback#onError(String)} sa porukom o nedostatku uloga.</p>
+     *
+     * @param uid         UID igrača
+     * @param stakeStars  broj zvezda koje se skidaju
+     * @param stakeTokens broj žetona koji se skidaju
+     * @param cb          callback: uspeh kad je ulog skinut, greška inače
+     */
+    public void deductChallengeStake(@NonNull String uid, int stakeStars, int stakeTokens,
+                                     @NonNull SimpleCallback cb) {
+        DocumentReference ref = mDb.collection(COLLECTION_USERS).document(uid);
+        mDb.runTransaction(transaction -> {
+            DocumentSnapshot snap = transaction.get(ref);
+            Long stars = snap.getLong("totalStars");
+            Long tokens = snap.getLong("tokens");
+            long currentStars = stars != null ? stars : 0;
+            long currentTokens = tokens != null ? tokens : 0;
+            if (currentStars < stakeStars || currentTokens < stakeTokens) {
+                throw new FirebaseFirestoreException(NO_STAKE_MARKER,
+                        FirebaseFirestoreException.Code.ABORTED);
+            }
+            transaction.update(ref, "totalStars", currentStars - stakeStars);
+            transaction.update(ref, "tokens", currentTokens - stakeTokens);
+            return null;
+        }).addOnSuccessListener(v -> cb.onSuccess())
+          .addOnFailureListener(e -> {
+              if (e.getMessage() != null && e.getMessage().contains(NO_STAKE_MARKER)) {
+                  cb.onError("Nemaš dovoljno zvezda ili žetona za ovaj izazov.");
+              } else {
+                  cb.onError("Skidanje uloga nije uspelo. Proveri internet konekciju.");
+              }
+          });
+    }
+
+    /**
+     * Dodeljuje nagradu (zvezde i/ili žetone) igraču nakon završenog izazova
+     * (pobedniku ili vraćanje uloga za drugoplasiranog).
+     *
+     * @param uid    UID igrača
+     * @param stars  broj zvezda za dodelu (0 ako nema)
+     * @param tokens broj žetona za dodelu (0 ako nema)
+     * @param cb     callback po završetku, može biti {@code null}
+     */
+    public void creditChallengeReward(@NonNull String uid, int stars, int tokens,
+                                      @Nullable SimpleCallback cb) {
+        Map<String, Object> updates = new HashMap<>();
+        if (stars > 0) {
+            updates.put("totalStars", FieldValue.increment(stars));
+        }
+        if (tokens > 0) {
+            updates.put("tokens", FieldValue.increment(tokens));
+        }
+        if (updates.isEmpty()) {
+            if (cb != null) cb.onSuccess();
+            return;
+        }
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates)
+                .addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
+                .addOnFailureListener(e -> {
+                    if (cb != null) cb.onError("Dodela nagrade za izazov nije uspela.");
+                });
     }
 }
 

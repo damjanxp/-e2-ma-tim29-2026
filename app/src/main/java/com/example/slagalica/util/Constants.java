@@ -23,14 +23,18 @@ public final class Constants {
             "https://slagalica-ma2025-default-rtdb.europe-west1.firebasedatabase.app";
     public static final String RTDB_MATCHMAKING = "matchmaking";
     public static final String RTDB_MATCHES     = "matches";
+    public static final String RTDB_CHATS       = "chats";
+    public static final String RTDB_CHALLENGES  = "challenges";
 
     // ==== Intent ekstre ====
     public static final String EXTRA_MATCH_ID      = "extra_match_id";
     public static final String EXTRA_OPPONENT_UID  = "extra_opponent_uid";
     public static final String EXTRA_OPPONENT_NAME = "extra_opponent_name";
     public static final String EXTRA_IS_PLAYER_ONE = "extra_is_player_one";
+    public static final String EXTRA_IS_FRIENDLY   = "extra_is_friendly";
     public static final String EXTRA_MY_SCORE       = "extra_my_score";
     public static final String EXTRA_OPPONENT_SCORE = "extra_opponent_score";
+    public static final String EXTRA_CHALLENGE_ID   = "extra_challenge_id";
 
     // Kumulativni bodovi koji se prenose kroz lanac igara
     public static final String EXTRA_MY_KZZ       = "extra_my_kzz";
