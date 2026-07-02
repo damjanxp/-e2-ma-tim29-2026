@@ -101,4 +101,35 @@ public final class MatchRewardCalculator {
         int earned = (starsAfter / STARS_PER_TOKEN) - (starsBefore / STARS_PER_TOKEN);
         return Math.max(0, earned);
     }
+
+    // -------------------------------------------------------------------------
+    // Turnir (4 igrača) — nagrade za pobedu u meču
+    // -------------------------------------------------------------------------
+
+    /** Osnovne zvezde za pobedu u polufinalu turnira. */
+    private static final int TOURNAMENT_SEMIFINAL_BASE_STARS = 10;
+    /** Osnovne zvezde za pobedu u finalu turnira. */
+    private static final int TOURNAMENT_FINAL_BASE_STARS = 20;
+    /** Žetoni za pobedu u polufinalu turnira. */
+    public static final int TOURNAMENT_SEMIFINAL_TOKENS = 2;
+    /** Žetoni za pobedu u finalu turnira. */
+    public static final int TOURNAMENT_FINAL_TOKENS = 3;
+
+    /**
+     * Zvezde koje pobednik polufinala osvaja: {@code 10 + (myPoints / 40)}.
+     *
+     * <p>Primer: pobeda u polufinalu sa 120 bodova → {@code 10 + 3 = 13} zvezdi.</p>
+     */
+    public static int starsForTournamentSemifinalWinner(int myPoints) {
+        return TOURNAMENT_SEMIFINAL_BASE_STARS + (myPoints / POINTS_PER_STAR);
+    }
+
+    /**
+     * Zvezde koje pobednik finala osvaja: {@code 20 + (myPoints / 40)}.
+     *
+     * <p>Primer: pobeda u finalu sa 200 bodova → {@code 20 + 5 = 25} zvezdi.</p>
+     */
+    public static int starsForTournamentFinalWinner(int myPoints) {
+        return TOURNAMENT_FINAL_BASE_STARS + (myPoints / POINTS_PER_STAR);
+    }
 }

@@ -17,6 +17,7 @@ import com.example.slagalica.ui.games.GameMenuActivity;
 import com.example.slagalica.ui.notifications.NotificationsActivity;
 import com.example.slagalica.ui.profile.ProfileActivity;
 import com.example.slagalica.ui.ranking.RankingActivity;
+import com.example.slagalica.ui.tournament.TournamentLobbyListActivity;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton btnNotifications;
     private MaterialButton btnChat;
     private MaterialButton btnChallenge;
+    private MaterialButton btnTournament;
     private MaterialButton btnLogout;
 
     @Override
@@ -75,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         btnNotifications = findViewById(R.id.btnNotifications);
         btnChat = findViewById(R.id.btnChat);
         btnChallenge = findViewById(R.id.btnChallenge);
+        btnTournament = findViewById(R.id.btnTournament);
         btnLogout = findViewById(R.id.btnLogout);
     }
 
@@ -100,6 +103,8 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this, ChatActivity.class)));
         btnChallenge.setOnClickListener(v ->
                 startActivity(new Intent(this, ChallengeListActivity.class)));
+        btnTournament.setOnClickListener(v ->
+                startActivity(new Intent(this, TournamentLobbyListActivity.class)));
         btnLogout.setOnClickListener(v -> onLogoutClicked());
     }
 

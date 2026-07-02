@@ -421,6 +421,39 @@
     <string name="matchmaking_preparing">Priprema meča…</string>
     <string name="matchmaking_btn_cancel">Otkaži</string>
 
+    <!-- Turnir (4 igrača) -->
+    <string name="main_btn_tournament">Turnir</string>
+    <string name="tournament_lobby_list_title">Turnirski lobiji</string>
+    <string name="tournament_lobby_list_hint">Uđi u lobi — turnir počinje kada se popuni sa 4 igrača.</string>
+    <string name="tournament_lobby_name">Turnir %d</string>
+    <string name="tournament_lobby_count">%1$d/%2$d</string>
+    <string name="tournament_lobby_join">Uđi</string>
+    <string name="tournament_lobby_full">Popunjeno</string>
+    <string name="tournament_lobby_in_progress">U toku</string>
+    <string name="tournament_lobby_waiting">Čekaš u lobiju… (%1$d/%2$d). Možeš izaći sa ekrana — ostaješ prijavljen/a.</string>
+    <string name="tournament_lobby_ready">Turnir počinje!</string>
+    <string name="tournament_lobby_leave">Napusti lobi</string>
+    <string name="tournament_btn_cancel">Otkaži</string>
+    <string name="tournament_bracket_title">Turnir</string>
+    <string name="tournament_semifinal1">Polufinale 1</string>
+    <string name="tournament_semifinal2">Polufinale 2</string>
+    <string name="tournament_final">Finale</string>
+    <string name="tournament_vs">VS</string>
+    <string name="tournament_tbd">?</string>
+    <string name="tournament_status_ready_prompt">Spreman/na si za svoj meč?</string>
+    <string name="tournament_status_waiting_opponent">Čeka se da protivnik bude spreman…</string>
+    <string name="tournament_status_starting">Pokretanje meča…</string>
+    <string name="tournament_status_advanced">Prošao/la si dalje! Čeka se drugi meč…</string>
+    <string name="tournament_status_eliminated">Ispao/la si iz turnira.</string>
+    <string name="tournament_status_waiting_final">Čeka se kraj turnira…</string>
+    <string name="tournament_champion">Šampion: %s 🏆</string>
+    <string name="tournament_you_champion">Ti si šampion turnira! 🏆</string>
+    <string name="tournament_btn_ready">Spreman/na sam</string>
+    <string name="tournament_btn_home">Nazad na početni ekran</string>
+    <string name="tournament_btn_back_to_bracket">Nazad na turnir</string>
+    <string name="tournament_reward_tokens">Žetoni: +%d</string>
+    <string name="tournament_reward_eliminated">Nema nagrade — ispao/la si iz turnira.</string>
+
     <!-- Ko zna zna — 1v1 (dodatno) -->
     <string name="kzz_waiting_opponent">Čeka se odgovor protivnika…</string>
     <string name="kzz_waiting_content">Učitavanje pitanja…</string>

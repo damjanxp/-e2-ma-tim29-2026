@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Jedan igrač u turnirskom bracketu (avatar + nadimak). Uključuje se više puta
+  preko <include> — findViewById se poziva na korenu svakog include-a da bi se
+  ispravno razrešili deljeni id-jevi dece.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="4dp">
+
+    <ImageView
+        android:id="@+id/ivPlayerAvatar"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:contentDescription="@string/tournament_bracket_title"
+        android:src="@drawable/avatar_0"
+        tools:src="@drawable/avatar_1" />
+
+    <TextView
+        android:id="@+id/tvPlayerName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="@string/tournament_tbd"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
+        tools:text="Pera" />
+
+</LinearLayout>

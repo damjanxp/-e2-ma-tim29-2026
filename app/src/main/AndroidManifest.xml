@@ -109,6 +109,16 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ui.tournament.TournamentLobbyListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.tournament.TournamentBracketActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".ui.challenge.ChallengeListActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

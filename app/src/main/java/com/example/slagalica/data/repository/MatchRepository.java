@@ -58,6 +58,13 @@ public class MatchRepository {
         void onError(@NonNull String message);
     }
 
+    /** Osnovni podaci o meču — koristi ih rezultat ekran da prepozna turnir. */
+    public interface MatchInfoListener {
+        void onInfo(@Nullable String tournamentId, @Nullable String stage,
+                    @Nullable String player1Uid, @Nullable String player2Uid);
+        void onError(@NonNull String message);
+    }
+
     /** Slušalac pitanja za "Ko zna zna" (okida se kad kreator upiše sadržaj). */
     public interface KzzQuestionsListener {
         void onQuestions(@NonNull List<KzzQuestion> questions);
@@ -144,6 +151,21 @@ public class MatchRepository {
             }
         }).addOnFailureListener(e ->
                 listener.onError("Traženje protivnika nije uspelo. Proveri internet konekciju."));
+    }
+
+    /**
+     * Učitava osnovne podatke o meču (za rezultat ekran): eventualni
+     * {@code tournamentId}/{@code stage} i uid-eve oba igrača (za neodlučen
+     * ishod u turniru — deterministički "coin flip").
+     */
+    public void getMatchInfo(@NonNull String matchId, @NonNull MatchInfoListener listener) {
+        matchRef(matchId).get().addOnSuccessListener(snapshot -> {
+            String tournamentId = snapshot.child("tournamentId").getValue(String.class);
+            String stage        = snapshot.child("stage").getValue(String.class);
+            String p1Uid        = snapshot.child("player1").child("uid").getValue(String.class);
+            String p2Uid        = snapshot.child("player2").child("uid").getValue(String.class);
+            listener.onInfo(tournamentId, stage, p1Uid, p2Uid);
+        }).addOnFailureListener(e -> listener.onError("Učitavanje podataka o meču nije uspelo."));
     }
 
     /** Napušta red za čekanje (otkazivanje pretrage). */

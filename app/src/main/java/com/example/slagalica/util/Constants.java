@@ -25,6 +25,8 @@ public final class Constants {
     public static final String RTDB_MATCHES     = "matches";
     public static final String RTDB_CHATS       = "chats";
     public static final String RTDB_CHALLENGES  = "challenges";
+    public static final String RTDB_TOURNAMENT_LOBBIES = "tournamentLobbies";
+    public static final String RTDB_TOURNAMENTS        = "tournaments";
 
     // ==== Intent ekstre ====
     public static final String EXTRA_MATCH_ID      = "extra_match_id";
@@ -35,6 +37,8 @@ public final class Constants {
     public static final String EXTRA_MY_SCORE       = "extra_my_score";
     public static final String EXTRA_OPPONENT_SCORE = "extra_opponent_score";
     public static final String EXTRA_CHALLENGE_ID   = "extra_challenge_id";
+    public static final String EXTRA_TOURNAMENT_ID    = "extra_tournament_id";
+    public static final String EXTRA_TOURNAMENT_STAGE = "extra_tournament_stage";
 
     // Kumulativni bodovi koji se prenose kroz lanac igara
     public static final String EXTRA_MY_KZZ       = "extra_my_kzz";
@@ -51,6 +55,17 @@ public final class Constants {
     public static final String EXTRA_OPP_ASOCIJACIJE = "extra_opp_asocijacije";
     public static final String EXTRA_MY_SKOCKO       = "extra_my_skocko";
     public static final String EXTRA_OPP_SKOCKO      = "extra_opp_skocko";
+
+    // ==== Turnir (4 igrača: dva polufinala + finale) ====
+    public static final String TOURNAMENT_SLOT_SEMI1 = "semifinal1";
+    public static final String TOURNAMENT_SLOT_SEMI2 = "semifinal2";
+    public static final String TOURNAMENT_SLOT_FINAL = "final";
+    public static final String TOURNAMENT_STATUS_SEMIS = "SEMIS";
+    public static final String TOURNAMENT_STATUS_FINAL = "FINAL";
+    public static final String TOURNAMENT_STATUS_DONE  = "DONE";
+    public static final int TOURNAMENT_SIZE = 4;
+    /** Fiksni lobiji za demo — turnir počinje kada se jedan popuni sa 4 igrača. */
+    public static final String[] TOURNAMENT_LOBBY_IDS = {"lobby1", "lobby2", "lobby3"};
 
     // ==== Identifikatori igara (za setGameResult) ====
     public static final String GAME_KZZ        = "kzz";
