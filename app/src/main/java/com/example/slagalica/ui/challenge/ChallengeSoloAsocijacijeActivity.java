@@ -23,17 +23,16 @@ import com.google.android.material.snackbar.Snackbar;
 
 /**
  * Solo verzija igre "Asocijacije" za Izazov — jedan igrač, bez protivnika,
- * dve runde. Vraća ukupan broj bodova pozivaocu kroz {@link Constants#EXTRA_MY_SCORE}.
+ * jedna runda. Vraća broj bodova pozivaocu kroz {@link Constants#EXTRA_MY_SCORE}.
  */
 public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
 
     private static final int TURN_SECONDS = 120;
-    private static final int NUM_ROUNDS   = 2;
     private static final int NUM_COLS     = AsocijacijeLogic.NUM_COLS;
     private static final int NUM_ROWS     = AsocijacijeLogic.NUM_ROWS;
 
     // ── Views ─────────────────────────────────────────────────────────────────
-    private TextView        tvRound, tvScore, tvTimer;
+    private TextView        tvScore, tvTimer;
     private ProgressBar     pbTimer;
     private MaterialButton[][] clueButtons;
     private MaterialButton[] colButtons;
@@ -46,8 +45,6 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
     private boolean             finalSolved;
     private boolean             mustReveal;
     private int                 score;
-    private int                 currentRound;
-    private final int[]         roundScores = new int[NUM_ROUNDS];
     private CountDownTimer      timer;
 
     private static final String[] COL_LETTERS = {"A", "B", "C", "D"};
@@ -57,7 +54,7 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_challenge_solo_asocijacije);
         initViews();
-        startRound(1);
+        startRound();
     }
 
     @Override
@@ -69,7 +66,6 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
     // ── Initialisation ────────────────────────────────────────────────────────
 
     private void initViews() {
-        tvRound  = findViewById(R.id.tvRound);
         tvScore  = findViewById(R.id.tvScore);
         tvTimer  = findViewById(R.id.tvTimer);
         pbTimer  = findViewById(R.id.pbTimer);
@@ -107,16 +103,14 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
 
     // ── Round lifecycle ────────────────────────────────────────────────────────
 
-    private void startRound(int round) {
-        currentRound = round;
-        puzzle       = AsocijacijePuzzle.samplePuzzles()[round - 1];
+    private void startRound() {
+        puzzle       = AsocijacijePuzzle.samplePuzzles()[0];
         revealed     = new boolean[NUM_COLS][NUM_ROWS];
         colSolved    = new boolean[NUM_COLS];
         finalSolved  = false;
         mustReveal   = false;
         score        = 0;
 
-        tvRound.setText(getString(R.string.asoc_round, round));
         updateScoreDisplay();
         bindBoard();
         startTimer();
@@ -124,13 +118,7 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
 
     private void endRound(boolean gaveUp) {
         cancelTimer();
-        roundScores[currentRound - 1] = score;
-
-        if (currentRound < NUM_ROUNDS) {
-            showRoundSummary();
-        } else {
-            showGameOver();
-        }
+        showGameOver();
     }
 
     // ── Board binding ─────────────────────────────────────────────────────────
@@ -324,26 +312,15 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
         }
     }
 
-    // ── Round / game-over dialogs ─────────────────────────────────────────────
-
-    private void showRoundSummary() {
-        disableBoard();
-        new AlertDialog.Builder(this)
-            .setTitle(getString(R.string.asoc_round_end_title, currentRound))
-            .setMessage(getString(R.string.asoc_round_end_msg, roundScores[currentRound - 1]))
-            .setCancelable(false)
-            .setPositiveButton(R.string.asoc_btn_next_round, (d, w) -> startRound(currentRound + 1))
-            .show();
-    }
+    // ── Game-over dialog ──────────────────────────────────────────────────────
 
     private void showGameOver() {
         disableBoard();
-        int total = roundScores[0] + roundScores[1];
         new AlertDialog.Builder(this)
             .setTitle(R.string.asoc_game_over_title)
-            .setMessage(getString(R.string.asoc_game_over_msg, roundScores[0], roundScores[1], total))
+            .setMessage(getString(R.string.asoc_round_end_msg, score))
             .setCancelable(false)
-            .setPositiveButton(R.string.asoc_btn_finish, (d, w) -> finishWithScore(total))
+            .setPositiveButton(R.string.asoc_btn_finish, (d, w) -> finishWithScore(score))
             .show();
     }
 

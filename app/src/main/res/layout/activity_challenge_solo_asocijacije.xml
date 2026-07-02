@@ -24,13 +24,6 @@
             android:textStyle="bold" />
 
         <TextView
-            android:id="@+id/tvRound"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <TextView
             android:id="@+id/tvScore"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

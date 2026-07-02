@@ -5,66 +5,300 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp"
+    android:padding="12dp"
     tools:context=".ui.challenge.ChallengeSoloMojBrojActivity">
 
-    <TextView
-        android:id="@+id/tvTimer"
+    <!-- Zaglavlje: naziv | bodovi | tajmer -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
-        tools:text="60 s" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/challenge_solo_title_mojbroj"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvScore"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textStyle="bold"
+            tools:text="Bodovi: 0" />
+
+        <TextView
+            android:id="@+id/tvTimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold"
+            tools:text="60 s" />
+
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/pbTimer"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="4dp"
+        android:max="60"
+        android:progress="60" />
 
     <TextView
-        android:id="@+id/tvTarget"
+        android:id="@+id/tvStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="6dp"
         android:gravity="center"
-        android:textAppearance="?attr/textAppearanceHeadlineSmall"
-        tools:text="Traženi broj: 456" />
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textStyle="italic"
+        tools:text="Pritisni STOP za traženi broj." />
 
-    <TextView
-        android:id="@+id/tvNumbers"
+    <!-- ===== TRAŽENI BROJ ===== -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:gravity="center"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
-        tools:text="3   7   5   2   15   75" />
+        android:layout_marginBottom="6dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilExpression"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:hint="@string/challenge_solo_mojbroj_hint">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etExpression"
+        <TextView
+            android:id="@+id/tvTrazeniBroj"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text"
-            android:maxLines="1" />
+            android:gravity="center"
+            android:padding="14dp"
+            android:textAppearance="?attr/textAppearanceDisplaySmall"
+            android:textStyle="bold"
+            tools:text="Traženi broj: ?" />
 
-    </com.google.android.material.textfield.TextInputLayout>
+    </com.google.android.material.card.MaterialCardView>
 
+    <!-- ===== IZRAZ + DEL ===== -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="?attr/colorOutline">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/tvIzraz"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minHeight="44dp"
+                android:gravity="center_vertical"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:padding="4dp"
+                tools:text="75 + 3 × 4" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDel"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:text="⌫"
+                android:textSize="16sp"
+                android:enabled="false"
+                android:padding="0dp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- ===== 4 JEDNOCIFRENA BROJA ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum0"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum1"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum2"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum3"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
+
+    </LinearLayout>
+
+    <!-- ===== 2 POSEBNA BROJA ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum4"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnNum5"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="3dp"
+            android:text="?"
+            android:textAllCaps="false"
+            android:enabled="false" />
+
+    </LinearLayout>
+
+    <!-- ===== OPERATORI ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLeftParen"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="("
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRightParen"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text=")"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPlus"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="+"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMinus"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="-"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMult"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="×"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:enabled="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDiv"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:text="÷"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:enabled="false" />
+
+    </LinearLayout>
+
+    <!-- ===== STOP / POTVRDI ===== -->
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnConfirm"
+        android:id="@+id/btnStopPotvrdi"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/challenge_solo_mojbroj_btn_confirm"
-        android:textAllCaps="false" />
+        android:layout_marginTop="4dp"
+        android:text="@string/challenge_solo_mojbroj_btn_stop"
+        android:textAllCaps="false"
+        android:textSize="16sp" />
 
-    <TextView
-        android:id="@+id/tvResult"
+    <!-- ===== PREDAJ ===== -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnGiveUp"
+        style="@style/Widget.Material3.Button.TextButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:gravity="center"
-        android:textAppearance="?attr/textAppearanceBodyMedium" />
+        android:text="@string/challenge_solo_btn_give_up"
+        android:textAllCaps="false" />
 
 </LinearLayout>

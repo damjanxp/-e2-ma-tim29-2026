@@ -336,7 +336,11 @@
     <string name="challenge_solo_spojnice_selected">Izabrano: %s</string>
 
     <string name="challenge_solo_mojbroj_target">Traženi broj: %d</string>
-    <string name="challenge_solo_mojbroj_hint">Izraz</string>
+    <string name="challenge_solo_mojbroj_target_unknown">Traženi broj: ?</string>
+    <string name="challenge_solo_mojbroj_stop_target">Pritisni STOP (ili protresi telefon) za traženi broj.</string>
+    <string name="challenge_solo_mojbroj_stop_numbers">Pritisni STOP (ili protresi telefon) za 6 brojeva.</string>
+    <string name="challenge_solo_mojbroj_enter">Unesi matematički izraz!</string>
+    <string name="challenge_solo_mojbroj_btn_stop">STOP</string>
     <string name="challenge_solo_mojbroj_btn_confirm">Potvrdi</string>
     <string name="challenge_solo_mojbroj_error_invalid">%s</string>
 
@@ -349,6 +353,11 @@
 
     <string name="challenge_solo_starting">Priprema izazova…</string>
     <string name="challenge_solo_finished_toast">Izazov je odigran, bodovi su poslati.</string>
+    <string name="challenge_solo_btn_give_up">Predaj</string>
+    <string name="challenge_solo_title_kzz">Ko zna zna</string>
+    <string name="challenge_solo_title_spojnice">Spojnice</string>
+    <string name="challenge_solo_title_mojbroj">Moj broj</string>
+    <string name="challenge_solo_title_korak">Korak po korak</string>
 
     <!-- Notifikacije -->
     <string name="notifications_title">Notifikacije</string>

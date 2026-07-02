@@ -1,13 +1,16 @@
 package com.example.slagalica.ui.challenge;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.KzzAnswer;
@@ -23,21 +26,23 @@ import java.util.List;
 /**
  * Solo verzija igre "Ko zna zna" za Izazov — jedan igrač, bez protivnika.
  * Igra {@link Constants#KZZ_QUESTION_COUNT} pitanja i vraća ukupan broj
- * bodova pozivaocu kroz {@link Constants#EXTRA_MY_SCORE}.
+ * bodova pozivaocu kroz {@link Constants#EXTRA_MY_SCORE}. Bodovi se
+ * ažuriraju odmah nakon svakog odgovora, uz obojenu povratnu informaciju
+ * kao u multiplayer verziji.
  */
 public class ChallengeSoloKzzActivity extends AppCompatActivity {
 
     /** Ključ pod kojim se čuva sopstveni odgovor — nema pravog UID-a jer nema protivnika. */
     private static final String SOLO_KEY = "solo";
 
+    private static final int FEEDBACK_DELAY_MS = 800;
+
     private TextView tvProgress;
     private TextView tvTimer;
     private TextView tvQuestion;
-    private MaterialButton btnAnswer0;
-    private MaterialButton btnAnswer1;
-    private MaterialButton btnAnswer2;
-    private MaterialButton btnAnswer3;
     private TextView tvScore;
+    private ProgressBar pbTimer;
+    private MaterialButton[] answerButtons;
 
     private List<KzzQuestion> questions;
     private int currentIndex;
@@ -46,6 +51,8 @@ public class ChallengeSoloKzzActivity extends AppCompatActivity {
     private boolean answered;
 
     private CountDownTimer timer;
+
+    private int colorCorrect, colorWrong;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,16 +80,24 @@ public class ChallengeSoloKzzActivity extends AppCompatActivity {
         tvProgress = findViewById(R.id.tvProgress);
         tvTimer = findViewById(R.id.tvTimer);
         tvQuestion = findViewById(R.id.tvQuestion);
-        btnAnswer0 = findViewById(R.id.btnAnswer0);
-        btnAnswer1 = findViewById(R.id.btnAnswer1);
-        btnAnswer2 = findViewById(R.id.btnAnswer2);
-        btnAnswer3 = findViewById(R.id.btnAnswer3);
         tvScore = findViewById(R.id.tvScore);
+        pbTimer = findViewById(R.id.pbTimer);
 
-        btnAnswer0.setOnClickListener(v -> onAnswer(0));
-        btnAnswer1.setOnClickListener(v -> onAnswer(1));
-        btnAnswer2.setOnClickListener(v -> onAnswer(2));
-        btnAnswer3.setOnClickListener(v -> onAnswer(3));
+        answerButtons = new MaterialButton[]{
+                findViewById(R.id.btnAnswer0),
+                findViewById(R.id.btnAnswer1),
+                findViewById(R.id.btnAnswer2),
+                findViewById(R.id.btnAnswer3)
+        };
+        for (int i = 0; i < answerButtons.length; i++) {
+            final int idx = i;
+            answerButtons[i].setOnClickListener(v -> onAnswer(idx));
+        }
+
+        colorCorrect = ContextCompat.getColor(this, R.color.kzz_answer_correct);
+        colorWrong   = ContextCompat.getColor(this, R.color.kzz_answer_wrong);
+
+        tvScore.setText(getString(R.string.challenge_solo_score, 0));
     }
 
     private void showQuestion(int index) {
@@ -94,11 +109,11 @@ public class ChallengeSoloKzzActivity extends AppCompatActivity {
                 index + 1, questions.size()));
         tvQuestion.setText(question.getText());
         List<String> answers = question.getAnswers();
-        btnAnswer0.setText(answers.get(0));
-        btnAnswer1.setText(answers.get(1));
-        btnAnswer2.setText(answers.get(2));
-        btnAnswer3.setText(answers.get(3));
-        tvScore.setText(getString(R.string.challenge_solo_score, totalScore));
+        for (int i = 0; i < answerButtons.length; i++) {
+            answerButtons[i].setText(answers.get(i));
+            answerButtons[i].setBackgroundTintList(null);
+            answerButtons[i].setEnabled(true);
+        }
 
         questionStartMs = System.currentTimeMillis();
         startTimer();
@@ -106,15 +121,22 @@ public class ChallengeSoloKzzActivity extends AppCompatActivity {
 
     private void startTimer() {
         cancelTimer();
+        int totalSeconds = (int) (Constants.KZZ_QUESTION_TIME_MS / 1000);
+        pbTimer.setMax(totalSeconds);
+        pbTimer.setProgress(totalSeconds);
+
         timer = new CountDownTimer(Constants.KZZ_QUESTION_TIME_MS, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                tvTimer.setText(getString(R.string.challenge_solo_timer_seconds,
-                        (int) Math.ceil(millisUntilFinished / 1000.0)));
+                int s = (int) Math.ceil(millisUntilFinished / 1000.0);
+                tvTimer.setText(getString(R.string.challenge_solo_timer_seconds, s));
+                pbTimer.setProgress(s);
             }
 
             @Override
             public void onFinish() {
+                tvTimer.setText(getString(R.string.challenge_solo_timer_seconds, 0));
+                pbTimer.setProgress(0);
                 if (!answered) {
                     resolveAnswer(-1);
                 }
@@ -145,15 +167,25 @@ public class ChallengeSoloKzzActivity extends AppCompatActivity {
         boolean correct = answerIndex >= 0 && answerIndex == question.getCorrectIndex();
         KzzAnswer myAnswer = new KzzAnswer(answerIndex, elapsed, correct);
 
+        // Obojena povratna informacija kao u multiplayer verziji
+        for (MaterialButton button : answerButtons) {
+            button.setEnabled(false);
+        }
+        answerButtons[question.getCorrectIndex()]
+                .setBackgroundTintList(ColorStateList.valueOf(colorCorrect));
+        if (answerIndex >= 0 && !correct) {
+            answerButtons[answerIndex].setBackgroundTintList(ColorStateList.valueOf(colorWrong));
+        }
+
         int points = KoZnaZnaLogic.pointsFor(SOLO_KEY, Collections.singletonMap(SOLO_KEY, myAnswer));
         totalScore += points;
         tvScore.setText(getString(R.string.challenge_solo_score, totalScore));
 
         int next = currentIndex + 1;
         if (next < questions.size()) {
-            tvQuestion.postDelayed(() -> showQuestion(next), 400);
+            tvQuestion.postDelayed(() -> showQuestion(next), FEEDBACK_DELAY_MS);
         } else {
-            tvQuestion.postDelayed(() -> finishWithScore(totalScore), 400);
+            tvQuestion.postDelayed(() -> finishWithScore(totalScore), FEEDBACK_DELAY_MS);
         }
     }
 

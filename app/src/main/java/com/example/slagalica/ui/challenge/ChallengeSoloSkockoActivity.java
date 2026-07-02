@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -20,14 +19,14 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Solo verzija igre "Skočko" za Izazov — jedan igrač, bez protivnika, dve
- * runde. Vraća ukupan broj bodova pozivaocu kroz {@link Constants#EXTRA_MY_SCORE}.
+ * Solo verzija igre "Skočko" za Izazov — jedan igrač, jedna runda, bez
+ * protivnika (nema faze "šansa za protivnika" iz multiplayer verzije).
+ * Ako igrač ne pogodi kombinaciju u 6 pokušaja ili istekne vreme, igra se
+ * završava sa 0 bodova. Vraća bodove kroz {@link Constants#EXTRA_MY_SCORE}.
  */
 public class ChallengeSoloSkockoActivity extends AppCompatActivity {
 
     private static final int MAIN_SECONDS = 30;
-    private static final int OPP_SECONDS  = 10;
-    private static final int NUM_ROUNDS   = 2;
 
     // Drawable IDs za svaki simbol (indeks odgovara SkockoLogic konstantama 0-5)
     private static final int[] SYMBOL_DRAW = {
@@ -44,25 +43,19 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
     private static final int HINT_DRAW_EMPTY  = R.drawable.bg_skocko_hint_empty;
 
     // ── Views ─────────────────────────────────────────────────────────────────
-    private TextView     tvRound, tvScore, tvInstruction, tvTimer;
+    private TextView     tvScore, tvInstruction, tvTimer;
     private ProgressBar  pbTimer;
     private ImageView[][] slotViews;   // [row 0-5][col 0-3]
     private android.view.View[][] hintViews;  // [row 0-5][hint 0-3]
-    private ImageView[]  opponentSlots;
-    private android.view.View[]  opponentHints;
     private ImageView[]  solutionSlots;
-    private LinearLayout rowOpponentGuess;
 
     // ── Game state ────────────────────────────────────────────────────────────
-    private enum Phase { MAIN_TURN, OPPONENT_TURN, ROUND_OVER }
-
-    private Phase        phase;
     private int[]        secret;
     private List<Integer> currentInput;
     private int          attemptsDone;
     private int          score;
-    private int          currentRound;
-    private final int[]  roundScores = new int[NUM_ROUNDS];
+    private boolean      roundOver = false;
+    private boolean      finished  = false;
     private CountDownTimer timer;
     private final Random random = new Random();
 
@@ -71,7 +64,7 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_challenge_solo_skocko);
         initViews();
-        startRound(1);
+        startRound();
     }
 
     @Override
@@ -83,12 +76,10 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
     // ── Initialisation ────────────────────────────────────────────────────────
 
     private void initViews() {
-        tvRound       = findViewById(R.id.tvRound);
         tvScore       = findViewById(R.id.tvScore);
         tvInstruction = findViewById(R.id.tvInstruction);
         tvTimer       = findViewById(R.id.tvTimer);
         pbTimer       = findViewById(R.id.pbTimer);
-        rowOpponentGuess = findViewById(R.id.rowOpponentGuess);
 
         slotViews = new ImageView[][]{
             { iv(R.id.ivRow1Col1), iv(R.id.ivRow1Col2), iv(R.id.ivRow1Col3), iv(R.id.ivRow1Col4) },
@@ -108,14 +99,6 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
             { v(R.id.vRow6Hint1), v(R.id.vRow6Hint2), v(R.id.vRow6Hint3), v(R.id.vRow6Hint4) },
         };
 
-        opponentSlots = new ImageView[]{
-            iv(R.id.ivOpponentCol1), iv(R.id.ivOpponentCol2),
-            iv(R.id.ivOpponentCol3), iv(R.id.ivOpponentCol4)
-        };
-        opponentHints = new android.view.View[]{
-            v(R.id.vOpponentHint1), v(R.id.vOpponentHint2),
-            v(R.id.vOpponentHint3), v(R.id.vOpponentHint4)
-        };
         solutionSlots = new ImageView[]{
             iv(R.id.ivSolutionCol1), iv(R.id.ivSolutionCol2),
             iv(R.id.ivSolutionCol3), iv(R.id.ivSolutionCol4)
@@ -139,15 +122,12 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
 
     // ── Round lifecycle ────────────────────────────────────────────────────────
 
-    private void startRound(int round) {
-        currentRound = round;
+    private void startRound() {
         secret       = SkockoLogic.randomSecret(random);
         currentInput = new ArrayList<>();
         attemptsDone = 0;
         score        = 0;
-        phase        = Phase.MAIN_TURN;
 
-        tvRound.setText(getString(R.string.skocko_round, round));
         updateScoreDisplay();
         resetBoard();
         updateInstruction();
@@ -162,17 +142,14 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
             }
         }
         for (int c = 0; c < SkockoLogic.COMBO_LEN; c++) {
-            opponentSlots[c].setImageDrawable(null);
-            opponentHints[c].setBackgroundResource(HINT_DRAW_EMPTY);
             solutionSlots[c].setImageDrawable(null);
         }
-        rowOpponentGuess.setAlpha(0.35f);
     }
 
     // ── Input handling ────────────────────────────────────────────────────────
 
     private void onSymbolTapped(int symbol) {
-        if (phase == Phase.ROUND_OVER) return;
+        if (roundOver) return;
         if (currentInput.size() >= SkockoLogic.COMBO_LEN) return;
 
         currentInput.add(symbol);
@@ -184,27 +161,20 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
     }
 
     private void onClear() {
-        if (phase == Phase.ROUND_OVER) return;
+        if (roundOver) return;
         if (currentInput.isEmpty()) return;
         currentInput.remove(currentInput.size() - 1);
         refreshActiveRow();
     }
 
     private void onGiveUp() {
-        if (phase == Phase.ROUND_OVER) return;
-        cancelTimer();
-        if (phase == Phase.MAIN_TURN) {
-            enterOpponentPhase();
-        } else {
-            endRound();
-        }
+        if (roundOver) return;
+        endRound();
     }
 
     /** Syncs the ImageViews of the active (currently-being-built) row with currentInput. */
     private void refreshActiveRow() {
-        ImageView[] slots = (phase == Phase.OPPONENT_TURN)
-                ? opponentSlots
-                : slotViews[attemptsDone];
+        ImageView[] slots = slotViews[attemptsDone];
         for (int c = 0; c < SkockoLogic.COMBO_LEN; c++) {
             if (c < currentInput.size()) {
                 slots[c].setImageResource(SYMBOL_DRAW[currentInput.get(c)]);
@@ -221,55 +191,27 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
         int[] hints = SkockoLogic.computeHints(guess, secret);
         currentInput.clear();
 
-        if (phase == Phase.MAIN_TURN) {
-            applyHints(hintViews[attemptsDone], hints);
-            attemptsDone++;
+        applyHints(hintViews[attemptsDone], hints);
+        attemptsDone++;
 
-            if (SkockoLogic.isCorrect(hints)) {
-                score += SkockoLogic.mainScore(attemptsDone - 1);
-                updateScoreDisplay();
-                cancelTimer();
-                endRound();
-            } else if (attemptsDone >= SkockoLogic.MAX_ATTEMPTS) {
-                cancelTimer();
-                enterOpponentPhase();
-            } else {
-                updateInstruction();
-            }
-        } else { // OPPONENT_TURN
-            applyHints(opponentHints, hints);
-            if (SkockoLogic.isCorrect(hints)) {
-                score += SkockoLogic.OPPONENT_SCORE;
-                updateScoreDisplay();
-            }
-            cancelTimer();
+        if (SkockoLogic.isCorrect(hints)) {
+            score += SkockoLogic.mainScore(attemptsDone - 1);
+            updateScoreDisplay();
             endRound();
+        } else if (attemptsDone >= SkockoLogic.MAX_ATTEMPTS) {
+            // Nema protivnika — bez dodatne šanse, igra se odmah završava.
+            endRound();
+        } else {
+            updateInstruction();
         }
     }
 
-    // ── Phase transitions ─────────────────────────────────────────────────────
-
-    private void enterOpponentPhase() {
-        phase        = Phase.OPPONENT_TURN;
-        currentInput = new ArrayList<>();
-        rowOpponentGuess.setAlpha(1.0f);
-        updateInstruction();
-        startTimer(OPP_SECONDS);
-    }
-
     private void endRound() {
-        phase = Phase.ROUND_OVER;
+        roundOver = true;
         cancelTimer();
         revealSolution();
-        roundScores[currentRound - 1] = score;
 
-        solutionSlots[0].postDelayed(() -> {
-            if (currentRound < NUM_ROUNDS) {
-                showRoundSummary();
-            } else {
-                showGameOver();
-            }
-        }, 1200);
+        solutionSlots[0].postDelayed(this::showGameOver, 1200);
     }
 
     // ── Hint & solution display ────────────────────────────────────────────────
@@ -312,21 +254,13 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
             public void onFinish() {
                 pbTimer.setProgress(0);
                 tvTimer.setText(getString(R.string.skocko_time_left, 0));
-                onTimerExpired();
+                if (!roundOver) endRound();
             }
         }.start();
     }
 
     private void cancelTimer() {
         if (timer != null) { timer.cancel(); timer = null; }
-    }
-
-    private void onTimerExpired() {
-        if (phase == Phase.MAIN_TURN) {
-            enterOpponentPhase();
-        } else if (phase == Phase.OPPONENT_TURN) {
-            endRound();
-        }
     }
 
     // ── UI helpers ────────────────────────────────────────────────────────────
@@ -336,35 +270,23 @@ public class ChallengeSoloSkockoActivity extends AppCompatActivity {
     }
 
     private void updateInstruction() {
-        if (phase == Phase.MAIN_TURN) {
-            tvInstruction.setText(getString(R.string.skocko_phase_main, attemptsDone + 1));
-        } else if (phase == Phase.OPPONENT_TURN) {
-            tvInstruction.setText(R.string.skocko_phase_opponent);
-        }
+        tvInstruction.setText(getString(R.string.skocko_phase_main, attemptsDone + 1));
     }
 
-    // ── Summary dialogs ───────────────────────────────────────────────────────
-
-    private void showRoundSummary() {
-        new AlertDialog.Builder(this)
-            .setTitle(getString(R.string.skocko_round_end_title, currentRound))
-            .setMessage(getString(R.string.skocko_round_end_msg, roundScores[currentRound - 1]))
-            .setCancelable(false)
-            .setPositiveButton(R.string.skocko_btn_next_round, (d, w) -> startRound(currentRound + 1))
-            .show();
-    }
+    // ── Kraj igre ─────────────────────────────────────────────────────────────
 
     private void showGameOver() {
-        int total = roundScores[0] + roundScores[1];
         new AlertDialog.Builder(this)
             .setTitle(R.string.skocko_game_over_title)
-            .setMessage(getString(R.string.skocko_game_over_msg, roundScores[0], roundScores[1], total))
+            .setMessage(getString(R.string.skocko_round_end_msg, score))
             .setCancelable(false)
-            .setPositiveButton(R.string.skocko_btn_finish, (d, w) -> finishWithScore(total))
+            .setPositiveButton(R.string.skocko_btn_finish, (d, w) -> finishWithScore(score))
             .show();
     }
 
     private void finishWithScore(int score) {
+        if (finished) return;
+        finished = true;
         Intent result = new Intent();
         result.putExtra(Constants.EXTRA_MY_SCORE, score);
         setResult(RESULT_OK, result);
