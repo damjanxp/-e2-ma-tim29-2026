@@ -29,8 +29,8 @@ import com.google.firebase.auth.FirebaseAuth;
  */
 public class SlagalicaApplication extends Application {
 
-    private final ChatRepository chatRepository = ChatRepository.getInstance();
-    private final UserRepository userRepository = UserRepository.getInstance();
+    private ChatRepository chatRepository;
+    private UserRepository userRepository;
 
     @Nullable private Runnable stopChatListening;
     @Nullable private String listeningForRegion;
@@ -38,6 +38,9 @@ public class SlagalicaApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        chatRepository = ChatRepository.getInstance();
+        userRepository = UserRepository.getInstance();
 
         FirebaseAuth.getInstance().addAuthStateListener(auth -> {
             if (auth.getCurrentUser() != null) {
