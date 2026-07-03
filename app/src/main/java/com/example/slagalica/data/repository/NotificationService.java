@@ -55,6 +55,20 @@ public class NotificationService {
         com.example.slagalica.util.NotificationPoster.post(appContext, type, title, message, actionLabel);
     }
 
+    /**
+     * Same as {@link #post(NotificationType, String, String, String)}, plus an
+     * optional {@code relatedId} tag so tapping the in-app notification can
+     * route to a specific screen (see {@link AppNotification#getRelatedId()}).
+     */
+    public void post(@NonNull NotificationType type,
+                     @NonNull String title,
+                     @NonNull String message,
+                     @Nullable String actionLabel,
+                     @Nullable String relatedId) {
+        com.example.slagalica.util.NotificationPoster.post(
+                appContext, type, title, message, actionLabel, relatedId);
+    }
+
     /** Convenience overload without an action label. */
     public void post(@NonNull NotificationType type,
                      @NonNull String title,

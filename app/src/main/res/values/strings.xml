@@ -537,4 +537,13 @@
     <string name="ranking_conclude_confirm_yes">Završi</string>
     <string name="ranking_conclude_confirm_no">Otkaži</string>
     <string name="ranking_cycle_concluded">Ciklus je završen — nagrade su dodeljene!</string>
+
+    <!-- Nagrada sa rang liste (popup + obaveštenje) -->
+    <string name="leaderboard_reward_title">Čestitamo! 🏆</string>
+    <string name="leaderboard_type_weekly_adj">nedeljnoj</string>
+    <string name="leaderboard_type_monthly_adj">mesečnoj</string>
+    <string name="leaderboard_reward_message">Osvojili ste %1$d. mesto na %2$s rang listi!</string>
+    <string name="leaderboard_reward_tokens">+%d žetona</string>
+    <string name="leaderboard_reward_btn_claim">Preuzmi</string>
+    <string name="leaderboard_reward_notif_title">Nagrada sa rang liste!</string>
 </resources>

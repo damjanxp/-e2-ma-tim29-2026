@@ -5,10 +5,14 @@ import android.os.Bundle;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.model.NotificationType;
 import com.example.slagalica.data.model.User;
+import com.example.slagalica.data.repository.LeaderboardRepository;
+import com.example.slagalica.data.repository.NotificationService;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.ui.auth.LoginActivity;
 import com.example.slagalica.ui.challenge.ChallengeListActivity;
@@ -17,8 +21,10 @@ import com.example.slagalica.ui.dailychallenge.DailyChallengesActivity;
 import com.example.slagalica.ui.games.GameMenuActivity;
 import com.example.slagalica.ui.notifications.NotificationsActivity;
 import com.example.slagalica.ui.profile.ProfileActivity;
+import com.example.slagalica.ui.ranking.LeaderboardRewardActivity;
 import com.example.slagalica.ui.ranking.RankingActivity;
 import com.example.slagalica.ui.tournament.TournamentLobbyListActivity;
+import com.example.slagalica.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -33,6 +39,7 @@ import com.google.android.material.chip.Chip;
 public class MainActivity extends AppCompatActivity {
 
     private final UserRepository userRepository = UserRepository.getInstance();
+    private final LeaderboardRepository leaderboardRepository = LeaderboardRepository.getInstance();
 
     private Chip chipTokens;
     private Chip chipStars;
@@ -140,6 +147,8 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void onError(String message) { /* bez UI-ja */ }
                         });
+
+                        checkPendingLeaderboardReward(uid);
                     }
 
                     @Override
@@ -152,6 +161,43 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onError(String message) {
                 // bez konekcije statusna traka ostaje na podrazumevanim vrednostima
+            }
+        });
+    }
+
+    /**
+     * Proverava ima li igrač čekajuću nagradu sa zaključenog ciklusa rang liste
+     * (postavljenu na nekom DRUGOM uređaju/sesiji, npr. dok igrač nije bio
+     * prijavljen). Ako ima, šalje sistemsko obaveštenje i odmah otvara popup
+     * sa prikazom nagrade — pokriva slučaj "prijava posle zaključenja ciklusa"
+     * jer se ovaj ekran uvek prikazuje nakon prijave.
+     */
+    private void checkPendingLeaderboardReward(String uid) {
+        leaderboardRepository.getPendingReward(uid, new LeaderboardRepository.PendingRewardListener() {
+            @Override
+            public void onResult(@Nullable LeaderboardRepository.PendingReward reward) {
+                if (reward == null || isFinishing() || isDestroyed()) return;
+
+                boolean monthly = Constants.LEADERBOARD_TYPE_MONTHLY.equals(reward.leaderboardType);
+                String typeAdj = getString(monthly
+                        ? R.string.leaderboard_type_monthly_adj
+                        : R.string.leaderboard_type_weekly_adj);
+                String message = getString(R.string.leaderboard_reward_message, reward.rank, typeAdj)
+                        + " " + getString(R.string.leaderboard_reward_tokens, reward.tokens);
+
+                NotificationService.getInstance(MainActivity.this).post(
+                        NotificationType.REWARD,
+                        getString(R.string.leaderboard_reward_notif_title),
+                        message,
+                        getString(R.string.leaderboard_reward_btn_claim),
+                        Constants.NOTIFICATION_RELATED_LEADERBOARD_REWARD);
+
+                startActivity(new Intent(MainActivity.this, LeaderboardRewardActivity.class));
+            }
+
+            @Override
+            public void onError(String message) {
+                // Tiho — nagrada (ako postoji) i dalje čeka i pojaviće se pri sledećem ulasku.
             }
         });
     }

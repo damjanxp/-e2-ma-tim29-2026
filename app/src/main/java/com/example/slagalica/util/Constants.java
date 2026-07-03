@@ -14,7 +14,16 @@ public final class Constants {
     public static final String COLLECTION_USERS     = "users";
     public static final String COLLECTION_KO_ZNA_ZNA = "koZnaZna";
     public static final String COLLECTION_SPOJNICE  = "spojnice";
-    public static final String COLLECTION_LEADERBOARD_CYCLES = "leaderboardCycles";
+    public static final String COLLECTION_LEADERBOARD_CYCLES  = "leaderboardCycles";
+    public static final String COLLECTION_LEADERBOARD_REWARDS = "leaderboardRewards";
+
+    /**
+     * Vrednost {@link com.example.slagalica.data.model.AppNotification#getRelatedId()}
+     * koja obeležava obaveštenje kao "osvojena nagrada sa rang liste" — klik na
+     * njega otvara {@code LeaderboardRewardActivity} umesto samog obeležavanja
+     * kao pročitano.
+     */
+    public static final String NOTIFICATION_RELATED_LEADERBOARD_REWARD = "leaderboard_reward";
 
     // ==== Realtime Database ====
     // Baza je u regionu europe-west1; google-services.json ne sadrži adresu baze,

@@ -19,6 +19,12 @@ public class AppNotification {
     private long timestampMillis;
     private boolean read;
     @Nullable private String actionLabel;
+    /**
+     * Generic pointer back to whatever this notification refers to (e.g. a
+     * leaderboard reward marker — see {@code Constants.NOTIFICATION_RELATED_*}).
+     * Optional; {@code null} for notifications that don't need one.
+     */
+    @Nullable private String relatedId;
 
     /** Required by Firestore deserialization. */
     public AppNotification() {}
@@ -30,6 +36,17 @@ public class AppNotification {
                            long timestampMillis,
                            boolean read,
                            @Nullable String actionLabel) {
+        this(id, title, message, type, timestampMillis, read, actionLabel, null);
+    }
+
+    public AppNotification(@NonNull String id,
+                           @NonNull String title,
+                           @NonNull String message,
+                           @NonNull NotificationType type,
+                           long timestampMillis,
+                           boolean read,
+                           @Nullable String actionLabel,
+                           @Nullable String relatedId) {
         this.id             = id;
         this.title          = title;
         this.message        = message;
@@ -37,6 +54,7 @@ public class AppNotification {
         this.timestampMillis = timestampMillis;
         this.read           = read;
         this.actionLabel    = actionLabel;
+        this.relatedId      = relatedId;
     }
 
     @NonNull public String getId()             { return id; }
@@ -59,4 +77,7 @@ public class AppNotification {
 
     @Nullable public String getActionLabel()               { return actionLabel; }
     public void setActionLabel(@Nullable String actionLabel) { this.actionLabel = actionLabel; }
+
+    @Nullable public String getRelatedId()                 { return relatedId; }
+    public void setRelatedId(@Nullable String relatedId)   { this.relatedId = relatedId; }
 }

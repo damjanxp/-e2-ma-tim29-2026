@@ -72,6 +72,10 @@
     <color name="rank_bronze_start">#FFE8B98A</color>
     <color name="rank_bronze_end">#FFCD7F32</color>
     <color name="rank_bronze_border">#FF8C5323</color>
+    <!-- Tekst za prva 3 mesta — zlatna/srebrna/bronzana pozadina su uvek
+         svetle (nisu tamno-temi svesne), pa se forsira tamna boja teksta
+         umesto podrazumevane (koja u tamnoj temi postaje svetla i nečitljiva). -->
+    <color name="rank_top3_text">#FF1A1A1A</color>
     <color name="rank_default_bg">#FFFFFFFF</color>
     <color name="rank_badge_bg">#FF16233F</color>
 

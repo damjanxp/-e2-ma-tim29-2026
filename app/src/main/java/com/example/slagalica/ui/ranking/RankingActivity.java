@@ -1,5 +1,6 @@
 package com.example.slagalica.ui.ranking;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -9,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -223,6 +225,7 @@ public class RankingActivity extends AppCompatActivity {
                 if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(RankingActivity.this, R.string.ranking_cycle_concluded, Toast.LENGTH_SHORT).show();
                 loadCycleAndRanking();
+                checkOwnRewardImmediately();
             }
 
             @Override
@@ -230,6 +233,27 @@ public class RankingActivity extends AppCompatActivity {
                 btnConcludeCycle.setEnabled(true);
                 if (isFinishing() || isDestroyed()) return;
                 Toast.makeText(RankingActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    /**
+     * Ako je onaj ko je zaključio ciklus i sam osvojio nagradu, popup se
+     * prikazuje odmah — ne čeka se sledeći ulazak u aplikaciju.
+     */
+    private void checkOwnRewardImmediately() {
+        String uid = userRepository.getCurrentUid();
+        if (uid == null) return;
+        leaderboardRepository.getPendingReward(uid, new LeaderboardRepository.PendingRewardListener() {
+            @Override
+            public void onResult(@Nullable LeaderboardRepository.PendingReward reward) {
+                if (reward == null || isFinishing() || isDestroyed()) return;
+                startActivity(new Intent(RankingActivity.this, LeaderboardRewardActivity.class));
+            }
+
+            @Override
+            public void onError(@NonNull String message) {
+                // Tiho — nagrada (ako postoji) i dalje čeka i pojaviće se pri sledećem ulasku.
             }
         });
     }
