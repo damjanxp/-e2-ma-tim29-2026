@@ -631,31 +631,64 @@ public class UserRepository {
             int newStars = MatchRewardCalculator.applyStarFloor(oldStars, delta);
             int newTokens = MatchRewardCalculator.tokensFromStars(oldStars, newStars);
             int newLeague = LeagueLogic.leagueForStars(newStars);
-            // Iste zvezde idu i na profil (totalStars) i u tekući nedeljni/mesečni
-            // ciklus rang liste (specifikacija 4b) — svako polje floor-ovano na nulu zasebno.
-            int newWeeklyStars = MatchRewardCalculator.applyStarFloor(user.getWeeklyStars(), delta);
-            int newMonthlyStars = MatchRewardCalculator.applyStarFloor(user.getMonthlyStars(), delta);
 
             Map<String, Object> updates = new HashMap<>();
             updates.put("totalStars", newStars);
-            updates.put("weeklyStars", newWeeklyStars);
-            updates.put("monthlyStars", newMonthlyStars);
             if (newTokens > 0) {
                 updates.put("tokens", FieldValue.increment(newTokens));
             }
             if (newLeague != user.getCurrentLeague()) {
                 updates.put("currentLeague", newLeague);
             }
+            // Rang lista prati OSVOJENE zvezde — delta nije "floor"-ovan kad je
+            // pozitivan (floor samo sprečava pad ispod nule), pa je bezbedno
+            // koristiti ga direktno kao stvarni dobitak ovog meča.
+            if (delta > 0) {
+                updates.put("weeklyStars", FieldValue.increment(delta));
+                updates.put("monthlyStars", FieldValue.increment(delta));
+            }
             ref.update(updates).addOnSuccessListener(v -> {
                 user.setTotalStars(newStars);
-                user.setWeeklyStars(newWeeklyStars);
-                user.setMonthlyStars(newMonthlyStars);
                 user.setTokens(user.getTokens() + newTokens);
                 user.setCurrentLeague(newLeague);
                 cb.onSuccess(user);
             }).addOnFailureListener(e -> cb.onError("Upis nagrada nije uspeo."));
         }).addOnFailureListener(e ->
                 cb.onError("Učitavanje profila nije uspelo. Proveri internet konekciju."));
+    }
+
+    /**
+     * Uvećava brojače zvezda za tekući nedeljni i mesečni ciklus rang liste
+     * ({@code weeklyStars}/{@code monthlyStars}) za {@code amount}.
+     *
+     * <p>Poziva se pored (ne umesto) metoda koje menjaju {@code totalStars}
+     * ({@link #applyMatchRewards}, {@link #creditChallengeReward}) — i to SAMO
+     * sa iznosom stvarno OSVOJENIH zvezda iz nekog izvora nagrade (pobeda u
+     * partiji, turniru, dnevni izazov, neto dobitak iz Izazova). Nikad se ne
+     * poziva za trošenje (ulog) ili za refundaciju uloga, tako da rang lista
+     * prati koliko je ko zvezda <b>osvojio</b> u tekućem periodu, a ne trenutni
+     * saldo zvezda (koji pada kad se zvezde troše).</p>
+     *
+     * <p>Ne radi ništa ako je {@code amount <= 0} — rang lista se nikad ne
+     * umanjuje, samo akumulira osvojeno.</p>
+     *
+     * @param uid    UID igrača
+     * @param amount broj novoosvojenih zvezda (ignoriše se ako je ≤ 0)
+     * @param cb     callback po završetku, može biti {@code null}
+     */
+    public void addLeaderboardStars(@NonNull String uid, int amount, @Nullable SimpleCallback cb) {
+        if (amount <= 0) {
+            if (cb != null) cb.onSuccess();
+            return;
+        }
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("weeklyStars", FieldValue.increment(amount));
+        updates.put("monthlyStars", FieldValue.increment(amount));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates)
+                .addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
+                .addOnFailureListener(e -> {
+                    if (cb != null) cb.onError("Ažuriranje rang liste nije uspelo.");
+                });
     }
 
     /** Odjava (alias za {@link #logout()} — koristi ga Student 2 kod profila). */
@@ -696,14 +729,6 @@ public class UserRepository {
             transaction.update(ref, "totalStars", newStars);
             transaction.update(ref, "tokens", currentTokens - stakeTokens);
             transaction.update(ref, "currentLeague", LeagueLogic.leagueForStars((int) newStars));
-
-            // Ulog se skida i iz tekućeg nedeljnog/mesečnog ciklusa (iste zvezde, specifikacija 4b).
-            Long weeklyStars = snap.getLong("weeklyStars");
-            Long monthlyStars = snap.getLong("monthlyStars");
-            transaction.update(ref, "weeklyStars",
-                    Math.max(0, (weeklyStars != null ? weeklyStars : 0) - stakeStars));
-            transaction.update(ref, "monthlyStars",
-                    Math.max(0, (monthlyStars != null ? monthlyStars : 0) - stakeStars));
             return null;
         }).addOnSuccessListener(v -> cb.onSuccess())
           .addOnFailureListener(e -> {
@@ -742,9 +767,6 @@ public class UserRepository {
             if (stars > 0) {
                 transaction.update(ref, "totalStars", newStars);
                 transaction.update(ref, "currentLeague", LeagueLogic.leagueForStars((int) newStars));
-                // Nagrada ide i u tekući nedeljni/mesečni ciklus (iste zvezde, specifikacija 4b).
-                transaction.update(ref, "weeklyStars", FieldValue.increment(stars));
-                transaction.update(ref, "monthlyStars", FieldValue.increment(stars));
             }
             if (tokens > 0) {
                 transaction.update(ref, "tokens", FieldValue.increment(tokens));

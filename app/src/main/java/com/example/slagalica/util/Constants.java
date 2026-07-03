@@ -15,10 +15,19 @@ public final class Constants {
     public static final String COLLECTION_KO_ZNA_ZNA = "koZnaZna";
     public static final String COLLECTION_SPOJNICE  = "spojnice";
     public static final String COLLECTION_LEADERBOARD_CYCLES = "leaderboardCycles";
+    public static final String COLLECTION_LEADERBOARD_REWARDS = "leaderboardRewards";
     public static final String COLLECTION_REGIONS = "regions";
     public static final String COLLECTION_REGION_CYCLE_RESULTS = "regionMonthlyResults";
     public static final String REGION_CYCLE_RESULTS_DOC = "latest";
     public static final String COLLECTION_FRIENDS = "friends";
+
+    /**
+     * Vrednost {@link com.example.slagalica.data.model.AppNotification#getRelatedId()}
+     * koja obeležava obaveštenje kao "osvojena nagrada sa rang liste" — klik na
+     * njega otvara {@code LeaderboardRewardActivity} umesto samog obeležavanja
+     * kao pročitano.
+     */
+    public static final String NOTIFICATION_RELATED_LEADERBOARD_REWARD = "leaderboard_reward";
 
     // ==== Realtime Database ====
     // Baza je u regionu europe-west1; google-services.json ne sadrži adresu baze,
@@ -30,6 +39,8 @@ public final class Constants {
     public static final String RTDB_CHATS       = "chats";
     public static final String RTDB_CHALLENGES  = "challenges";
     public static final String RTDB_FRIEND_INVITES = "friendInvites";
+    public static final String RTDB_TOURNAMENT_LOBBIES = "tournamentLobbies";
+    public static final String RTDB_TOURNAMENTS        = "tournaments";
 
     // ==== Intent ekstre ====
     public static final String EXTRA_MATCH_ID      = "extra_match_id";
@@ -40,6 +51,8 @@ public final class Constants {
     public static final String EXTRA_MY_SCORE       = "extra_my_score";
     public static final String EXTRA_OPPONENT_SCORE = "extra_opponent_score";
     public static final String EXTRA_CHALLENGE_ID   = "extra_challenge_id";
+    public static final String EXTRA_TOURNAMENT_ID    = "extra_tournament_id";
+    public static final String EXTRA_TOURNAMENT_STAGE = "extra_tournament_stage";
 
     // Kumulativni bodovi koji se prenose kroz lanac igara
     public static final String EXTRA_MY_KZZ       = "extra_my_kzz";
@@ -56,6 +69,17 @@ public final class Constants {
     public static final String EXTRA_OPP_ASOCIJACIJE = "extra_opp_asocijacije";
     public static final String EXTRA_MY_SKOCKO       = "extra_my_skocko";
     public static final String EXTRA_OPP_SKOCKO      = "extra_opp_skocko";
+
+    // ==== Turnir (4 igrača: dva polufinala + finale) ====
+    public static final String TOURNAMENT_SLOT_SEMI1 = "semifinal1";
+    public static final String TOURNAMENT_SLOT_SEMI2 = "semifinal2";
+    public static final String TOURNAMENT_SLOT_FINAL = "final";
+    public static final String TOURNAMENT_STATUS_SEMIS = "SEMIS";
+    public static final String TOURNAMENT_STATUS_FINAL = "FINAL";
+    public static final String TOURNAMENT_STATUS_DONE  = "DONE";
+    public static final int TOURNAMENT_SIZE = 4;
+    /** Fiksni lobiji za demo — turnir počinje kada se jedan popuni sa 4 igrača. */
+    public static final String[] TOURNAMENT_LOBBY_IDS = {"lobby1", "lobby2", "lobby3"};
 
     // ==== Identifikatori igara (za setGameResult) ====
     public static final String GAME_KZZ        = "kzz";
@@ -90,6 +114,30 @@ public final class Constants {
     // ==== Profil ====
     public static final int AVATAR_COUNT = 6;
     public static final int LEAGUE_COUNT = 6; // nulta + 5 liga
+
+    // ==== Dnevni izazovi ====
+    public static final String DAILY_CHALLENGE_WIN_MATCH            = "win_regular_match";
+    public static final String DAILY_CHALLENGE_WIN_TOURNAMENT_MATCH = "win_tournament_match";
+    public static final String DAILY_CHALLENGE_PLAY_FRIENDLY_MATCH  = "play_friendly_match";
+    public static final String DAILY_CHALLENGE_SEND_CHAT_MESSAGE    = "send_chat_message";
+    /**
+     * Registar svih dnevnih izazova — jedini spisak koji određuje koji izazovi
+     * postoje. Lista, reset i "Završi sve" u UI-ju automatski rade za svaki
+     * izazov iz ovog niza; za dodavanje novog vidi uputstvo u klasnom komentaru
+     * {@code DailyChallengesActivity}.
+     */
+    public static final String[] DAILY_CHALLENGE_IDS = {
+            DAILY_CHALLENGE_WIN_MATCH,
+            DAILY_CHALLENGE_WIN_TOURNAMENT_MATCH,
+            DAILY_CHALLENGE_PLAY_FRIENDLY_MATCH,
+            DAILY_CHALLENGE_SEND_CHAT_MESSAGE,
+    };
+    /** Zvezde dodeljene za svaki pojedinačno završen dnevni izazov. */
+    public static final int DAILY_CHALLENGE_REWARD_STARS = 3;
+    /** Dodatne zvezde kada su svi dnevni izazovi završeni istog dana. */
+    public static final int DAILY_CHALLENGE_ALL_BONUS_STARS = 2;
+    /** Dodatni žetoni kada su svi dnevni izazovi završeni istog dana. */
+    public static final int DAILY_CHALLENGE_ALL_BONUS_TOKENS = 3;
 
     // ==== Rang lista ====
     public static final String LEADERBOARD_TYPE_WEEKLY  = "weekly";

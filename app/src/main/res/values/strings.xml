@@ -278,6 +278,7 @@
     <string name="asoc_correct_final">Tačno! +%d bodova — Kraj runde!</string>
     <string name="asoc_wrong">Netačno. Otkrij polje pre sledećeg pogađanja.</string>
     <string name="asoc_must_reveal_first">Pogriješio/la si — prvo otkrij polje.</string>
+    <string name="asoc_already_revealed">Već si otvorio/la polje ovog poteza — sad pogodi kolonu ili finale!</string>
     <string name="asoc_round_end_title">Kraj runde %d</string>
     <string name="asoc_round_end_msg">Bodovi u ovoj rundi: %d</string>
     <string name="asoc_btn_next_round">Sledeća runda</string>
@@ -421,6 +422,61 @@
     <string name="matchmaking_preparing">Priprema meča…</string>
     <string name="matchmaking_btn_cancel">Otkaži</string>
 
+    <!-- Dnevni izazovi -->
+    <string name="main_btn_daily_challenges">Dnevni izazovi</string>
+    <string name="daily_challenges_title">Dnevni izazovi</string>
+    <string name="daily_challenge_title_win_match">Pobedi u partiji</string>
+    <string name="daily_challenge_desc_win_match">Pobedi u jednoj rankiranoj 1v1 partiji.</string>
+    <string name="daily_challenge_title_win_tournament">Pobedi u turniru</string>
+    <string name="daily_challenge_desc_win_tournament">Pobedi u jednom meču turnira (polufinale se računa).</string>
+    <string name="daily_challenge_title_play_friendly">Odigraj prijateljsku partiju</string>
+    <string name="daily_challenge_desc_play_friendly">Odigraj partiju sa prijateljem do kraja.</string>
+    <string name="daily_challenge_title_send_chat">Pošalji poruku u čet</string>
+    <string name="daily_challenge_desc_send_chat">Pošalji bar jednu poruku u regionalni čet.</string>
+    <string name="daily_challenge_status_complete">✓ Završeno</string>
+    <string name="daily_challenge_status_incomplete">U toku</string>
+    <string name="daily_challenge_reward_each">+%d ⭐ po izazovu</string>
+    <string name="daily_challenges_bonus_incomplete">Završi sve izazove za bonus: +%1$d ⭐ i +%2$d žetona</string>
+    <string name="daily_challenges_bonus_complete">Bonus osvojen: +%1$d ⭐ i +%2$d žetona 🎉</string>
+    <string name="daily_challenges_debug_section">Debug</string>
+    <string name="daily_challenges_btn_reset">Resetuj sve</string>
+    <string name="daily_challenges_btn_complete_all">Završi sve</string>
+    <string name="daily_challenge_toast_completed">Dnevni izazov završen! +%d ⭐</string>
+    <string name="daily_challenge_toast_bonus">Bonus: +%1$d ⭐ i +%2$d žetona!</string>
+
+    <!-- Turnir (4 igrača) -->
+    <string name="main_btn_tournament">Turnir</string>
+    <string name="tournament_lobby_list_title">Turnirski lobiji</string>
+    <string name="tournament_lobby_list_hint">Uđi u lobi — turnir počinje kada se popuni sa 4 igrača.</string>
+    <string name="tournament_lobby_name">Turnir %d</string>
+    <string name="tournament_lobby_count">%1$d/%2$d</string>
+    <string name="tournament_lobby_join">Uđi</string>
+    <string name="tournament_lobby_full">Popunjeno</string>
+    <string name="tournament_lobby_in_progress">U toku</string>
+    <string name="tournament_lobby_waiting">Čekaš u lobiju… (%1$d/%2$d). Možeš izaći sa ekrana — ostaješ prijavljen/a.</string>
+    <string name="tournament_lobby_ready">Turnir počinje!</string>
+    <string name="tournament_lobby_leave">Napusti lobi</string>
+    <string name="tournament_btn_cancel">Otkaži</string>
+    <string name="tournament_bracket_title">Turnir</string>
+    <string name="tournament_semifinal1">Polufinale 1</string>
+    <string name="tournament_semifinal2">Polufinale 2</string>
+    <string name="tournament_final">Finale</string>
+    <string name="tournament_vs">VS</string>
+    <string name="tournament_tbd">?</string>
+    <string name="tournament_status_ready_prompt">Spreman/na si za svoj meč?</string>
+    <string name="tournament_status_waiting_opponent">Čeka se da protivnik bude spreman…</string>
+    <string name="tournament_status_starting">Pokretanje meča…</string>
+    <string name="tournament_status_advanced">Prošao/la si dalje! Čeka se drugi meč…</string>
+    <string name="tournament_status_eliminated">Ispao/la si iz turnira.</string>
+    <string name="tournament_status_waiting_final">Čeka se kraj turnira…</string>
+    <string name="tournament_champion">Šampion: %s 🏆</string>
+    <string name="tournament_you_champion">Ti si šampion turnira! 🏆</string>
+    <string name="tournament_btn_ready">Spreman/na sam</string>
+    <string name="tournament_btn_home">Nazad na početni ekran</string>
+    <string name="tournament_btn_back_to_bracket">Nazad na turnir</string>
+    <string name="tournament_reward_tokens">Žetoni: +%d</string>
+    <string name="tournament_reward_eliminated">Nema nagrade — ispao/la si iz turnira.</string>
+
     <!-- Ko zna zna — 1v1 (dodatno) -->
     <string name="kzz_waiting_opponent">Čeka se odgovor protivnika…</string>
     <string name="kzz_waiting_content">Učitavanje pitanja…</string>
@@ -534,4 +590,13 @@
     <string name="friends_incoming_title">Poziv na partiju</string>
     <string name="friends_incoming_message">%1$s te poziva na prijateljsku partiju! (%2$ds)</string>
     <string name="friends_preparing_match">Priprema partije…</string>
+
+    <!-- Nagrada sa rang liste (popup + obaveštenje) -->
+    <string name="leaderboard_reward_title">Čestitamo! 🏆</string>
+    <string name="leaderboard_type_weekly_adj">nedeljnoj</string>
+    <string name="leaderboard_type_monthly_adj">mesečnoj</string>
+    <string name="leaderboard_reward_message">Osvojili ste %1$d. mesto na %2$s rang listi!</string>
+    <string name="leaderboard_reward_tokens">+%d žetona</string>
+    <string name="leaderboard_reward_btn_claim">Preuzmi</string>
+    <string name="leaderboard_reward_notif_title">Nagrada sa rang liste!</string>
 </resources>

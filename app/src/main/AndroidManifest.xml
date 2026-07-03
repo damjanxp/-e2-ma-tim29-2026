@@ -107,6 +107,11 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ui.ranking.LeaderboardRewardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".ui.match.MatchmakingActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
@@ -118,6 +123,21 @@
 
         <activity
             android:name=".ui.chat.ChatActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.tournament.TournamentLobbyListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.tournament.TournamentBracketActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.dailychallenge.DailyChallengesActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

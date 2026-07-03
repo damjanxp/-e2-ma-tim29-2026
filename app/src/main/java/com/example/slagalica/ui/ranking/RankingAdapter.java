@@ -1,5 +1,6 @@
 package com.example.slagalica.ui.ranking;
 
+import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -7,6 +8,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.slagalica.R;
@@ -65,6 +67,11 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankView
             holder.card.setCardElevation(dp(holder, rank == 1 ? 8f : 5f));
             holder.rowContent.setBackgroundResource(backgroundFor(rank));
             holder.tvCrown.setVisibility(rank == 1 ? View.VISIBLE : View.GONE);
+            // Zlatna/srebrna/bronzana pozadina je uvek svetla — forsiraj tamnu
+            // boju teksta da ostane čitljivo bez obzira na svetlu/tamnu temu.
+            int contrastColor = ContextCompat.getColor(holder.itemView.getContext(), R.color.rank_top3_text);
+            holder.tvUsername.setTextColor(contrastColor);
+            holder.tvStars.setTextColor(contrastColor);
         } else {
             holder.tvRankNumber.setVisibility(View.VISIBLE);
             holder.tvRankNumber.setText(String.valueOf(rank));
@@ -72,6 +79,9 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankView
             holder.rowContent.setBackgroundResource(0);
             holder.card.setCardElevation(dp(holder, 1f));
             holder.tvCrown.setVisibility(View.GONE);
+            // Vrati podrazumevanu boju (bitno zbog recikliranja redova u RecyclerView-u).
+            holder.tvUsername.setTextColor(holder.defaultUsernameColor);
+            holder.tvStars.setTextColor(holder.defaultStarsColor);
         }
     }
 
@@ -102,6 +112,8 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankView
         final TextView tvCrown;
         final TextView tvUsername;
         final TextView tvStars;
+        final ColorStateList defaultUsernameColor;
+        final ColorStateList defaultStarsColor;
 
         RankViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -113,6 +125,8 @@ public class RankingAdapter extends RecyclerView.Adapter<RankingAdapter.RankView
             tvCrown = itemView.findViewById(R.id.tvRankCrown);
             tvUsername = itemView.findViewById(R.id.tvRankUsername);
             tvStars = itemView.findViewById(R.id.tvRankStars);
+            defaultUsernameColor = tvUsername.getTextColors();
+            defaultStarsColor = tvStars.getTextColors();
         }
     }
 }

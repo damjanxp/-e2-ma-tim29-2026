@@ -571,6 +571,8 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         matchRepository.setGameResult(matchId, Constants.GAME_KORAK, myUid, myTotalScore);
 
         Intent intent = new Intent(this, MatchResultActivity.class);
+        intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
+        intent.putExtra(Constants.EXTRA_OPPONENT_UID, opponentUid);
         intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
         intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
         intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);

@@ -15,7 +15,9 @@ import com.example.slagalica.R;
 import com.example.slagalica.data.model.Message;
 import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.ChatRepository;
+import com.example.slagalica.data.repository.DailyChallengeRepository;
 import com.example.slagalica.data.repository.UserRepository;
+import com.example.slagalica.util.Constants;
 import com.example.slagalica.util.RegionKey;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -31,6 +33,7 @@ public class ChatActivity extends AppCompatActivity {
 
     private final UserRepository userRepository = UserRepository.getInstance();
     private final ChatRepository chatRepository = ChatRepository.getInstance();
+    private final DailyChallengeRepository dailyChallengeRepository = DailyChallengeRepository.getInstance();
 
     private RecyclerView rvMessages;
     private TextInputEditText etMessage;
@@ -146,6 +149,18 @@ public class ChatActivity extends AppCompatActivity {
             public void onSuccess() {
                 etMessage.setText("");
                 btnSend.setEnabled(true);
+                dailyChallengeRepository.completeChallenge(myUid, Constants.DAILY_CHALLENGE_SEND_CHAT_MESSAGE,
+                        new DailyChallengeRepository.CompleteListener() {
+                            @Override
+                            public void onResult(boolean newlyCompleted, boolean bonusAwarded) {
+                                // Tiho — čet ostaje fokusiran na poruke, bez dodatnih dijaloga.
+                            }
+
+                            @Override
+                            public void onError(@NonNull String message) {
+                                // Tiho — dnevni izazovi nisu kritični za tok četa.
+                            }
+                        });
             }
 
             @Override
