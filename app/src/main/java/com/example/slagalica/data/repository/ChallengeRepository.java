@@ -319,11 +319,20 @@ public class ChallengeRepository {
                     scores, finishedAt, totalPotStars, totalPotTokens,
                     challenge.getStakeStars(), challenge.getStakeTokens());
 
+            int stakeStars = challenge.getStakeStars();
             for (Map.Entry<String, ChallengePayout.Payout> entry : payouts.entrySet()) {
+                String participantUid = entry.getKey();
                 ChallengePayout.Payout payout = entry.getValue();
                 if (payout.getStars() > 0 || payout.getTokens() > 0) {
                     userRepository.creditChallengeReward(
-                            entry.getKey(), payout.getStars(), payout.getTokens(), null);
+                            participantUid, payout.getStars(), payout.getTokens(), null);
+                }
+                // Drugoplasirani dobija tačno svoj ulog nazad (neto 0 — nije
+                // "osvojeno"). Samo pobednikov neto dobitak (pot minus sopstveni
+                // ulog) ide na rang listu, da refundacija ne naduva plasman.
+                int netEarnedStars = payout.getStars() - stakeStars;
+                if (netEarnedStars > 0) {
+                    userRepository.addLeaderboardStars(participantUid, netEarnedStars, null);
                 }
             }
 
