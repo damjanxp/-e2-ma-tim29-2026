@@ -89,6 +89,8 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private boolean gameEnded      = false;
     private int     myTotalScore   = 0;
     private int     opponentTotalScore = 0;
+    /** Korak (0-6) na kom sam pogodio traženi pojam u rundi gde sam bio aktivan, ili -1. */
+    private int     myActiveStepHit = -1;
 
     // Stanje runde
     private String  currentPhase   = "";
@@ -543,10 +545,14 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         boolean iAmActiveThisRound = isActivePlayerForRound(currentRound);
 
         if (activeGuess != null && activeGuess.correct) {
-            int pts = KorakPoKorakLogic.bodoviZaPogodakUKoraku(
-                    Math.max(0, Math.min(6, activeGuess.korakIndex)));
-            if (iAmActiveThisRound) myTotalScore += pts;
-            else opponentTotalScore += pts;
+            int stepIdx = Math.max(0, Math.min(6, activeGuess.korakIndex));
+            int pts = KorakPoKorakLogic.bodoviZaPogodakUKoraku(stepIdx);
+            if (iAmActiveThisRound) {
+                myTotalScore += pts;
+                myActiveStepHit = stepIdx; // statistika profila (2.c.iv)
+            } else {
+                opponentTotalScore += pts;
+            }
         } else if (opponentGuess != null && opponentGuess.correct) {
             int pts = KorakPoKorakLogic.bodoviZaPreuzimanje();
             if (!iAmActiveThisRound) myTotalScore += pts;
@@ -569,6 +575,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         gameEnded = true;
 
         matchRepository.setGameResult(matchId, Constants.GAME_KORAK, myUid, myTotalScore);
+        userRepository.recordKorakResult(myUid, myActiveStepHit, myTotalScore);
 
         Intent intent = new Intent(this, MatchResultActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);

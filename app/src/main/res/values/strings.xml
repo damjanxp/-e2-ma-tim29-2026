@@ -154,7 +154,7 @@
     <string name="profile_stat_moj_broj_title">Moj broj</string>
     <string name="profile_stat_moj_broj">Tačan rezultat: %d%%</string>
     <string name="profile_stat_korak_title">Korak po korak</string>
-    <string name="profile_stat_korak">Prosečan korak pogotka: %.1f / 7</string>
+    <string name="profile_stat_korak">Pogodak po koraku — 1: %1$d%%  2: %2$d%%  3: %3$d%%  4: %4$d%%  5: %5$d%%  6: %6$d%%  7: %7$d%%</string>
     <string name="profile_stat_asoc_title">Asocijacije</string>
     <string name="profile_stat_asoc">Rešeno: %d%%  |  Nerešeno: %d%%</string>
     <string name="profile_stat_skocko_title">Skočko</string>
@@ -571,7 +571,9 @@
     <string name="friends_btn_accept">Prihvati</string>
     <string name="friends_btn_decline">Odbij</string>
     <string name="friends_empty">Nemaš još prijatelja. Dodaj ih pretragom po korisničkom imenu ili skeniranjem QR koda.</string>
-    <string name="friends_item_details">%1$s · %2$d ⭐ ovog meseca</string>
+    <string name="friends_item_details">%1$s · %2$d ⭐ ukupno · %3$s</string>
+    <string name="friends_rank_format">#%d na mesečnoj rang listi</string>
+    <string name="friends_rank_unranked">nerangiran ovog meseca</string>
 
     <string name="friends_dialog_add_title">Dodaj prijatelja</string>
     <string name="friends_search_hint">Pretraži po korisničkom imenu</string>

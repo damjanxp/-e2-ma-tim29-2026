@@ -15,12 +15,14 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Adapter za listu prijatelja ({@code activity_friends.xml}) — prikazuje
- * avatar, korisničko ime, ligu i mesečne zvezde svakog prijatelja, sa
- * dugmetom za poziv na partiju.
+ * avatar, korisničko ime, ligu, ukupan broj zvezda i trenutni mesečni rang
+ * svakog prijatelja (specifikacija 7.c), sa dugmetom za poziv na partiju.
  */
 public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHolder> {
 
@@ -30,6 +32,7 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
     }
 
     private final List<User> items = new ArrayList<>();
+    private Map<String, Integer> ranksByUid = new HashMap<>();
     private final OnPlayClickListener listener;
     private final String[] leagueNames;
 
@@ -38,9 +41,11 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
         this.leagueNames = leagueNames;
     }
 
-    public void setItems(@NonNull List<User> newItems) {
+    /** @param ranks trenutni mesečni rang po UID-u (1 = prvo mesto, 0/odsutno = nerangiran) */
+    public void setItems(@NonNull List<User> newItems, @NonNull Map<String, Integer> ranks) {
         items.clear();
         items.addAll(newItems);
+        ranksByUid = ranks;
         notifyDataSetChanged();
     }
 
@@ -59,8 +64,12 @@ public class FriendsAdapter extends RecyclerView.Adapter<FriendsAdapter.ViewHold
         holder.tvUsername.setText(friend.getUsername());
 
         String league = leagueName(friend.getCurrentLeague());
+        Integer rank = ranksByUid.get(friend.getUid());
+        String rankText = (rank != null && rank > 0)
+                ? holder.itemView.getContext().getString(R.string.friends_rank_format, rank)
+                : holder.itemView.getContext().getString(R.string.friends_rank_unranked);
         holder.tvDetails.setText(holder.itemView.getContext().getString(
-                R.string.friends_item_details, league, friend.getMonthlyStars()));
+                R.string.friends_item_details, league, friend.getTotalStars(), rankText));
 
         holder.btnPlay.setOnClickListener(v -> listener.onPlayClicked(friend));
     }

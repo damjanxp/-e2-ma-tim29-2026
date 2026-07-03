@@ -104,6 +104,8 @@ public class MojBrojActivity extends AppCompatActivity {
     private int  opponentTotalScore = 0;
     private int  trazeniBroj;
     private int[] dostupniBrojevi;
+    /** Broj rundi (0-2) u kojima sam lično pronašao traženi broj — za statistiku profila. */
+    private int  myHitsCount        = 0;
 
     private Map<String, MatchRepository.MojBrojExpression> lastExpressions;
 
@@ -573,6 +575,11 @@ public class MojBrojActivity extends AppCompatActivity {
         MojBrojLogic.IzrazRezultat myResult  = exprToRezultat(myExpr);
         MojBrojLogic.IzrazRezultat oppResult = exprToRezultat(oppExpr);
 
+        // Statistika profila (2.c.iii): da li sam LIČNO pronašao traženi broj ove runde.
+        if (myResult.validan && Math.round(myResult.rezultat) == trazeniBroj) {
+            myHitsCount++;
+        }
+
         // r1 = player1, r2 = player2 (izracunajBodovanje je definisano tako)
         MojBrojLogic.IzrazRezultat r1 = isPlayerOne ? myResult : oppResult;
         MojBrojLogic.IzrazRezultat r2 = isPlayerOne ? oppResult : myResult;
@@ -638,6 +645,7 @@ public class MojBrojActivity extends AppCompatActivity {
         gameEnded = true;
 
         matchRepository.setGameResult(matchId, Constants.GAME_MOJ_BROJ, myUid, myTotalScore);
+        userRepository.recordMojBrojResult(myUid, myHitsCount, myTotalScore);
 
         Intent intent = new Intent(this, SpojniceActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);

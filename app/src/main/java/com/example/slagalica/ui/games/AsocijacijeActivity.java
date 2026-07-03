@@ -78,6 +78,8 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private int  myRoundScore       = 0;
     private boolean roundDone       = false;
     private boolean gameEnded       = false;
+    private int  myRoundsSolved     = 0;
+    private int  myRoundsUnsolved   = 0;
 
     // ── Live RTDB state ───────────────────────────────────────────────────────
     private String  currentTurn     = null;
@@ -323,6 +325,13 @@ public class AsocijacijeActivity extends AppCompatActivity {
         Integer oppScore = finalState.scores.get(opponentUid);
         opponentTotalScore += (oppScore != null ? oppScore : 0);
 
+        // Statistika profila (2.c.v): da li sam LIČNO pogodio krajnje rešenje ove runde.
+        if (myUid.equals(finalState.finalSolvedBy)) {
+            myRoundsSolved++;
+        } else {
+            myRoundsUnsolved++;
+        }
+
         boolean isLast = (currentRound >= NUM_ROUNDS - 1);
         handler.postDelayed(() -> {
             if (gameEnded) return;
@@ -524,6 +533,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
         if (gameEnded) return;
         gameEnded = true;
         matchRepository.setGameResult(matchId, Constants.GAME_ASOCIJACIJE, myUid, myTotalScore);
+        userRepository.recordAsocijacijeResult(myUid, myRoundsSolved, myRoundsUnsolved, myTotalScore);
 
         Intent intent = new Intent(this, SkockoActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);

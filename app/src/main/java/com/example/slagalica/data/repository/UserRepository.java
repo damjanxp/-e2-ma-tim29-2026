@@ -505,6 +505,64 @@ public class UserRepository {
         mDb.collection(COLLECTION_USERS).document(uid).update(updates);
     }
 
+    /**
+     * Beleži rezultat jedne partije "Asocijacije": {@code solved}/{@code unsolved} su broj
+     * rundi (od 2) u kojima je OVAJ igrač lično pogodio/nije pogodio krajnje rešenje.
+     */
+    public void recordAsocijacijeResult(@NonNull String uid, int solved, int unsolved, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("asocSolved", FieldValue.increment(solved));
+        updates.put("asocUnsolved", FieldValue.increment(unsolved));
+        updates.put("asocPointsSum", FieldValue.increment(points));
+        updates.put("asocGames", FieldValue.increment(1));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /**
+     * Beleži rezultat jedne partije "Skočko". {@code earlyHit} — da li je igrač (u rundi u
+     * kojoj je bio aktivan) pogodio svoju kombinaciju u 1. ili 2. pokušaju.
+     */
+    public void recordSkockoResult(@NonNull String uid, boolean earlyHit, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        if (earlyHit) {
+            updates.put("skockoEarlyHits", FieldValue.increment(1));
+        }
+        updates.put("skockoPointsSum", FieldValue.increment(points));
+        updates.put("skockoGames", FieldValue.increment(1));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /**
+     * Beleži rezultat jedne partije "Korak po korak". {@code activeStepHit} je korak (0-6)
+     * na kom je igrač pogodio TRAŽENI POJAM u rundi u kojoj je bio aktivan, ili -1 ako nije
+     * pogodio (imenilac za procenat po koraku je {@code korakGames} — aktivan je tačno
+     * jednom po partiji, vidi specifikaciju 2.c.iv).
+     */
+    public void recordKorakResult(@NonNull String uid, int activeStepHit, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("korakPointsSum", FieldValue.increment(points));
+        updates.put("korakGames", FieldValue.increment(1));
+        if (activeStepHit >= 0) {
+            updates.put("korakHits", FieldValue.increment(1));
+            updates.put("korakStepSum", FieldValue.increment(activeStepHit));
+            updates.put("korakStepHit" + (activeStepHit + 1), FieldValue.increment(1));
+        }
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /**
+     * Beleži rezultat jedne partije "Moj broj". {@code hits} je broj rundi (0-2) u kojima je
+     * OVAJ igrač lično pronašao traženi broj (imenilac za procenat je {@code mojBrojRounds}).
+     */
+    public void recordMojBrojResult(@NonNull String uid, int hits, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("mojBrojHits", FieldValue.increment(hits));
+        updates.put("mojBrojRounds", FieldValue.increment(2));
+        updates.put("mojBrojPointsSum", FieldValue.increment(points));
+        updates.put("mojBrojGames", FieldValue.increment(1));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
     /** Beleži odigranu partiju (i pobedu) u statistiku korisnika. */
     public void recordMatchResult(@NonNull String uid, boolean won) {
         Map<String, Object> updates = new HashMap<>();

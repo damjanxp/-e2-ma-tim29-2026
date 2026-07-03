@@ -27,6 +27,7 @@ import com.example.slagalica.data.model.SpojnicePuzzle;
 import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.FriendRepository;
 import com.example.slagalica.data.repository.GameContentRepository;
+import com.example.slagalica.data.repository.LeaderboardRepository;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.ui.games.KoZnaZnaActivity;
@@ -39,7 +40,9 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Ekran "7. Prijatelji" — lista prijatelja sa trenutnim podacima profila,
@@ -58,6 +61,7 @@ public class FriendsActivity extends AppCompatActivity {
     private final FriendRepository friendRepository = FriendRepository.getInstance();
     private final MatchRepository matchRepository = MatchRepository.getInstance();
     private final GameContentRepository contentRepository = GameContentRepository.getInstance();
+    private final LeaderboardRepository leaderboardRepository = LeaderboardRepository.getInstance();
 
     private RecyclerView rvFriends;
     private TextView tvEmpty;
@@ -165,9 +169,9 @@ public class FriendsActivity extends AppCompatActivity {
             public void onSuccess(@NonNull List<User> friends) {
                 if (isFinishing() || isDestroyed()) return;
                 pbLoading.setVisibility(View.GONE);
-                adapter.setItems(friends);
                 tvEmpty.setVisibility(friends.isEmpty() ? View.VISIBLE : View.GONE);
                 rvFriends.setVisibility(friends.isEmpty() ? View.GONE : View.VISIBLE);
+                loadRanksThenBind(friends);
             }
 
             @Override
@@ -177,6 +181,37 @@ public class FriendsActivity extends AppCompatActivity {
                 Toast.makeText(FriendsActivity.this, message, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    /** Učitava trenutni mesečni rang svakog prijatelja (specifikacija 7.c) pa tek onda puni listu. */
+    private void loadRanksThenBind(@NonNull List<User> friends) {
+        if (friends.isEmpty()) {
+            adapter.setItems(friends, new HashMap<>());
+            return;
+        }
+        Map<String, Integer> ranksByUid = new HashMap<>();
+        int[] remaining = {friends.size()};
+        for (User friend : friends) {
+            leaderboardRepository.getMonthlyRank(friend.getMonthlyStars(), new LeaderboardRepository.RankCallback() {
+                @Override
+                public void onSuccess(int rank) {
+                    ranksByUid.put(friend.getUid(), rank);
+                    finishOne();
+                }
+
+                @Override
+                public void onError(@NonNull String message) {
+                    finishOne(); // tiho — red bez ranga i dalje prikazuje ostale podatke
+                }
+
+                private void finishOne() {
+                    remaining[0]--;
+                    if (remaining[0] == 0 && !isFinishing() && !isDestroyed()) {
+                        adapter.setItems(friends, ranksByUid);
+                    }
+                }
+            });
+        }
     }
 
     // =========================================================================

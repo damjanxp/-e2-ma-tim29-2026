@@ -96,6 +96,7 @@ public class SkockoActivity extends AppCompatActivity {
     private boolean gameEnded          = false;
     private int     myTotalScore       = 0;
     private int     opponentTotalScore = 0;
+    private boolean myEarlyHit         = false;
 
     private String  currentPhase   = "";
     private int[]   secret;
@@ -556,7 +557,13 @@ public class SkockoActivity extends AppCompatActivity {
         boolean iAmActive = isActivePlayerForRound(currentRound);
         if (mainCorrectAttemptIdx >= 0) {
             int pts = SkockoLogic.mainScore(mainCorrectAttemptIdx);
-            if (iAmActive) myTotalScore += pts; else opponentTotalScore += pts;
+            if (iAmActive) {
+                myTotalScore += pts;
+                // Statistika profila (2.c.vi): pogodak u 1. ili 2. pokušaju.
+                if (mainCorrectAttemptIdx <= 1) myEarlyHit = true;
+            } else {
+                opponentTotalScore += pts;
+            }
         } else if (opponentAttemptCorrect) {
             int pts = SkockoLogic.OPPONENT_SCORE;
             if (!iAmActive) myTotalScore += pts; else opponentTotalScore += pts;
@@ -587,6 +594,7 @@ public class SkockoActivity extends AppCompatActivity {
         gameEnded = true;
 
         matchRepository.setGameResult(matchId, Constants.GAME_SKOCKO, myUid, myTotalScore);
+        userRepository.recordSkockoResult(myUid, myEarlyHit, myTotalScore);
 
         Intent intent = new Intent(this, MojBrojActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);

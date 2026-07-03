@@ -134,10 +134,10 @@ public final class Constants {
     };
     /** Zvezde dodeljene za svaki pojedinačno završen dnevni izazov. */
     public static final int DAILY_CHALLENGE_REWARD_STARS = 3;
-    /** Dodatne zvezde kada su svi dnevni izazovi završeni istog dana. */
-    public static final int DAILY_CHALLENGE_ALL_BONUS_STARS = 2;
+    /** Dodatne zvezde kada su svi dnevni izazovi završeni istog dana (specifikacija 12.b: "2 tokena i još 3 zvezde"). */
+    public static final int DAILY_CHALLENGE_ALL_BONUS_STARS = 3;
     /** Dodatni žetoni kada su svi dnevni izazovi završeni istog dana. */
-    public static final int DAILY_CHALLENGE_ALL_BONUS_TOKENS = 3;
+    public static final int DAILY_CHALLENGE_ALL_BONUS_TOKENS = 2;
 
     // ==== Rang lista ====
     public static final String LEADERBOARD_TYPE_WEEKLY  = "weekly";

@@ -82,6 +82,13 @@ public class LeaderboardRepository {
         void onError(@NonNull String message);
     }
 
+    /** Rezultat provere trenutnog mesečnog ranga jednog igrača (vidi {@link #getMonthlyRank}). */
+    public interface RankCallback {
+        /** @param rank pozicija na mesečnoj rang listi (1 = prvo mesto), ili 0 ako igrač nije rangiran (0 zvezda ovog meseca). */
+        void onSuccess(int rank);
+        void onError(@NonNull String message);
+    }
+
     // -------------------------------------------------------------------------
     // Pomoćne metode
     // -------------------------------------------------------------------------
@@ -154,6 +161,24 @@ public class LeaderboardRepository {
             users.add(user);
         }
         return users;
+    }
+
+    /**
+     * Vraća trenutnu poziciju igrača na MESEČNOJ rang listi (1 = prvo mesto),
+     * na osnovu broja {@code monthlyStars} — koristi se na listi prijatelja
+     * (specifikacija 7.c: "trenutni mesečni rang"). Igrač bez zvezda ovog
+     * meseca (0) se ne smatra rangiranim (specifikacija 4a), pa vraća 0.
+     */
+    public void getMonthlyRank(int monthlyStars, @NonNull RankCallback cb) {
+        if (monthlyStars <= 0) {
+            cb.onSuccess(0);
+            return;
+        }
+        mDb.collection(Constants.COLLECTION_USERS)
+                .whereGreaterThan("monthlyStars", monthlyStars)
+                .get()
+                .addOnSuccessListener(snapshot -> cb.onSuccess(snapshot.size() + 1))
+                .addOnFailureListener(e -> cb.onError("Učitavanje ranga nije uspelo."));
     }
 
     // -------------------------------------------------------------------------
