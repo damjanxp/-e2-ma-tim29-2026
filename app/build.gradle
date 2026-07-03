@@ -62,4 +62,7 @@ dependencies {
 
     // ZXing — generisanje QR koda na profilu (Student 2)
     implementation libs.zxing.core
+
+    // ZXing embedded — skener QR koda za dodavanje prijatelja (Student 2)
+    implementation libs.zxing.embedded
 }

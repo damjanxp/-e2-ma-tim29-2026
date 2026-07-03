@@ -2,7 +2,6 @@ package com.example.slagalica.ui.main;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,11 +17,13 @@ import com.example.slagalica.ui.auth.LoginActivity;
 import com.example.slagalica.ui.challenge.ChallengeListActivity;
 import com.example.slagalica.ui.chat.ChatActivity;
 import com.example.slagalica.ui.dailychallenge.DailyChallengesActivity;
+import com.example.slagalica.ui.friends.FriendsActivity;
 import com.example.slagalica.ui.games.GameMenuActivity;
 import com.example.slagalica.ui.notifications.NotificationsActivity;
 import com.example.slagalica.ui.profile.ProfileActivity;
 import com.example.slagalica.ui.ranking.LeaderboardRewardActivity;
 import com.example.slagalica.ui.ranking.RankingActivity;
+import com.example.slagalica.ui.region.RegionMapActivity;
 import com.example.slagalica.ui.tournament.TournamentLobbyListActivity;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -104,9 +105,9 @@ public class MainActivity extends AppCompatActivity {
         btnLeaderboard.setOnClickListener(v ->
                 startActivity(new Intent(this, RankingActivity.class)));
         btnFriends.setOnClickListener(v ->
-                showComingSoon(getString(R.string.main_btn_friends)));
+                startActivity(new Intent(this, FriendsActivity.class)));
         btnRegion.setOnClickListener(v ->
-                showComingSoon(getString(R.string.main_btn_region)));
+                startActivity(new Intent(this, RegionMapActivity.class)));
         btnNotifications.setOnClickListener(v ->
                 startActivity(new Intent(this, NotificationsActivity.class)));
         btnChat.setOnClickListener(v ->
@@ -200,13 +201,6 @@ public class MainActivity extends AppCompatActivity {
                 // Tiho — nagrada (ako postoji) i dalje čeka i pojaviće se pri sledećem ulasku.
             }
         });
-    }
-
-    /** Prikazuje Toast poruku "Otvaranje X (uskoro)" za nedovršene funkcionalnosti. */
-    private void showComingSoon(String sectionName) {
-        Toast.makeText(this,
-                getString(R.string.main_coming_soon, sectionName),
-                Toast.LENGTH_SHORT).show();
     }
 
     /** Odjavljuje korisnika i vraća na ekran za prijavu. */

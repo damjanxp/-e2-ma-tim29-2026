@@ -85,6 +85,7 @@ public class SkockoActivity extends AppCompatActivity {
     private String  opponentUid;
     private String  opponentName;
     private boolean isPlayerOne;
+    private boolean isFriendly;
     private boolean opponentOnline = true;
 
     private int myKzzScore, oppKzzScore;
@@ -148,6 +149,7 @@ public class SkockoActivity extends AppCompatActivity {
         opponentUid   = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne   = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        isFriendly    = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
         myKzzScore    = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
         oppKzzScore   = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
         myAsocScore   = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
@@ -597,6 +599,7 @@ public class SkockoActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPP_ASOCIJACIJE, oppAsocScore);
         intent.putExtra(Constants.EXTRA_MY_SKOCKO, myTotalScore);
         intent.putExtra(Constants.EXTRA_OPP_SKOCKO, opponentTotalScore);
+        intent.putExtra(Constants.EXTRA_IS_FRIENDLY, isFriendly);
         startActivity(intent);
         finish();
     }

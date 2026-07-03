@@ -243,6 +243,41 @@ public class MatchRepository {
                         listener.onError("Kreiranje meča nije uspelo."));
     }
 
+    /**
+     * Kreira zapis meča direktno, bez matchmaking reda — koristi ga poziv
+     * prijatelja na partiju ("7. Prijatelji"), kada je protivnik već poznat
+     * (prihvatio je poziv) pa nema potrebe za nasumičnim uparivanjem.
+     *
+     * @param matchId     jedinstven id meča (npr. ključ pod {@code friendInvites})
+     * @param player1Uid  uid igrača koji priprema sadržaj igara (kreator poziva)
+     * @param player1Name korisničko ime kreatora poziva
+     * @param player2Uid  uid pozvanog igrača
+     * @param player2Name korisničko ime pozvanog igrača
+     * @param cb          callback sa rezultatom operacije
+     */
+    public void createDirectMatch(@NonNull String matchId,
+                                  @NonNull String player1Uid, @NonNull String player1Name,
+                                  @NonNull String player2Uid, @NonNull String player2Name,
+                                  @NonNull SimpleCallback cb) {
+        Map<String, Object> player1 = new HashMap<>();
+        player1.put("uid", player1Uid);
+        player1.put("username", player1Name);
+
+        Map<String, Object> player2 = new HashMap<>();
+        player2.put("uid", player2Uid);
+        player2.put("username", player2Name);
+
+        Map<String, Object> match = new HashMap<>();
+        match.put("player1", player1);
+        match.put("player2", player2);
+        match.put("status", "active");
+        match.put("createdAt", ServerValue.TIMESTAMP);
+
+        matchRef(matchId).setValue(match)
+                .addOnSuccessListener(v -> cb.onSuccess())
+                .addOnFailureListener(e -> cb.onError("Kreiranje meča nije uspelo."));
+    }
+
     private void enqueueAndWait(String uid, String username, MatchmakingListener listener) {
         DatabaseReference entryRef =
                 database.getReference(Constants.RTDB_MATCHMAKING).child(uid);

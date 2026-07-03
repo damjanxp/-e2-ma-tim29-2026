@@ -42,6 +42,12 @@ final class DailyChallengeCatalog {
             case Constants.DAILY_CHALLENGE_WIN_TOURNAMENT_MATCH:
                 return new Entry(R.string.daily_challenge_title_win_tournament,
                         R.string.daily_challenge_desc_win_tournament, "🏆");
+            case Constants.DAILY_CHALLENGE_PLAY_FRIENDLY_MATCH:
+                return new Entry(R.string.daily_challenge_title_play_friendly,
+                        R.string.daily_challenge_desc_play_friendly, "🤝");
+            case Constants.DAILY_CHALLENGE_SEND_CHAT_MESSAGE:
+                return new Entry(R.string.daily_challenge_title_send_chat,
+                        R.string.daily_challenge_desc_send_chat, "💬");
             default:
                 return null;
         }

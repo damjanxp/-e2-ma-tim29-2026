@@ -53,6 +53,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     private ScoreBarView   scoreBar;
     private TextView       tvQuestionNumber;
     private TextView       tvStatus;
+    private TextView       tvTimes;
     private TextView       tvQuestion;
     private MaterialButton[] answerButtons;
     private ColorStateList defaultButtonTint;
@@ -63,6 +64,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
     private String opponentUid;
     private String opponentName;
     private boolean isPlayerOne;
+    private boolean isFriendly;
     private boolean opponentOnline = true;
 
     // Stanje igre
@@ -100,6 +102,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         opponentUid  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne  = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        isFriendly   = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
         myUid        = userRepository.getCurrentUid();
     }
 
@@ -107,6 +110,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         scoreBar         = findViewById(R.id.scoreBar);
         tvQuestionNumber = findViewById(R.id.tvQuestionNumber);
         tvStatus         = findViewById(R.id.tvStatus);
+        tvTimes          = findViewById(R.id.tvTimes);
         tvQuestion       = findViewById(R.id.tvQuestion);
 
         answerButtons = new MaterialButton[]{
@@ -228,6 +232,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         tvQuestionNumber.setText(getString(R.string.kzz_question_label, idx + 1));
         tvQuestion.setText(q.getText());
         tvStatus.setText("");
+        tvTimes.setText("");
         for (int i = 0; i < answerButtons.length; i++) {
             answerButtons[i].setText(q.getAnswers().get(i));
             answerButtons[i].setBackgroundTintList(defaultButtonTint);
@@ -326,6 +331,8 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         int opponentDelta = KoZnaZnaLogic.pointsFor(opponentUid, answers);
         myScore += myDelta;
         opponentScore += opponentDelta;
+        // Bodovi se prikazuju odmah posle svakog pitanja, ne tek na kraju igre.
+        scoreBar.setScores(myScore, opponentScore);
         showResolutionFeedback(answers, myDelta);
 
         handler.postDelayed(() -> showQuestion(currentQuestion + 1), FEEDBACK_DELAY_MS);
@@ -347,6 +354,22 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         } else {
             tvStatus.setText(R.string.kzz_correct);
         }
+
+        showAnswerTimes(answers);
+    }
+
+    /** Prikazuje vreme odgovora oba igrača kad su oba tačno odgovorila, radi poređenja brzine. */
+    private void showAnswerTimes(Map<String, KzzAnswer> answers) {
+        KzzAnswer mine = answers.get(myUid);
+        KzzAnswer other = answers.get(opponentUid);
+        if (mine == null || other == null
+                || mine.getAnswerIndex() < 0 || other.getAnswerIndex() < 0
+                || !mine.isCorrect() || !other.isCorrect()) {
+            tvTimes.setText("");
+            return;
+        }
+        tvTimes.setText(getString(R.string.kzz_times_format,
+                mine.getElapsedMs() / 1000f, other.getElapsedMs() / 1000f));
     }
 
     // =========================================================================
@@ -371,6 +394,7 @@ public class KoZnaZnaActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
         intent.putExtra(Constants.EXTRA_MY_SCORE, myScore);
         intent.putExtra(Constants.EXTRA_OPPONENT_SCORE, opponentScore);
+        intent.putExtra(Constants.EXTRA_IS_FRIENDLY, isFriendly);
         startActivity(intent);
         finish();
     }

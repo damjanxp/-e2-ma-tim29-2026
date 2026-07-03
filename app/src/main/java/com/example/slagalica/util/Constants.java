@@ -14,8 +14,12 @@ public final class Constants {
     public static final String COLLECTION_USERS     = "users";
     public static final String COLLECTION_KO_ZNA_ZNA = "koZnaZna";
     public static final String COLLECTION_SPOJNICE  = "spojnice";
-    public static final String COLLECTION_LEADERBOARD_CYCLES  = "leaderboardCycles";
+    public static final String COLLECTION_LEADERBOARD_CYCLES = "leaderboardCycles";
     public static final String COLLECTION_LEADERBOARD_REWARDS = "leaderboardRewards";
+    public static final String COLLECTION_REGIONS = "regions";
+    public static final String COLLECTION_REGION_CYCLE_RESULTS = "regionMonthlyResults";
+    public static final String REGION_CYCLE_RESULTS_DOC = "latest";
+    public static final String COLLECTION_FRIENDS = "friends";
 
     /**
      * Vrednost {@link com.example.slagalica.data.model.AppNotification#getRelatedId()}
@@ -34,6 +38,7 @@ public final class Constants {
     public static final String RTDB_MATCHES     = "matches";
     public static final String RTDB_CHATS       = "chats";
     public static final String RTDB_CHALLENGES  = "challenges";
+    public static final String RTDB_FRIEND_INVITES = "friendInvites";
     public static final String RTDB_TOURNAMENT_LOBBIES = "tournamentLobbies";
     public static final String RTDB_TOURNAMENTS        = "tournaments";
 
@@ -113,6 +118,8 @@ public final class Constants {
     // ==== Dnevni izazovi ====
     public static final String DAILY_CHALLENGE_WIN_MATCH            = "win_regular_match";
     public static final String DAILY_CHALLENGE_WIN_TOURNAMENT_MATCH = "win_tournament_match";
+    public static final String DAILY_CHALLENGE_PLAY_FRIENDLY_MATCH  = "play_friendly_match";
+    public static final String DAILY_CHALLENGE_SEND_CHAT_MESSAGE    = "send_chat_message";
     /**
      * Registar svih dnevnih izazova — jedini spisak koji određuje koji izazovi
      * postoje. Lista, reset i "Završi sve" u UI-ju automatski rade za svaki
@@ -122,6 +129,8 @@ public final class Constants {
     public static final String[] DAILY_CHALLENGE_IDS = {
             DAILY_CHALLENGE_WIN_MATCH,
             DAILY_CHALLENGE_WIN_TOURNAMENT_MATCH,
+            DAILY_CHALLENGE_PLAY_FRIENDLY_MATCH,
+            DAILY_CHALLENGE_SEND_CHAT_MESSAGE,
     };
     /** Zvezde dodeljene za svaki pojedinačno završen dnevni izazov. */
     public static final int DAILY_CHALLENGE_REWARD_STARS = 3;
