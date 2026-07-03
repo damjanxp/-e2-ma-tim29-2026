@@ -2,6 +2,9 @@ package com.example.slagalica.data.repository;
 
 import androidx.annotation.NonNull;
 
+import androidx.annotation.Nullable;
+
+import com.example.slagalica.data.model.AsocijacijePuzzle;
 import com.example.slagalica.data.model.KorakPoKorakZadatak;
 import com.example.slagalica.data.model.KzzQuestion;
 import com.example.slagalica.data.model.SpojnicePuzzle;
@@ -13,7 +16,9 @@ import com.google.firebase.firestore.WriteBatch;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -25,15 +30,22 @@ import java.util.Random;
  * <ul>
  *   <li>{@code korakPoKorak} — zadaci za igru "Korak po korak"</li>
  *   <li>{@code koZnaZna} — pitanja za "Ko zna zna" (Student 2)</li>
+ *   <li>{@code spojnice} — slagalice za igru "Spojnice"</li>
+ *   <li>{@code asocijacije} — slagalice za igru "Asocijacije"</li>
  * </ul>
+ *
+ * <p>Za {@code spojnice} i {@code asocijacije}: ako je kolekcija prazna pri
+ * prvom čitanju, automatski se popunjava sa par primera ("seed" pri prvom
+ * pokretanju) — nema potrebe za ručnim unosom pre prve upotrebe.</p>
  *
  * <p>Svaki dokument mora imati strukturu koja odgovara odgovarajućem POJO modelu.</p>
  */
 public class GameContentRepository {
 
-    private static final String COLLECTION_KORAK    = "korakPoKorak";
-    private static final String COLLECTION_KO_ZNA   = "koZnaZna";
-    private static final String COLLECTION_SPOJNICE = "spojnice";
+    private static final String COLLECTION_KORAK       = "korakPoKorak";
+    private static final String COLLECTION_KO_ZNA      = "koZnaZna";
+    private static final String COLLECTION_SPOJNICE    = "spojnice";
+    private static final String COLLECTION_ASOCIJACIJE = "asocijacije";
 
     // -------------------------------------------------------------------------
     // Singleton
@@ -187,6 +199,12 @@ public class GameContentRepository {
         void onError(@NonNull String message);
     }
 
+    /** Callback za listu slagalica "Asocijacije". */
+    public interface AsocijacijeCallback {
+        void onSuccess(@NonNull List<AsocijacijePuzzle> puzzles);
+        void onError(@NonNull String message);
+    }
+
     /** Učitava {@code count} nasumičnih pitanja za "Ko zna zna". */
     public void loadKzzQuestions(int count, @NonNull KzzCallback cb) {
         mDb.collection(COLLECTION_KO_ZNA).get()
@@ -232,6 +250,27 @@ public class GameContentRepository {
                 .addOnFailureListener(e -> cb.onError("Učitavanje spojnica nije uspelo."));
     }
 
+    /** Učitava {@code count} nasumičnih slagalica za "Asocijacije". */
+    public void loadAsocijacijePuzzles(int count, @NonNull AsocijacijeCallback cb) {
+        mDb.collection(COLLECTION_ASOCIJACIJE).get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.isEmpty()) {
+                        seedAsocijacije(() -> loadAsocijacijePuzzles(count, cb), cb);
+                        return;
+                    }
+                    List<AsocijacijePuzzle> all = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : snapshot) {
+                        AsocijacijePuzzle p = asocijacijePuzzleFromDoc(doc);
+                        if (p != null) {
+                            all.add(p);
+                        }
+                    }
+                    Collections.shuffle(all);
+                    cb.onSuccess(new ArrayList<>(all.subList(0, Math.min(count, all.size()))));
+                })
+                .addOnFailureListener(e -> cb.onError("Učitavanje asocijacija nije uspelo."));
+    }
+
     private void seedKzz(Runnable onSeeded, KzzCallback cb) {
         WriteBatch batch = mDb.batch();
         for (KzzQuestion q : sampleQuestions()) {
@@ -250,6 +289,59 @@ public class GameContentRepository {
         batch.commit()
                 .addOnSuccessListener(v -> onSeeded.run())
                 .addOnFailureListener(e -> cb.onError("Inicijalni unos spojnica nije uspeo."));
+    }
+
+    private void seedAsocijacije(Runnable onSeeded, AsocijacijeCallback cb) {
+        WriteBatch batch = mDb.batch();
+        for (AsocijacijePuzzle p : sampleAsocijacijePuzzles()) {
+            batch.set(mDb.collection(COLLECTION_ASOCIJACIJE).document(), asocijacijePuzzleToMap(p));
+        }
+        batch.commit()
+                .addOnSuccessListener(v -> onSeeded.run())
+                .addOnFailureListener(e -> cb.onError("Inicijalni unos asocijacija nije uspeo."));
+    }
+
+    /**
+     * Pretvara slagalicu u ravnu mapu za Firestore — {@code String[][]} (niz
+     * nizova) nije podržan kao vrednost polja, pa se {@code clues} snima kao
+     * ravna lista od 16 elemenata (indeks {@code kolona*4 + red}), isto kao što
+     * {@link MatchRepository#writeAsocijacijePuzzles} radi za RTDB.
+     */
+    private Map<String, Object> asocijacijePuzzleToMap(AsocijacijePuzzle p) {
+        List<String> clueFlat = new ArrayList<>(16);
+        for (int c = 0; c < 4; c++) {
+            for (int r = 0; r < 4; r++) {
+                clueFlat.add(p.getClue(c, r));
+            }
+        }
+        List<String> colSols = new ArrayList<>(4);
+        for (int c = 0; c < 4; c++) {
+            colSols.add(p.getColSolution(c));
+        }
+        Map<String, Object> m = new HashMap<>();
+        m.put("clues", clueFlat);
+        m.put("colSolutions", colSols);
+        m.put("finalSolution", p.getFinalSolution());
+        return m;
+    }
+
+    /** Obrnuto od {@link #asocijacijePuzzleToMap} — vraća {@code null} ako je dokument nepotpun. */
+    @Nullable
+    private AsocijacijePuzzle asocijacijePuzzleFromDoc(@NonNull QueryDocumentSnapshot doc) {
+        String finalSol = doc.getString("finalSolution");
+        List<String> clueFlat = (List<String>) doc.get("clues");
+        List<String> colSolsList = (List<String>) doc.get("colSolutions");
+        if (finalSol == null || clueFlat == null || clueFlat.size() != 16
+                || colSolsList == null || colSolsList.size() != 4) {
+            return null;
+        }
+        String[][] clues = new String[4][4];
+        for (int c = 0; c < 4; c++) {
+            for (int r = 0; r < 4; r++) {
+                clues[c][r] = clueFlat.get(c * 4 + r);
+            }
+        }
+        return new AsocijacijePuzzle(clues, colSolsList.toArray(new String[4]), finalSol);
     }
 
     private List<KzzQuestion> sampleQuestions() {
@@ -278,6 +370,35 @@ public class GameContentRepository {
                 Arrays.asList("SAD", "Indija", "Kina", "Rusija"), 1));
         list.add(new KzzQuestion("Koliko igrača ima fudbalski tim na terenu?",
                 Arrays.asList("9", "10", "11", "12"), 2));
+        return list;
+    }
+
+    /** Početni sadržaj za kolekciju {@code asocijacije} (koristi se samo pri prvom seed-u). */
+    private List<AsocijacijePuzzle> sampleAsocijacijePuzzles() {
+        List<AsocijacijePuzzle> list = new ArrayList<>();
+
+        list.add(new AsocijacijePuzzle(
+                new String[][]{
+                        {"Tropik", "Kokos", "Surfer", "Plaža"},          // A → MORE
+                        {"Skija", "Sankanje", "Sneg", "Planina"},        // B → ZIMA
+                        {"Šatori", "Reka", "Priroda", "Šuma"},           // C → KAMPOVANJE
+                        {"Bazen", "Sunce", "Odmor", "Letovanje"}         // D → LETO
+                },
+                new String[]{"MORE", "ZIMA", "KAMPOVANJE", "LETO"},
+                "ODMOR"
+        ));
+
+        list.add(new AsocijacijePuzzle(
+                new String[][]{
+                        {"Pasta", "Pica", "Rim", "Venecija"},            // A → ITALIJA
+                        {"Baguette", "Pariz", "Ajfelov", "Vino"},        // B → FRANCUSKA
+                        {"Flamenco", "Toreador", "Barselona", "Šerija"}, // C → ŠPANIJA
+                        {"Big Ben", "London", "Čaj", "Kruna"}            // D → ENGLESKA
+                },
+                new String[]{"ITALIJA", "FRANCUSKA", "ŠPANIJA", "ENGLESKA"},
+                "EVROPA"
+        ));
+
         return list;
     }
 

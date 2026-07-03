@@ -30,11 +30,19 @@
     <color name="skocko_hint_empty">#FFBDBDBD</color>
     <color name="skocko_symbol_tint">#FF1565C0</color>
 
-    <!-- Asocijacije — stanja ćelija -->
-    <color name="asoc_cell_hidden">#FFE8EAF6</color>
-    <color name="asoc_cell_revealed">#FFE3F2FD</color>
-    <color name="asoc_col_solved">#FFC8E6C9</color>
-    <color name="asoc_final_solved">#FFFFF9C4</color>
+    <!-- Asocijacije — stanja ćelija.
+         Namerno pune, srednje-tamne boje uparene sa belim tekstom (vidi setTint()
+         u AsocijacijeActivity/ChallengeSoloAsocijacijeActivity) — tako izgled ne
+         zavisi od svetle/tamne teme uređaja (stari pastelni tonovi su bili
+         nečitljivi u tamnoj temi jer je podrazumevana boja teksta dugmeta tada
+         svetla). Otvoreno polje/rešena kolona/rešeno finale: plavo za mene,
+         crveno za protivnika (u solo režimu koristi se samo plava). -->
+    <color name="asoc_cell_hidden">#FF607D8B</color>
+    <color name="asoc_cell_revealed_me">#FF1976D2</color>
+    <color name="asoc_cell_revealed_opponent">#FFD32F2F</color>
+    <!-- Polja otkrivena AUTOMATSKI (tačna kolona/finale) — zeleno, čisto vizuelno.
+         Ne menja stvarno stanje "otkriveno" koje se koristi za bodovanje. -->
+    <color name="asoc_cell_auto_revealed">#FF2E7D32</color>
 
     <!-- Notifikacije -->
     <color name="notification_unread_bg">#FFE3F2FD</color>

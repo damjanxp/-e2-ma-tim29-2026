@@ -278,6 +278,7 @@
     <string name="asoc_correct_final">Tačno! +%d bodova — Kraj runde!</string>
     <string name="asoc_wrong">Netačno. Otkrij polje pre sledećeg pogađanja.</string>
     <string name="asoc_must_reveal_first">Pogriješio/la si — prvo otkrij polje.</string>
+    <string name="asoc_already_revealed">Već si otvorio/la polje ovog poteza — sad pogodi kolonu ili finale!</string>
     <string name="asoc_round_end_title">Kraj runde %d</string>
     <string name="asoc_round_end_msg">Bodovi u ovoj rundi: %d</string>
     <string name="asoc_btn_next_round">Sledeća runda</string>
