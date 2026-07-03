@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Required on Android 13+ (API 33) to post system tray notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Skeniranje QR koda za dodavanje prijatelja (7. Prijatelji) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
         android:name=".SlagalicaApplication"
@@ -95,6 +98,21 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ui.region.RegionMapActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.friends.FriendsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.ranking.LeaderboardRewardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".ui.match.MatchmakingActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
@@ -106,6 +124,21 @@
 
         <activity
             android:name=".ui.chat.ChatActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.tournament.TournamentLobbyListActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.tournament.TournamentBracketActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ui.dailychallenge.DailyChallengesActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
 

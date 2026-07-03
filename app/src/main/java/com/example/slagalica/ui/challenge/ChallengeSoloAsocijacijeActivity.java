@@ -9,34 +9,45 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.AsocijacijePuzzle;
+import com.example.slagalica.data.repository.GameContentRepository;
 import com.example.slagalica.logic.games.AsocijacijeLogic;
 import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.snackbar.Snackbar;
 
+import java.util.List;
+
 /**
  * Solo verzija igre "Asocijacije" za Izazov — jedan igrač, bez protivnika,
- * jedna runda. Vraća broj bodova pozivaocu kroz {@link Constants#EXTRA_MY_SCORE}.
+ * dve runde. Vraća ukupan broj bodova pozivaocu kroz {@link Constants#EXTRA_MY_SCORE}.
  */
 public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
 
     private static final int TURN_SECONDS = 120;
+    private static final int NUM_ROUNDS   = 2;
     private static final int NUM_COLS     = AsocijacijeLogic.NUM_COLS;
     private static final int NUM_ROWS     = AsocijacijeLogic.NUM_ROWS;
 
     // ── Views ─────────────────────────────────────────────────────────────────
-    private TextView        tvScore, tvTimer;
+    private TextView        tvRound, tvScore, tvTimer;
     private ProgressBar     pbTimer;
     private MaterialButton[][] clueButtons;
     private MaterialButton[] colButtons;
     private MaterialButton  finalButton;
+    private ColorStateList  defaultTextColors;
+
+    // ── Content ───────────────────────────────────────────────────────────────
+    private final GameContentRepository contentRepository = GameContentRepository.getInstance();
+    private List<AsocijacijePuzzle> puzzles;
 
     // ── Game state ────────────────────────────────────────────────────────────
     private AsocijacijePuzzle   puzzle;
@@ -45,6 +56,8 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
     private boolean             finalSolved;
     private boolean             mustReveal;
     private int                 score;
+    private int                 currentRound;
+    private final int[]         roundScores = new int[NUM_ROUNDS];
     private CountDownTimer      timer;
 
     private static final String[] COL_LETTERS = {"A", "B", "C", "D"};
@@ -54,7 +67,33 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_challenge_solo_asocijacije);
         initViews();
-        startRound();
+        loadPuzzlesThenStart();
+    }
+
+    /** Učitava obe slagalice iz Firestore-a pre prve runde (par sekundi, jednokratno). */
+    private void loadPuzzlesThenStart() {
+        contentRepository.loadAsocijacijePuzzles(NUM_ROUNDS,
+                new GameContentRepository.AsocijacijeCallback() {
+                    @Override
+                    public void onSuccess(@NonNull List<AsocijacijePuzzle> loaded) {
+                        if (isFinishing() || isDestroyed()) return;
+                        if (loaded.size() < NUM_ROUNDS) {
+                            Toast.makeText(ChallengeSoloAsocijacijeActivity.this,
+                                    "Nema dovoljno asocijacija u bazi.", Toast.LENGTH_LONG).show();
+                            finish();
+                            return;
+                        }
+                        puzzles = loaded;
+                        startRound(1);
+                    }
+
+                    @Override
+                    public void onError(@NonNull String message) {
+                        if (isFinishing() || isDestroyed()) return;
+                        Toast.makeText(ChallengeSoloAsocijacijeActivity.this, message, Toast.LENGTH_LONG).show();
+                        finish();
+                    }
+                });
     }
 
     @Override
@@ -66,6 +105,7 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
     // ── Initialisation ────────────────────────────────────────────────────────
 
     private void initViews() {
+        tvRound  = findViewById(R.id.tvRound);
         tvScore  = findViewById(R.id.tvScore);
         tvTimer  = findViewById(R.id.tvTimer);
         pbTimer  = findViewById(R.id.pbTimer);
@@ -97,20 +137,23 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
         };
 
         finalButton = findViewById(R.id.btnCenter);
+        defaultTextColors = clueButtons[0][0].getTextColors();
 
         findViewById(R.id.btnGiveUp).setOnClickListener(v -> endRound(true));
     }
 
     // ── Round lifecycle ────────────────────────────────────────────────────────
 
-    private void startRound() {
-        puzzle       = AsocijacijePuzzle.samplePuzzles()[0];
+    private void startRound(int round) {
+        currentRound = round;
+        puzzle       = puzzles.get(round - 1);
         revealed     = new boolean[NUM_COLS][NUM_ROWS];
         colSolved    = new boolean[NUM_COLS];
         finalSolved  = false;
-        mustReveal   = false;
+        mustReveal   = true;
         score        = 0;
 
+        tvRound.setText(getString(R.string.asoc_round, round));
         updateScoreDisplay();
         bindBoard();
         startTimer();
@@ -118,7 +161,13 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
 
     private void endRound(boolean gaveUp) {
         cancelTimer();
-        showGameOver();
+        roundScores[currentRound - 1] = score;
+
+        if (currentRound < NUM_ROUNDS) {
+            showRoundSummary();
+        } else {
+            showGameOver();
+        }
     }
 
     // ── Board binding ─────────────────────────────────────────────────────────
@@ -152,6 +201,14 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
 
     private void onClueTapped(int col, int row) {
         if (revealed[col][row]) return;
+        // Polje je već prikazano (zeleno) jer je kolona ili finale pogođeno —
+        // nije stvarno "otkriveno" (radi bodovanja), ali se ne sme ponovo dirati.
+        if (colSolved[col] || finalSolved) return;
+        if (!mustReveal) {
+            // Već je otvoreno tačno jedno polje ovog poteza — sada mora da pogađa.
+            Snackbar.make(finalButton, R.string.asoc_already_revealed, Snackbar.LENGTH_SHORT).show();
+            return;
+        }
 
         revealed[col][row] = true;
         mustReveal = false;
@@ -159,11 +216,14 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
         MaterialButton btn = clueButtons[col][row];
         btn.setText(puzzle.getClue(col, row));
         btn.setEnabled(false);
-        setButtonTint(btn, ContextCompat.getColor(this, R.color.asoc_cell_revealed));
+        setButtonTint(btn, ContextCompat.getColor(this, R.color.asoc_cell_revealed_me));
     }
 
     private void onColSolutionTapped(int col) {
         if (colSolved[col]) return;
+        // Kolona je već prikazana (zeleno) jer je finale pogođeno — ne sme se
+        // ponovo "rešavati".
+        if (finalSolved) return;
         if (mustReveal) {
             Snackbar.make(finalButton, R.string.asoc_must_reveal_first, Snackbar.LENGTH_SHORT).show();
             return;
@@ -176,9 +236,10 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
                     int pts = AsocijacijeLogic.columnScore(countRevealed(col));
                     score += pts;
                     colSolved[col] = true;
-                    mustReveal = false;
+                    mustReveal = true;
                     updateScoreDisplay();
                     markColumnSolved(col);
+                    revealRemainingInColumnGreen(col);
                     Snackbar.make(finalButton,
                         getString(R.string.asoc_correct_col, pts, COL_LETTERS[col]),
                         Snackbar.LENGTH_SHORT).show();
@@ -206,9 +267,10 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
                     finalSolved = true;
                     updateScoreDisplay();
                     setButtonTint(finalButton,
-                        ContextCompat.getColor(this, R.color.asoc_final_solved));
+                        ContextCompat.getColor(this, R.color.asoc_cell_revealed_me));
                     finalButton.setText(puzzle.getFinalSolution());
                     finalButton.setEnabled(false);
+                    revealAllRemainingGreen();
                     Snackbar.make(finalButton,
                         getString(R.string.asoc_correct_final, pts),
                         Snackbar.LENGTH_SHORT).show();
@@ -226,20 +288,61 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
 
     private void markColumnSolved(int col) {
         setButtonTint(colButtons[col],
-            ContextCompat.getColor(this, R.color.asoc_col_solved));
+            ContextCompat.getColor(this, R.color.asoc_cell_revealed_me));
         colButtons[col].setText(puzzle.getColSolution(col));
         colButtons[col].setEnabled(false);
+    }
+
+    /**
+     * Prikazuje preostala skrivena polja jedne kolone (zeleno), pošto je
+     * kolona pogođena. Čisto vizuelno — NE upisuje u {@code revealed}, pa ne
+     * utiče na bodovanje (nedodirnuta polja i dalje doprinose bodovima kao da
+     * su ostala skrivena).
+     */
+    private void revealRemainingInColumnGreen(int col) {
+        int autoColor = ContextCompat.getColor(this, R.color.asoc_cell_auto_revealed);
+        for (int row = 0; row < NUM_ROWS; row++) {
+            if (revealed[col][row]) continue;
+            MaterialButton btn = clueButtons[col][row];
+            btn.setText(puzzle.getClue(col, row));
+            btn.setEnabled(false);
+            setButtonTint(btn, autoColor);
+        }
+    }
+
+    /**
+     * Isto kao {@link #revealRemainingInColumnGreen}, ali za celu tablu (finale
+     * pogođeno) — dodatno otkriva i rešenja kolona koje igrač nikad nije
+     * pogodio (i njih, zeleno, čisto vizuelno).
+     */
+    private void revealAllRemainingGreen() {
+        int autoColor = ContextCompat.getColor(this, R.color.asoc_cell_auto_revealed);
+        for (int col = 0; col < NUM_COLS; col++) {
+            revealRemainingInColumnGreen(col);
+            if (!colSolved[col]) {
+                setButtonTint(colButtons[col], autoColor);
+                colButtons[col].setText(puzzle.getColSolution(col));
+                colButtons[col].setEnabled(false);
+            }
+        }
     }
 
     private void updateScoreDisplay() {
         tvScore.setText(getString(R.string.asoc_score, score));
     }
 
+    /**
+     * Puni pozadinu i tera belu boju teksta kad je zadata boja (čitljivo bez
+     * obzira na svetlu/tamnu temu); {@code null} vraća podrazumevani izgled
+     * dugmeta (koristi se za "otkriveno" stanje na početku runde).
+     */
     private void setButtonTint(MaterialButton btn, Integer color) {
         if (color == null) {
             btn.setBackgroundTintList(null);
+            btn.setTextColor(defaultTextColors);
         } else {
             btn.setBackgroundTintList(ColorStateList.valueOf(color));
+            btn.setTextColor(ContextCompat.getColor(this, R.color.white));
         }
     }
 
@@ -312,15 +415,26 @@ public class ChallengeSoloAsocijacijeActivity extends AppCompatActivity {
         }
     }
 
-    // ── Game-over dialog ──────────────────────────────────────────────────────
+    // ── Round / game-over dialogs ─────────────────────────────────────────────
+
+    private void showRoundSummary() {
+        disableBoard();
+        new AlertDialog.Builder(this)
+            .setTitle(getString(R.string.asoc_round_end_title, currentRound))
+            .setMessage(getString(R.string.asoc_round_end_msg, roundScores[currentRound - 1]))
+            .setCancelable(false)
+            .setPositiveButton(R.string.asoc_btn_next_round, (d, w) -> startRound(currentRound + 1))
+            .show();
+    }
 
     private void showGameOver() {
         disableBoard();
+        int total = roundScores[0] + roundScores[1];
         new AlertDialog.Builder(this)
             .setTitle(R.string.asoc_game_over_title)
-            .setMessage(getString(R.string.asoc_round_end_msg, score))
+            .setMessage(getString(R.string.asoc_game_over_msg, roundScores[0], roundScores[1], total))
             .setCancelable(false)
-            .setPositiveButton(R.string.asoc_btn_finish, (d, w) -> finishWithScore(score))
+            .setPositiveButton(R.string.asoc_btn_finish, (d, w) -> finishWithScore(total))
             .show();
     }
 

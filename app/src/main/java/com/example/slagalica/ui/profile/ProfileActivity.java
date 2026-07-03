@@ -1,6 +1,7 @@
 package com.example.slagalica.ui.profile;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.UserRepository;
+import com.example.slagalica.logic.league.LeagueLogic;
 import com.example.slagalica.ui.auth.LoginActivity;
 import com.example.slagalica.util.AvatarProvider;
 import com.example.slagalica.util.QrCodeGenerator;
@@ -43,6 +45,8 @@ public class ProfileActivity extends AppCompatActivity {
     private Chip           chipStars;
     private Chip           chipLeague;
     private Chip           chipRegion;
+    private TextView       tvLeagueProgress;
+    private ProgressBar    pbLeagueProgress;
     private TextView       tvUsername;
     private TextView       tvEmail;
     private TextView       tvTotalGames;
@@ -53,10 +57,14 @@ public class ProfileActivity extends AppCompatActivity {
     private TextView       tvStatKzzAvg;
     private ProgressBar    pbKzz;
     private TextView       tvStatMojBroj;
+    private TextView       tvStatMojBrojAvg;
     private ProgressBar    pbMojBroj;
     private TextView       tvStatKorak;
+    private TextView       tvStatKorakAvg;
     private TextView       tvStatAsoc;
+    private TextView       tvStatAsocAvg;
     private TextView       tvStatSkocko;
+    private TextView       tvStatSkockoAvg;
     private ProgressBar    pbSkocko;
     private TextView       tvStatSpojnice;
     private TextView       tvStatSpojniceAvg;
@@ -82,6 +90,8 @@ public class ProfileActivity extends AppCompatActivity {
         chipStars       = findViewById(R.id.chipStars);
         chipLeague      = findViewById(R.id.chipLeague);
         chipRegion      = findViewById(R.id.chipRegion);
+        tvLeagueProgress = findViewById(R.id.tvLeagueProgress);
+        pbLeagueProgress = findViewById(R.id.pbLeagueProgress);
         tvUsername      = findViewById(R.id.tvUsername);
         tvEmail         = findViewById(R.id.tvEmail);
         tvTotalGames    = findViewById(R.id.tvTotalGames);
@@ -92,10 +102,14 @@ public class ProfileActivity extends AppCompatActivity {
         tvStatKzzAvg    = findViewById(R.id.tvStatKzzAvg);
         pbKzz           = findViewById(R.id.pbKzz);
         tvStatMojBroj   = findViewById(R.id.tvStatMojBroj);
+        tvStatMojBrojAvg = findViewById(R.id.tvStatMojBrojAvg);
         pbMojBroj       = findViewById(R.id.pbMojBroj);
         tvStatKorak     = findViewById(R.id.tvStatKorak);
+        tvStatKorakAvg  = findViewById(R.id.tvStatKorakAvg);
         tvStatAsoc      = findViewById(R.id.tvStatAsoc);
+        tvStatAsocAvg   = findViewById(R.id.tvStatAsocAvg);
         tvStatSkocko    = findViewById(R.id.tvStatSkocko);
+        tvStatSkockoAvg = findViewById(R.id.tvStatSkockoAvg);
         pbSkocko        = findViewById(R.id.pbSkocko);
         tvStatSpojnice  = findViewById(R.id.tvStatSpojnice);
         tvStatSpojniceAvg = findViewById(R.id.tvStatSpojniceAvg);
@@ -155,6 +169,7 @@ public class ProfileActivity extends AppCompatActivity {
                 ? getString(R.string.profile_no_email) : user.getEmail());
 
         ivAvatar.setImageResource(AvatarProvider.getDrawableForStored(user.getAvatarUrl()));
+        ivAvatar.setStrokeColor(ColorStateList.valueOf(avatarFrameColor((int) user.getAvatarFrameType())));
 
         chipTokens.setText(getString(R.string.profile_label_tokens, (int) user.getTokens()));
         chipStars.setText(getString(R.string.profile_label_stars, (int) user.getTotalStars()));
@@ -162,7 +177,25 @@ public class ProfileActivity extends AppCompatActivity {
         chipLeague.setChipIconResource(R.drawable.ic_league);
         chipRegion.setText(getString(R.string.profile_label_region, user.getRegion()));
 
+        bindLeagueProgress((int) user.getTotalStars(), (int) user.getCurrentLeague());
         bindStatistics(user);
+    }
+
+    /** Popunjava tekst i traku napretka do sledeće lige (vidi {@link LeagueLogic}). */
+    private void bindLeagueProgress(int totalStars, int currentLeague) {
+        int nextThreshold = LeagueLogic.thresholdForNextLeague(currentLeague);
+        if (nextThreshold < 0) {
+            tvLeagueProgress.setText(R.string.league_progress_max);
+            pbLeagueProgress.setProgress(100);
+            return;
+        }
+        int currentThreshold = LeagueLogic.thresholdForLeague(currentLeague);
+        int remaining = Math.max(0, nextThreshold - totalStars);
+        tvLeagueProgress.setText(getString(R.string.league_progress_next, remaining));
+
+        int span = Math.max(1, nextThreshold - currentThreshold);
+        int progressed = Math.max(0, Math.min(span, totalStars - currentThreshold));
+        pbLeagueProgress.setProgress((int) Math.round(progressed * 100.0 / span));
     }
 
     private void bindStatistics(User user) {
@@ -182,24 +215,38 @@ public class ProfileActivity extends AppCompatActivity {
                 average(user.getKzzPointsSum(), user.getKzzGames())));
         pbKzz.setProgress(kzzPct);
 
-        // Moj broj: procenat pronađenog tačnog broja
-        int mojBrojPct = percent(user.getMojBrojHits(), user.getMojBrojGames());
+        // Moj broj: procenat pronađenog tačnog broja (imenilac: odigrane runde) + prosečni bodovi
+        int mojBrojPct = percent(user.getMojBrojHits(), user.getMojBrojRounds());
         tvStatMojBroj.setText(getString(R.string.profile_stat_moj_broj, mojBrojPct));
+        tvStatMojBrojAvg.setText(getString(R.string.profile_stat_avg_points,
+                average(user.getMojBrojPointsSum(), user.getMojBrojGames())));
         pbMojBroj.setProgress(mojBrojPct);
 
-        // Korak po korak: prosečan korak pogotka
-        float korakAvg = user.getKorakHits() == 0
-                ? 0f : (float) user.getKorakStepSum() / user.getKorakHits();
-        tvStatKorak.setText(getString(R.string.profile_stat_korak, korakAvg));
+        // Korak po korak: procenat pogođenog pojma PO SVAKOM KORAKU (spec 2.c.iv) + prosečni bodovi
+        long korakGames = user.getKorakGames();
+        tvStatKorak.setText(getString(R.string.profile_stat_korak,
+                percent(user.getKorakStepHit1(), korakGames),
+                percent(user.getKorakStepHit2(), korakGames),
+                percent(user.getKorakStepHit3(), korakGames),
+                percent(user.getKorakStepHit4(), korakGames),
+                percent(user.getKorakStepHit5(), korakGames),
+                percent(user.getKorakStepHit6(), korakGames),
+                percent(user.getKorakStepHit7(), korakGames)));
+        tvStatKorakAvg.setText(getString(R.string.profile_stat_avg_points,
+                average(user.getKorakPointsSum(), user.getKorakGames())));
 
-        // Asocijacije: odnos rešenih i nerešenih
+        // Asocijacije: odnos rešenih i nerešenih + prosečni bodovi
         long asocTotal = user.getAsocSolved() + user.getAsocUnsolved();
         int asocPct = percent(user.getAsocSolved(), asocTotal);
         tvStatAsoc.setText(getString(R.string.profile_stat_asoc, asocPct, 100 - asocPct));
+        tvStatAsocAvg.setText(getString(R.string.profile_stat_avg_points,
+                average(user.getAsocPointsSum(), user.getAsocGames())));
 
-        // Skočko: procenat pogođene kombinacije u 1–2. pokušaju
+        // Skočko: procenat pogođene kombinacije u 1–2. pokušaju + prosečni bodovi
         int skockoPct = percent(user.getSkockoEarlyHits(), user.getSkockoGames());
         tvStatSkocko.setText(getString(R.string.profile_stat_skocko, skockoPct));
+        tvStatSkockoAvg.setText(getString(R.string.profile_stat_avg_points,
+                average(user.getSkockoPointsSum(), user.getSkockoGames())));
         pbSkocko.setProgress(skockoPct);
 
         // Spojnice: procenat uspešno povezanih pojmova + prosečni bodovi
@@ -275,6 +322,20 @@ public class ProfileActivity extends AppCompatActivity {
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
+    }
+
+    /**
+     * Vraća boju okvira avatara prema {@code avatarFrameType} (postavlja se
+     * na kraju mesečnog ciklusa za igrače čiji je region bio 1./2./3. — vidi
+     * "5. Prikaz regiona"): 0=podrazumevano, 1=zlatno, 2=srebrno, 3=bronzano.
+     */
+    private int avatarFrameColor(int avatarFrameType) {
+        switch (avatarFrameType) {
+            case 1: return getColor(R.color.rank_gold_border);
+            case 2: return getColor(R.color.rank_silver_border);
+            case 3: return getColor(R.color.rank_bronze_border);
+            default: return getColor(R.color.profile_avatar_stroke);
+        }
     }
 
     private String leagueName(int league) {

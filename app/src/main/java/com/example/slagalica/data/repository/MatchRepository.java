@@ -58,6 +58,13 @@ public class MatchRepository {
         void onError(@NonNull String message);
     }
 
+    /** Osnovni podaci o meču — koristi ih rezultat ekran da prepozna turnir. */
+    public interface MatchInfoListener {
+        void onInfo(@Nullable String tournamentId, @Nullable String stage,
+                    @Nullable String player1Uid, @Nullable String player2Uid);
+        void onError(@NonNull String message);
+    }
+
     /** Slušalac pitanja za "Ko zna zna" (okida se kad kreator upiše sadržaj). */
     public interface KzzQuestionsListener {
         void onQuestions(@NonNull List<KzzQuestion> questions);
@@ -146,6 +153,21 @@ public class MatchRepository {
                 listener.onError("Traženje protivnika nije uspelo. Proveri internet konekciju."));
     }
 
+    /**
+     * Učitava osnovne podatke o meču (za rezultat ekran): eventualni
+     * {@code tournamentId}/{@code stage} i uid-eve oba igrača (za neodlučen
+     * ishod u turniru — deterministički "coin flip").
+     */
+    public void getMatchInfo(@NonNull String matchId, @NonNull MatchInfoListener listener) {
+        matchRef(matchId).get().addOnSuccessListener(snapshot -> {
+            String tournamentId = snapshot.child("tournamentId").getValue(String.class);
+            String stage        = snapshot.child("stage").getValue(String.class);
+            String p1Uid        = snapshot.child("player1").child("uid").getValue(String.class);
+            String p2Uid        = snapshot.child("player2").child("uid").getValue(String.class);
+            listener.onInfo(tournamentId, stage, p1Uid, p2Uid);
+        }).addOnFailureListener(e -> listener.onError("Učitavanje podataka o meču nije uspelo."));
+    }
+
     /** Napušta red za čekanje (otkazivanje pretrage). */
     public void cancelQueue(@NonNull String uid) {
         if (myQueueRef != null && queueListener != null) {
@@ -219,6 +241,41 @@ public class MatchRepository {
                         listener.onMatched(matchId, true, opponentUid, opponentName))
                 .addOnFailureListener(e ->
                         listener.onError("Kreiranje meča nije uspelo."));
+    }
+
+    /**
+     * Kreira zapis meča direktno, bez matchmaking reda — koristi ga poziv
+     * prijatelja na partiju ("7. Prijatelji"), kada je protivnik već poznat
+     * (prihvatio je poziv) pa nema potrebe za nasumičnim uparivanjem.
+     *
+     * @param matchId     jedinstven id meča (npr. ključ pod {@code friendInvites})
+     * @param player1Uid  uid igrača koji priprema sadržaj igara (kreator poziva)
+     * @param player1Name korisničko ime kreatora poziva
+     * @param player2Uid  uid pozvanog igrača
+     * @param player2Name korisničko ime pozvanog igrača
+     * @param cb          callback sa rezultatom operacije
+     */
+    public void createDirectMatch(@NonNull String matchId,
+                                  @NonNull String player1Uid, @NonNull String player1Name,
+                                  @NonNull String player2Uid, @NonNull String player2Name,
+                                  @NonNull SimpleCallback cb) {
+        Map<String, Object> player1 = new HashMap<>();
+        player1.put("uid", player1Uid);
+        player1.put("username", player1Name);
+
+        Map<String, Object> player2 = new HashMap<>();
+        player2.put("uid", player2Uid);
+        player2.put("username", player2Name);
+
+        Map<String, Object> match = new HashMap<>();
+        match.put("player1", player1);
+        match.put("player2", player2);
+        match.put("status", "active");
+        match.put("createdAt", ServerValue.TIMESTAMP);
+
+        matchRef(matchId).setValue(match)
+                .addOnSuccessListener(v -> cb.onSuccess())
+                .addOnFailureListener(e -> cb.onError("Kreiranje meča nije uspelo."));
     }
 
     private void enqueueAndWait(String uid, String username, MatchmakingListener listener) {
@@ -847,6 +904,7 @@ public class MatchRepository {
         public boolean mustReveal;
         public String phase = "PLAYING";
         public boolean[][] revealed = new boolean[4][4];
+        public String[][] revealedBy = new String[4][4];
         public String[] colSolvedBy = new String[4];
         public int[] colScores = new int[4];
         public boolean finalSolved;
@@ -855,27 +913,46 @@ public class MatchRepository {
         public Map<String, Integer> scores = new HashMap<>();
     }
 
+    /**
+     * Inicira rundu — prvi igrač na potezu MORA otvoriti tačno jedno polje pre
+     * nego što sme da pogađa (isto pravilo važi za svaki naredni potez, vidi
+     * {@link #revealAsocijacijeCell} i {@link #passAsocijacijeTurn}).
+     */
     public void initAsocijacijeRound(@NonNull String matchId, int round, @NonNull String firstTurnUid) {
         Map<String, Object> init = new HashMap<>();
         init.put("turn", firstTurnUid);
-        init.put("mustReveal", false);
+        init.put("mustReveal", true);
         init.put("phase", "PLAYING");
         asocRoundRef(matchId, round).updateChildren(init);
     }
 
-    public void revealAsocijacijeCell(@NonNull String matchId, int round, int col, int row, boolean clearMustReveal) {
+    /**
+     * Otkriva jedno polje i beleži KO ga je otkrio (za bojenje po igraču).
+     * Poziva se samo kada je {@code mustReveal == true} (proverava
+     * {@code AsocijacijeActivity} pre poziva) — nakon otkrivanja se
+     * {@code mustReveal} gasi, čime se sprečava otvaranje još polja pre pogotka.
+     */
+    public void revealAsocijacijeCell(@NonNull String matchId, int round, int col, int row,
+                                       @NonNull String revealerUid, boolean clearMustReveal) {
         Map<String, Object> update = new HashMap<>();
         update.put("revealed/" + col + "/" + row, true);
+        update.put("revealedBy/" + col + "/" + row, revealerUid);
         if (clearMustReveal) update.put("mustReveal", false);
         asocRoundRef(matchId, round).updateChildren(update);
     }
 
+    /**
+     * Beleži tačan pogodak kolone. Igrač nastavlja potez, ali mora ponovo
+     * otkriti novo polje pre sledećeg pogotka ({@code mustReveal} se ponovo
+     * pali) — isti ciklus "otkrij jedno pa pogodi" važi tokom cele runde.
+     */
     public void solveAsocijacijeColumn(@NonNull String matchId, int round, int col,
                                         @NonNull String solverUid, int colScore, int newTotalScore) {
         Map<String, Object> update = new HashMap<>();
         update.put("colSolved/" + col, solverUid);
         update.put("colScores/" + col, colScore);
         update.put("scores/" + solverUid, newTotalScore);
+        update.put("mustReveal", true);
         asocRoundRef(matchId, round).updateChildren(update);
     }
 
@@ -921,6 +998,15 @@ public class MatchRepository {
                         int r = safeParseInt(rowSnap.getKey(), -1);
                         if (r < 0 || r >= 4) continue;
                         if (Boolean.TRUE.equals(rowSnap.getValue(Boolean.class))) state.revealed[c][r] = true;
+                    }
+                }
+                for (DataSnapshot colSnap : snap.child("revealedBy").getChildren()) {
+                    int c = safeParseInt(colSnap.getKey(), -1);
+                    if (c < 0 || c >= 4) continue;
+                    for (DataSnapshot rowSnap : colSnap.getChildren()) {
+                        int r = safeParseInt(rowSnap.getKey(), -1);
+                        if (r < 0 || r >= 4) continue;
+                        state.revealedBy[c][r] = rowSnap.getValue(String.class);
                     }
                 }
                 for (DataSnapshot cs : snap.child("colSolved").getChildren()) {

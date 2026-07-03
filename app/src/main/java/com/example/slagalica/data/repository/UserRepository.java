@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.example.slagalica.data.model.User;
+import com.example.slagalica.logic.league.LeagueLogic;
 import com.example.slagalica.logic.match.MatchRewardCalculator;
 import com.example.slagalica.util.AvatarProvider;
 import com.google.firebase.auth.AuthCredential;
@@ -40,9 +41,6 @@ public class UserRepository {
 
     /** Broj milisekundi u 24 sata — prag za dnevnu dodelu žetona. */
     private static final long DAY_MS = 24L * 60 * 60 * 1000;
-
-    /** Broj žetona koji se dodeljuje svakog dana. */
-    private static final int DAILY_TOKENS = 5;
 
     /** Interni marker greške u transakciji kada igrač nema žetona. */
     private static final String NO_TOKENS_MARKER = "NO_TOKENS";
@@ -451,6 +449,32 @@ public class UserRepository {
     }
 
     /**
+     * Učitava profil korisnika po UID-u bez kreiranja — za slučajeve gde
+     * nepostojeći korisnik treba da bude greška, ne novi (mock) nalog (npr.
+     * dodavanje prijatelja skeniranjem QR koda ili pretragom po imenu).
+     *
+     * @param uid UID igrača koji se traži
+     * @param cb  callback: {@link User} pri uspehu, greška ako ne postoji
+     */
+    public void getUserIfExists(@NonNull String uid, @NonNull UserCallback cb) {
+        mDb.collection(COLLECTION_USERS).document(uid).get()
+                .addOnSuccessListener(snap -> {
+                    if (!snap.exists()) {
+                        cb.onError("Korisnik nije pronađen.");
+                        return;
+                    }
+                    User user = snap.toObject(User.class);
+                    if (user == null) {
+                        cb.onError("Greška pri čitanju korisničkog profila.");
+                        return;
+                    }
+                    cb.onSuccess(user);
+                })
+                .addOnFailureListener(e ->
+                        cb.onError("Učitavanje korisnika nije uspelo. Proveri internet konekciju."));
+    }
+
+    /**
      * Menja avatar korisnika. Lokalni avatar (indeks) se čuva kao string u polju
      * {@code avatarUrl} (bez Firebase Storage, po AGENTS.md).
      */
@@ -478,6 +502,64 @@ public class UserRepository {
         updates.put("spojniceMissed", FieldValue.increment(missed));
         updates.put("spojnicePointsSum", FieldValue.increment(points));
         updates.put("spojniceGames", FieldValue.increment(1));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /**
+     * Beleži rezultat jedne partije "Asocijacije": {@code solved}/{@code unsolved} su broj
+     * rundi (od 2) u kojima je OVAJ igrač lično pogodio/nije pogodio krajnje rešenje.
+     */
+    public void recordAsocijacijeResult(@NonNull String uid, int solved, int unsolved, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("asocSolved", FieldValue.increment(solved));
+        updates.put("asocUnsolved", FieldValue.increment(unsolved));
+        updates.put("asocPointsSum", FieldValue.increment(points));
+        updates.put("asocGames", FieldValue.increment(1));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /**
+     * Beleži rezultat jedne partije "Skočko". {@code earlyHit} — da li je igrač (u rundi u
+     * kojoj je bio aktivan) pogodio svoju kombinaciju u 1. ili 2. pokušaju.
+     */
+    public void recordSkockoResult(@NonNull String uid, boolean earlyHit, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        if (earlyHit) {
+            updates.put("skockoEarlyHits", FieldValue.increment(1));
+        }
+        updates.put("skockoPointsSum", FieldValue.increment(points));
+        updates.put("skockoGames", FieldValue.increment(1));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /**
+     * Beleži rezultat jedne partije "Korak po korak". {@code activeStepHit} je korak (0-6)
+     * na kom je igrač pogodio TRAŽENI POJAM u rundi u kojoj je bio aktivan, ili -1 ako nije
+     * pogodio (imenilac za procenat po koraku je {@code korakGames} — aktivan je tačno
+     * jednom po partiji, vidi specifikaciju 2.c.iv).
+     */
+    public void recordKorakResult(@NonNull String uid, int activeStepHit, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("korakPointsSum", FieldValue.increment(points));
+        updates.put("korakGames", FieldValue.increment(1));
+        if (activeStepHit >= 0) {
+            updates.put("korakHits", FieldValue.increment(1));
+            updates.put("korakStepSum", FieldValue.increment(activeStepHit));
+            updates.put("korakStepHit" + (activeStepHit + 1), FieldValue.increment(1));
+        }
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates);
+    }
+
+    /**
+     * Beleži rezultat jedne partije "Moj broj". {@code hits} je broj rundi (0-2) u kojima je
+     * OVAJ igrač lično pronašao traženi broj (imenilac za procenat je {@code mojBrojRounds}).
+     */
+    public void recordMojBrojResult(@NonNull String uid, int hits, int points) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("mojBrojHits", FieldValue.increment(hits));
+        updates.put("mojBrojRounds", FieldValue.increment(2));
+        updates.put("mojBrojPointsSum", FieldValue.increment(points));
+        updates.put("mojBrojGames", FieldValue.increment(1));
         mDb.collection(COLLECTION_USERS).document(uid).update(updates);
     }
 
@@ -529,8 +611,12 @@ public class UserRepository {
     }
 
     /**
-     * Dodeljuje dnevnih {@value #DAILY_TOKENS} žetona ako je od poslednje dodele
-     * prošlo najmanje 24 sata; u suprotnom ne menja ništa.
+     * Dodeljuje dnevne žetone ako je od poslednje dodele prošlo najmanje 24 sata;
+     * u suprotnom ne menja ništa.
+     *
+     * <p>Broj dodeljenih žetona zavisi od trenutne lige igrača — svaka liga
+     * donosi po dodatni token (vidi {@link LeagueLogic#dailyTokensForLeague(int)}),
+     * npr. treća liga daje 5 + 3 = 8 žetona dnevno.</p>
      *
      * <p>Poziva se tiho pri ulasku na glavni ekran; uspeh se vraća i kada nije
      * bilo dodele (nije istekao dan).</p>
@@ -552,8 +638,12 @@ public class UserRepository {
                 cb.onSuccess();
                 return;
             }
+            Long leagueField = snap.getLong("currentLeague");
+            int league = leagueField != null ? leagueField.intValue() : 0;
+            int dailyTokens = LeagueLogic.dailyTokensForLeague(league);
+
             Map<String, Object> updates = new HashMap<>();
-            updates.put("tokens", FieldValue.increment(DAILY_TOKENS));
+            updates.put("tokens", FieldValue.increment(dailyTokens));
             updates.put("lastTokenGrantTimestamp", now);
             ref.update(updates)
                     .addOnSuccessListener(v -> cb.onSuccess())
@@ -568,8 +658,13 @@ public class UserRepository {
      * <ul>
      *   <li>izračuna novu vrednost zvezda (uz donju granicu na nuli),</li>
      *   <li>izračuna nove žetone jer je pređen prag od 50 zvezda,</li>
-     *   <li>upiše {@code totalStars} i uveća {@code tokens} u Firestore.</li>
+     *   <li>upiše {@code totalStars} i uveća {@code tokens} u Firestore,</li>
+     *   <li>preračuna ligu na osnovu novog broja zvezda (vidi {@link LeagueLogic})
+     *       i upiše je ako se promenila.</li>
      * </ul>
+     *
+     * <p>Vraćeni {@link User} ima ažurnu {@code currentLeague} — pozivalac (UI)
+     * upoređuje je sa ligom pre partije da bi prikazao obaveštenje o promeni lige.</p>
      *
      * <p><b>Ne</b> poziva se za prijateljske partije.</p>
      *
@@ -593,19 +688,65 @@ public class UserRepository {
                     : MatchRewardCalculator.starsDeltaForLoser(myPoints);
             int newStars = MatchRewardCalculator.applyStarFloor(oldStars, delta);
             int newTokens = MatchRewardCalculator.tokensFromStars(oldStars, newStars);
+            int newLeague = LeagueLogic.leagueForStars(newStars);
 
             Map<String, Object> updates = new HashMap<>();
             updates.put("totalStars", newStars);
             if (newTokens > 0) {
                 updates.put("tokens", FieldValue.increment(newTokens));
             }
+            if (newLeague != user.getCurrentLeague()) {
+                updates.put("currentLeague", newLeague);
+            }
+            // Rang lista prati OSVOJENE zvezde — delta nije "floor"-ovan kad je
+            // pozitivan (floor samo sprečava pad ispod nule), pa je bezbedno
+            // koristiti ga direktno kao stvarni dobitak ovog meča.
+            if (delta > 0) {
+                updates.put("weeklyStars", FieldValue.increment(delta));
+                updates.put("monthlyStars", FieldValue.increment(delta));
+            }
             ref.update(updates).addOnSuccessListener(v -> {
                 user.setTotalStars(newStars);
                 user.setTokens(user.getTokens() + newTokens);
+                user.setCurrentLeague(newLeague);
                 cb.onSuccess(user);
             }).addOnFailureListener(e -> cb.onError("Upis nagrada nije uspeo."));
         }).addOnFailureListener(e ->
                 cb.onError("Učitavanje profila nije uspelo. Proveri internet konekciju."));
+    }
+
+    /**
+     * Uvećava brojače zvezda za tekući nedeljni i mesečni ciklus rang liste
+     * ({@code weeklyStars}/{@code monthlyStars}) za {@code amount}.
+     *
+     * <p>Poziva se pored (ne umesto) metoda koje menjaju {@code totalStars}
+     * ({@link #applyMatchRewards}, {@link #creditChallengeReward}) — i to SAMO
+     * sa iznosom stvarno OSVOJENIH zvezda iz nekog izvora nagrade (pobeda u
+     * partiji, turniru, dnevni izazov, neto dobitak iz Izazova). Nikad se ne
+     * poziva za trošenje (ulog) ili za refundaciju uloga, tako da rang lista
+     * prati koliko je ko zvezda <b>osvojio</b> u tekućem periodu, a ne trenutni
+     * saldo zvezda (koji pada kad se zvezde troše).</p>
+     *
+     * <p>Ne radi ništa ako je {@code amount <= 0} — rang lista se nikad ne
+     * umanjuje, samo akumulira osvojeno.</p>
+     *
+     * @param uid    UID igrača
+     * @param amount broj novoosvojenih zvezda (ignoriše se ako je ≤ 0)
+     * @param cb     callback po završetku, može biti {@code null}
+     */
+    public void addLeaderboardStars(@NonNull String uid, int amount, @Nullable SimpleCallback cb) {
+        if (amount <= 0) {
+            if (cb != null) cb.onSuccess();
+            return;
+        }
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("weeklyStars", FieldValue.increment(amount));
+        updates.put("monthlyStars", FieldValue.increment(amount));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates)
+                .addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
+                .addOnFailureListener(e -> {
+                    if (cb != null) cb.onError("Ažuriranje rang liste nije uspelo.");
+                });
     }
 
     /** Odjava (alias za {@link #logout()} — koristi ga Student 2 kod profila). */
@@ -642,8 +783,10 @@ public class UserRepository {
                 throw new FirebaseFirestoreException(NO_STAKE_MARKER,
                         FirebaseFirestoreException.Code.ABORTED);
             }
-            transaction.update(ref, "totalStars", currentStars - stakeStars);
+            long newStars = currentStars - stakeStars;
+            transaction.update(ref, "totalStars", newStars);
             transaction.update(ref, "tokens", currentTokens - stakeTokens);
+            transaction.update(ref, "currentLeague", LeagueLogic.leagueForStars((int) newStars));
             return null;
         }).addOnSuccessListener(v -> cb.onSuccess())
           .addOnFailureListener(e -> {
@@ -659,6 +802,10 @@ public class UserRepository {
      * Dodeljuje nagradu (zvezde i/ili žetone) igraču nakon završenog izazova
      * (pobedniku ili vraćanje uloga za drugoplasiranog).
      *
+     * <p>Ako se dodeljuju zvezde, preračunava i upisuje ligu na osnovu novog
+     * broja zvezda (vidi {@link LeagueLogic}) — otud atomična transakcija
+     * umesto prostog {@code increment}-a.</p>
+     *
      * @param uid    UID igrača
      * @param stars  broj zvezda za dodelu (0 ako nema)
      * @param tokens broj žetona za dodelu (0 ako nema)
@@ -666,22 +813,27 @@ public class UserRepository {
      */
     public void creditChallengeReward(@NonNull String uid, int stars, int tokens,
                                       @Nullable SimpleCallback cb) {
-        Map<String, Object> updates = new HashMap<>();
-        if (stars > 0) {
-            updates.put("totalStars", FieldValue.increment(stars));
-        }
-        if (tokens > 0) {
-            updates.put("tokens", FieldValue.increment(tokens));
-        }
-        if (updates.isEmpty()) {
+        if (stars <= 0 && tokens <= 0) {
             if (cb != null) cb.onSuccess();
             return;
         }
-        mDb.collection(COLLECTION_USERS).document(uid).update(updates)
-                .addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
-                .addOnFailureListener(e -> {
-                    if (cb != null) cb.onError("Dodela nagrade za izazov nije uspela.");
-                });
+        DocumentReference ref = mDb.collection(COLLECTION_USERS).document(uid);
+        mDb.runTransaction(transaction -> {
+            DocumentSnapshot snap = transaction.get(ref);
+            Long currentStars = snap.getLong("totalStars");
+            long newStars = (currentStars != null ? currentStars : 0) + stars;
+            if (stars > 0) {
+                transaction.update(ref, "totalStars", newStars);
+                transaction.update(ref, "currentLeague", LeagueLogic.leagueForStars((int) newStars));
+            }
+            if (tokens > 0) {
+                transaction.update(ref, "tokens", FieldValue.increment(tokens));
+            }
+            return null;
+        }).addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
+          .addOnFailureListener(e -> {
+              if (cb != null) cb.onError("Dodela nagrade za izazov nije uspela.");
+          });
     }
 }
 

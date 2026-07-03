@@ -75,6 +75,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private String  opponentUid;
     private String  opponentName;
     private boolean isPlayerOne;
+    private boolean isFriendly;
     private boolean opponentOnline = true;
 
     private int myKzzScore, oppKzzScore;
@@ -88,6 +89,8 @@ public class KorakPoKorakActivity extends AppCompatActivity {
     private boolean gameEnded      = false;
     private int     myTotalScore   = 0;
     private int     opponentTotalScore = 0;
+    /** Korak (0-6) na kom sam pogodio traženi pojam u rundi gde sam bio aktivan, ili -1. */
+    private int     myActiveStepHit = -1;
 
     // Stanje runde
     private String  currentPhase   = "";
@@ -144,6 +147,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         opponentUid      = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName     = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne      = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        isFriendly       = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
         myKzzScore      = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
         oppKzzScore     = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
         myAsocScore     = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
@@ -541,10 +545,14 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         boolean iAmActiveThisRound = isActivePlayerForRound(currentRound);
 
         if (activeGuess != null && activeGuess.correct) {
-            int pts = KorakPoKorakLogic.bodoviZaPogodakUKoraku(
-                    Math.max(0, Math.min(6, activeGuess.korakIndex)));
-            if (iAmActiveThisRound) myTotalScore += pts;
-            else opponentTotalScore += pts;
+            int stepIdx = Math.max(0, Math.min(6, activeGuess.korakIndex));
+            int pts = KorakPoKorakLogic.bodoviZaPogodakUKoraku(stepIdx);
+            if (iAmActiveThisRound) {
+                myTotalScore += pts;
+                myActiveStepHit = stepIdx; // statistika profila (2.c.iv)
+            } else {
+                opponentTotalScore += pts;
+            }
         } else if (opponentGuess != null && opponentGuess.correct) {
             int pts = KorakPoKorakLogic.bodoviZaPreuzimanje();
             if (!iAmActiveThisRound) myTotalScore += pts;
@@ -570,8 +578,11 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         gameEnded = true;
 
         matchRepository.setGameResult(matchId, Constants.GAME_KORAK, myUid, myTotalScore);
+        userRepository.recordKorakResult(myUid, myActiveStepHit, myTotalScore);
 
         Intent intent = new Intent(this, MatchResultActivity.class);
+        intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
+        intent.putExtra(Constants.EXTRA_OPPONENT_UID, opponentUid);
         intent.putExtra(Constants.EXTRA_OPPONENT_NAME, opponentName);
         intent.putExtra(Constants.EXTRA_MY_KZZ, myKzzScore);
         intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);
@@ -585,6 +596,7 @@ public class KorakPoKorakActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, oppSpojniceScore);
         intent.putExtra(Constants.EXTRA_MY_KORAK, myTotalScore);
         intent.putExtra(Constants.EXTRA_OPP_KORAK, opponentTotalScore);
+        intent.putExtra(Constants.EXTRA_IS_FRIENDLY, isFriendly);
         startActivity(intent);
         finish();
     }

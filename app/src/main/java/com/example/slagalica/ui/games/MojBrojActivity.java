@@ -84,6 +84,7 @@ public class MojBrojActivity extends AppCompatActivity {
     private String  opponentUid;
     private String  opponentName;
     private boolean isPlayerOne;
+    private boolean isFriendly;
     private boolean opponentOnline = true;
 
     // Bodovi iz prethodnih igara (prenose se kroz lanac)
@@ -103,6 +104,8 @@ public class MojBrojActivity extends AppCompatActivity {
     private int  opponentTotalScore = 0;
     private int  trazeniBroj;
     private int[] dostupniBrojevi;
+    /** Broj rundi (0-2) u kojima sam lično pronašao traženi broj — za statistiku profila. */
+    private int  myHitsCount        = 0;
 
     private Map<String, MatchRepository.MojBrojExpression> lastExpressions;
 
@@ -158,6 +161,7 @@ public class MojBrojActivity extends AppCompatActivity {
         opponentUid  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne  = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        isFriendly   = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
         myKzzScore    = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
         oppKzzScore   = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
         myAsocScore   = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
@@ -571,6 +575,11 @@ public class MojBrojActivity extends AppCompatActivity {
         MojBrojLogic.IzrazRezultat myResult  = exprToRezultat(myExpr);
         MojBrojLogic.IzrazRezultat oppResult = exprToRezultat(oppExpr);
 
+        // Statistika profila (2.c.iii): da li sam LIČNO pronašao traženi broj ove runde.
+        if (myResult.validan && Math.round(myResult.rezultat) == trazeniBroj) {
+            myHitsCount++;
+        }
+
         // r1 = player1, r2 = player2 (izracunajBodovanje je definisano tako)
         MojBrojLogic.IzrazRezultat r1 = isPlayerOne ? myResult : oppResult;
         MojBrojLogic.IzrazRezultat r2 = isPlayerOne ? oppResult : myResult;
@@ -638,6 +647,7 @@ public class MojBrojActivity extends AppCompatActivity {
         gameEnded = true;
 
         matchRepository.setGameResult(matchId, Constants.GAME_MOJ_BROJ, myUid, myTotalScore);
+        userRepository.recordMojBrojResult(myUid, myHitsCount, myTotalScore);
 
         Intent intent = new Intent(this, SpojniceActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
@@ -652,6 +662,7 @@ public class MojBrojActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPP_SKOCKO, oppSkockoScore);
         intent.putExtra(Constants.EXTRA_MY_MOJ_BROJ, myTotalScore);
         intent.putExtra(Constants.EXTRA_OPP_MOJ_BROJ, opponentTotalScore);
+        intent.putExtra(Constants.EXTRA_IS_FRIENDLY, isFriendly);
         startActivity(intent);
         finish();
     }

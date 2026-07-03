@@ -30,11 +30,19 @@
     <color name="skocko_hint_empty">#FFBDBDBD</color>
     <color name="skocko_symbol_tint">#FF1565C0</color>
 
-    <!-- Asocijacije — stanja ćelija -->
-    <color name="asoc_cell_hidden">#FFE8EAF6</color>
-    <color name="asoc_cell_revealed">#FFE3F2FD</color>
-    <color name="asoc_col_solved">#FFC8E6C9</color>
-    <color name="asoc_final_solved">#FFFFF9C4</color>
+    <!-- Asocijacije — stanja ćelija.
+         Namerno pune, srednje-tamne boje uparene sa belim tekstom (vidi setTint()
+         u AsocijacijeActivity/ChallengeSoloAsocijacijeActivity) — tako izgled ne
+         zavisi od svetle/tamne teme uređaja (stari pastelni tonovi su bili
+         nečitljivi u tamnoj temi jer je podrazumevana boja teksta dugmeta tada
+         svetla). Otvoreno polje/rešena kolona/rešeno finale: plavo za mene,
+         crveno za protivnika (u solo režimu koristi se samo plava). -->
+    <color name="asoc_cell_hidden">#FF607D8B</color>
+    <color name="asoc_cell_revealed_me">#FF1976D2</color>
+    <color name="asoc_cell_revealed_opponent">#FFD32F2F</color>
+    <!-- Polja otkrivena AUTOMATSKI (tačna kolona/finale) — zeleno, čisto vizuelno.
+         Ne menja stvarno stanje "otkriveno" koje se koristi za bodovanje. -->
+    <color name="asoc_cell_auto_revealed">#FF2E7D32</color>
 
     <!-- Notifikacije -->
     <color name="notification_unread_bg">#FFE3F2FD</color>
@@ -64,6 +72,18 @@
     <color name="rank_bronze_start">#FFE8B98A</color>
     <color name="rank_bronze_end">#FFCD7F32</color>
     <color name="rank_bronze_border">#FF8C5323</color>
+    <!-- Tekst za prva 3 mesta — zlatna/srebrna/bronzana pozadina su uvek
+         svetle (nisu tamno-temi svesne), pa se forsira tamna boja teksta
+         umesto podrazumevane (koja u tamnoj temi postaje svetla i nečitljiva). -->
+    <color name="rank_top3_text">#FF1A1A1A</color>
     <color name="rank_default_bg">#FFFFFFFF</color>
     <color name="rank_badge_bg">#FF16233F</color>
+
+    <!-- Dnevni izazovi — nezavršeno (žuto) / završeno (zeleno) -->
+    <color name="daily_challenge_incomplete_bg">#FFFFF8E1</color>
+    <color name="daily_challenge_incomplete_border">#FFFFC107</color>
+    <color name="daily_challenge_incomplete_text">#FF8D6E00</color>
+    <color name="daily_challenge_complete_bg">#FFE8F5E9</color>
+    <color name="daily_challenge_complete_border">#FF4CAF50</color>
+    <color name="daily_challenge_complete_text">#FF1B5E20</color>
 </resources>

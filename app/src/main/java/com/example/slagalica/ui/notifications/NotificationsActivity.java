@@ -1,6 +1,7 @@
 package com.example.slagalica.ui.notifications;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -23,6 +24,8 @@ import com.example.slagalica.R;
 import com.example.slagalica.data.model.AppNotification;
 import com.example.slagalica.data.model.NotificationType;
 import com.example.slagalica.data.repository.NotificationRepository;
+import com.example.slagalica.ui.ranking.LeaderboardRewardActivity;
+import com.example.slagalica.util.Constants;
 import com.example.slagalica.util.NotificationChannelHelper;
 import com.example.slagalica.util.NotificationPoster;
 import com.google.android.material.appbar.MaterialToolbar;
@@ -229,6 +232,10 @@ public class NotificationsActivity extends AppCompatActivity
             notification.setRead(true);
             repository.markAsRead(notification.getId());
             applyFilter();
+        }
+        if (notification.getType() == NotificationType.REWARD
+                && Constants.NOTIFICATION_RELATED_LEADERBOARD_REWARD.equals(notification.getRelatedId())) {
+            startActivity(new Intent(this, LeaderboardRewardActivity.class));
         }
     }
 

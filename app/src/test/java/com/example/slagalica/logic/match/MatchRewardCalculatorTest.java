@@ -72,4 +72,40 @@ public class MatchRewardCalculatorTest {
         // 30/50=0 -> 130/50=2  => 2 nova tokena
         assertEquals(2, MatchRewardCalculator.tokensFromStars(30, 130));
     }
+
+    // ---- Turnir: polufinale ------------------------------------------------
+
+    @Test
+    public void tournamentSemifinal_120points_gives13stars() {
+        // 10 + 120/40 = 10 + 3 = 13
+        assertEquals(13, MatchRewardCalculator.starsForTournamentSemifinalWinner(120));
+    }
+
+    @Test
+    public void tournamentSemifinal_zeroPoints_gives10stars() {
+        assertEquals(10, MatchRewardCalculator.starsForTournamentSemifinalWinner(0));
+    }
+
+    @Test
+    public void tournamentSemifinal_tokensAreTwo() {
+        assertEquals(2, MatchRewardCalculator.TOURNAMENT_SEMIFINAL_TOKENS);
+    }
+
+    // ---- Turnir: finale ----------------------------------------------------
+
+    @Test
+    public void tournamentFinal_200points_gives25stars() {
+        // 20 + 200/40 = 20 + 5 = 25
+        assertEquals(25, MatchRewardCalculator.starsForTournamentFinalWinner(200));
+    }
+
+    @Test
+    public void tournamentFinal_zeroPoints_gives20stars() {
+        assertEquals(20, MatchRewardCalculator.starsForTournamentFinalWinner(0));
+    }
+
+    @Test
+    public void tournamentFinal_tokensAreThree() {
+        assertEquals(3, MatchRewardCalculator.TOURNAMENT_FINAL_TOKENS);
+    }
 }

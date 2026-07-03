@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="32dp"
+    tools:context=".ui.ranking.LeaderboardRewardActivity">
+
+    <TextView
+        android:id="@+id/tvTrophy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="🏆"
+        android:textSize="72sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:gravity="center"
+        android:text="@string/leaderboard_reward_title"
+        android:textAppearance="?attr/textAppearanceHeadlineMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvRewardMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:textAppearance="?attr/textAppearanceTitleMedium"
+        tools:text="Osvojili ste 2. mesto na nedeljnoj rang listi!" />
+
+    <TextView
+        android:id="@+id/tvRewardTokens"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="32dp"
+        android:gravity="center"
+        android:textAppearance="?attr/textAppearanceHeadlineSmall"
+        android:textColor="@color/notification_type_reward"
+        android:textStyle="bold"
+        tools:text="+5 žetona" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnClaim"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="@string/leaderboard_reward_btn_claim"
+        android:textAllCaps="false"
+        app:cornerRadius="12dp" />
+
+</LinearLayout>

@@ -21,6 +21,7 @@ import androidx.core.content.ContextCompat;
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.AsocijacijePuzzle;
 import com.example.slagalica.data.model.User;
+import com.example.slagalica.data.repository.GameContentRepository;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.games.AsocijacijeLogic;
@@ -62,8 +63,10 @@ public class AsocijacijeActivity extends AppCompatActivity {
     // ── Match ─────────────────────────────────────────────────────────────────
     private final MatchRepository matchRepository = MatchRepository.getInstance();
     private final UserRepository  userRepository  = UserRepository.getInstance();
+    private final GameContentRepository contentRepository = GameContentRepository.getInstance();
     private String  matchId, myUid, opponentUid, opponentName;
     private boolean isPlayerOne;
+    private boolean isFriendly;
     private boolean opponentOnline = true;
     private int     myKzzScore, oppKzzScore;
 
@@ -75,6 +78,8 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private int  myRoundScore       = 0;
     private boolean roundDone       = false;
     private boolean gameEnded       = false;
+    private int  myRoundsSolved     = 0;
+    private int  myRoundsUnsolved   = 0;
 
     // ── Live RTDB state ───────────────────────────────────────────────────────
     private String  currentTurn     = null;
@@ -89,7 +94,11 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private Runnable              roundStateDetacher;
 
     // ── Colors ────────────────────────────────────────────────────────────────
-    private int colorHidden, colorRevealed, colorColSolvedMine, colorColSolvedTheirs, colorFinalSolved;
+    // Otvoreno/rešeno od mene = plavo, od protivnika = crveno; polja koja ostanu
+    // skrivena ali se automatski otkriju kad se kolona/finale pogodi = zeleno.
+    // Svi tonovi su puni i upareni sa belim tekstom (vidi setTint()) tako da rade
+    // i u tamnoj temi.
+    private int colorHidden, colorMine, colorTheirs, colorAutoRevealed, colorWhiteText;
 
     // =========================================================================
     // Lifecycle
@@ -123,6 +132,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
         opponentUid  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne  = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        isFriendly   = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
         myKzzScore   = getIntent().getIntExtra(Constants.EXTRA_MY_SCORE, 0);
         oppKzzScore  = getIntent().getIntExtra(Constants.EXTRA_OPPONENT_SCORE, 0);
         myUid        = userRepository.getCurrentUid();
@@ -182,11 +192,11 @@ public class AsocijacijeActivity extends AppCompatActivity {
     }
 
     private void resolveColors() {
-        colorHidden          = ContextCompat.getColor(this, R.color.asoc_cell_hidden);
-        colorRevealed        = ContextCompat.getColor(this, R.color.asoc_cell_revealed);
-        colorColSolvedMine   = ContextCompat.getColor(this, R.color.asoc_col_solved);
-        colorColSolvedTheirs = ContextCompat.getColor(this, R.color.asoc_cell_revealed);
-        colorFinalSolved     = ContextCompat.getColor(this, R.color.asoc_final_solved);
+        colorHidden       = ContextCompat.getColor(this, R.color.asoc_cell_hidden);
+        colorMine         = ContextCompat.getColor(this, R.color.asoc_cell_revealed_me);
+        colorTheirs       = ContextCompat.getColor(this, R.color.asoc_cell_revealed_opponent);
+        colorAutoRevealed = ContextCompat.getColor(this, R.color.asoc_cell_auto_revealed);
+        colorWhiteText    = ContextCompat.getColor(this, R.color.white);
     }
 
     private void setupBackHandler() {
@@ -221,8 +231,27 @@ public class AsocijacijeActivity extends AppCompatActivity {
                 }));
 
         if (isPlayerOne) {
-            AsocijacijePuzzle[] samples = AsocijacijePuzzle.samplePuzzles();
-            matchRepository.writeAsocijacijePuzzles(matchId, samples[0], samples[1], null);
+            // Asinhrono učitavanje iz Firestore-a — startRound(0) ne čeka ovaj poziv,
+            // isto kao ranije kad je writeAsocijacijePuzzles bio "fire and forget";
+            // oba igrača svejedno čekaju sadržaj kroz listenAsocijacijePuzzle.
+            contentRepository.loadAsocijacijePuzzles(NUM_ROUNDS,
+                    new GameContentRepository.AsocijacijeCallback() {
+                        @Override
+                        public void onSuccess(@NonNull List<AsocijacijePuzzle> puzzles) {
+                            if (puzzles.size() < NUM_ROUNDS) {
+                                Toast.makeText(AsocijacijeActivity.this,
+                                        "Nema dovoljno asocijacija u bazi.", Toast.LENGTH_LONG).show();
+                                return;
+                            }
+                            matchRepository.writeAsocijacijePuzzles(
+                                    matchId, puzzles.get(0), puzzles.get(1), null);
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            Toast.makeText(AsocijacijeActivity.this, message, Toast.LENGTH_LONG).show();
+                        }
+                    });
         }
         startRound(0);
     }
@@ -296,6 +325,13 @@ public class AsocijacijeActivity extends AppCompatActivity {
         Integer oppScore = finalState.scores.get(opponentUid);
         opponentTotalScore += (oppScore != null ? oppScore : 0);
 
+        // Statistika profila (2.c.v): da li sam LIČNO pogodio krajnje rešenje ove runde.
+        if (myUid.equals(finalState.finalSolvedBy)) {
+            myRoundsSolved++;
+        } else {
+            myRoundsUnsolved++;
+        }
+
         boolean isLast = (currentRound >= NUM_ROUNDS - 1);
         handler.postDelayed(() -> {
             if (gameEnded) return;
@@ -354,12 +390,20 @@ public class AsocijacijeActivity extends AppCompatActivity {
                 oppKzzScore + opponentTotalScore + (oppLiveRoundScore != null ? oppLiveRoundScore : 0));
 
         for (int col = 0; col < NUM_COLS; col++) {
+            boolean colAutoRevealed = state.colSolvedBy[col] != null || state.finalSolved;
             // Clue cells
             for (int row = 0; row < NUM_ROWS; row++) {
                 MaterialButton btn = clueButtons[col][row];
                 if (state.revealed[col][row]) {
                     btn.setText(puzzle.getClue(col, row));
-                    setTint(btn, colorRevealed);
+                    boolean mine = myUid.equals(state.revealedBy[col][row]);
+                    setTint(btn, mine ? colorMine : colorTheirs);
+                } else if (colAutoRevealed) {
+                    // Kolona (ili cela tabla, ako je finale pogođeno) je rešena —
+                    // ostala skrivena polja se prikazuju zeleno, čisto vizuelno.
+                    // NE menja latestState.revealed, pa ne utiče na bodovanje.
+                    btn.setText(puzzle.getClue(col, row));
+                    setTint(btn, colorAutoRevealed);
                 } else {
                     btn.setText("?");
                     setTint(btn, colorHidden);
@@ -370,7 +414,12 @@ public class AsocijacijeActivity extends AppCompatActivity {
             if (state.colSolvedBy[col] != null) {
                 colBtn.setText(puzzle.getColSolution(col));
                 boolean mine = myUid.equals(state.colSolvedBy[col]);
-                setTint(colBtn, mine ? colorColSolvedMine : colorColSolvedTheirs);
+                setTint(colBtn, mine ? colorMine : colorTheirs);
+            } else if (state.finalSolved) {
+                // Kolona nikad nije pogođena, ali je finale rešeno — otkrij i nju,
+                // čisto vizuelno (isto pravilo kao za preostala skrivena polja).
+                colBtn.setText(puzzle.getColSolution(col));
+                setTint(colBtn, colorAutoRevealed);
             } else {
                 colBtn.setText(COL_LETTERS[col] + " ?");
                 setTint(colBtn, colorHidden);
@@ -380,7 +429,8 @@ public class AsocijacijeActivity extends AppCompatActivity {
         // Final button
         if (state.finalSolved) {
             finalButton.setText(puzzle.getFinalSolution());
-            setTint(finalButton, colorFinalSolved);
+            boolean mine = myUid.equals(state.finalSolvedBy);
+            setTint(finalButton, mine ? colorMine : colorTheirs);
         } else {
             finalButton.setText(getString(R.string.asoc_final_label));
             setTint(finalButton, colorHidden);
@@ -402,17 +452,32 @@ public class AsocijacijeActivity extends AppCompatActivity {
 
     private void onClueTapped(int col, int row) {
         if (roundDone || puzzle == null) return;
-        if (latestState != null && latestState.revealed[col][row]) return;
+        if (latestState != null) {
+            if (latestState.revealed[col][row]) return;
+            // Polje je već prikazano (zeleno) jer je kolona ili finale pogođeno —
+            // nije stvarno "otkriveno" (radi bodovanja), ali se ne sme ponovo dirati.
+            if (latestState.colSolvedBy[col] != null || latestState.finalSolved) return;
+        }
         if (!isMyTurn()) {
             Snackbar.make(finalButton, "Nije tvoj red!", Snackbar.LENGTH_SHORT).show();
             return;
         }
-        matchRepository.revealAsocijacijeCell(matchId, currentRound, col, row, localMustReveal);
+        if (!localMustReveal) {
+            // Već je otvoreno tačno jedno polje ovog poteza — sada mora da pogađa.
+            Snackbar.make(finalButton, R.string.asoc_already_revealed, Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+        matchRepository.revealAsocijacijeCell(matchId, currentRound, col, row, myUid, localMustReveal);
     }
 
     private void onColSolutionTapped(int col) {
         if (roundDone || puzzle == null) return;
-        if (latestState != null && latestState.colSolvedBy[col] != null) return;
+        if (latestState != null) {
+            if (latestState.colSolvedBy[col] != null) return;
+            // Kolona je već prikazana (zeleno) jer je finale pogođeno — ne sme
+            // se ponovo "rešavati".
+            if (latestState.finalSolved) return;
+        }
         if (!isMyTurn()) {
             Snackbar.make(finalButton, "Nije tvoj red!", Snackbar.LENGTH_SHORT).show();
             return;
@@ -474,6 +539,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
         if (gameEnded) return;
         gameEnded = true;
         matchRepository.setGameResult(matchId, Constants.GAME_ASOCIJACIJE, myUid, myTotalScore);
+        userRepository.recordAsocijacijeResult(myUid, myRoundsSolved, myRoundsUnsolved, myTotalScore);
 
         Intent intent = new Intent(this, SkockoActivity.class);
         intent.putExtra(Constants.EXTRA_MATCH_ID, matchId);
@@ -484,6 +550,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);
         intent.putExtra(Constants.EXTRA_MY_ASOCIJACIJE, myTotalScore);
         intent.putExtra(Constants.EXTRA_OPP_ASOCIJACIJE, opponentTotalScore);
+        intent.putExtra(Constants.EXTRA_IS_FRIENDLY, isFriendly);
         startActivity(intent);
         finish();
     }
@@ -537,8 +604,10 @@ public class AsocijacijeActivity extends AppCompatActivity {
     // UI helpers
     // =========================================================================
 
+    /** Puni pozadinu i tera belu boju teksta — čitljivo bez obzira na svetlu/tamnu temu. */
     private void setTint(MaterialButton btn, int color) {
         btn.setBackgroundTintList(ColorStateList.valueOf(color));
+        btn.setTextColor(colorWhiteText);
     }
 
     // =========================================================================
