@@ -69,6 +69,7 @@ public class SpojniceActivity extends AppCompatActivity {
     private String opponentUid;
     private String opponentName;
     private boolean isPlayerOne;
+    private boolean isFriendly;
     private boolean opponentOnline = true;
     private int myKzzScore;
     private int opponentKzzScore;
@@ -109,6 +110,7 @@ public class SpojniceActivity extends AppCompatActivity {
         opponentUid      = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName     = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne      = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        isFriendly       = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
         myKzzScore       = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
         opponentKzzScore = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
         myAsocScore      = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
@@ -537,6 +539,7 @@ public class SpojniceActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPP_MOJ_BROJ, oppMojBrojScore);
         intent.putExtra(Constants.EXTRA_MY_SPOJNICE, myScore);
         intent.putExtra(Constants.EXTRA_OPP_SPOJNICE, opponentScore);
+        intent.putExtra(Constants.EXTRA_IS_FRIENDLY, isFriendly);
         startActivity(intent);
         finish();
     }

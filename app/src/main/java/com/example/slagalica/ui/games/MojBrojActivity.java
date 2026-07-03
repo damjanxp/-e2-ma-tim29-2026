@@ -84,6 +84,7 @@ public class MojBrojActivity extends AppCompatActivity {
     private String  opponentUid;
     private String  opponentName;
     private boolean isPlayerOne;
+    private boolean isFriendly;
     private boolean opponentOnline = true;
 
     // Bodovi iz prethodnih igara (prenose se kroz lanac)
@@ -158,6 +159,7 @@ public class MojBrojActivity extends AppCompatActivity {
         opponentUid  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne  = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        isFriendly   = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
         myKzzScore    = getIntent().getIntExtra(Constants.EXTRA_MY_KZZ, 0);
         oppKzzScore   = getIntent().getIntExtra(Constants.EXTRA_OPP_KZZ, 0);
         myAsocScore   = getIntent().getIntExtra(Constants.EXTRA_MY_ASOCIJACIJE, 0);
@@ -650,6 +652,7 @@ public class MojBrojActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPP_SKOCKO, oppSkockoScore);
         intent.putExtra(Constants.EXTRA_MY_MOJ_BROJ, myTotalScore);
         intent.putExtra(Constants.EXTRA_OPP_MOJ_BROJ, opponentTotalScore);
+        intent.putExtra(Constants.EXTRA_IS_FRIENDLY, isFriendly);
         startActivity(intent);
         finish();
     }

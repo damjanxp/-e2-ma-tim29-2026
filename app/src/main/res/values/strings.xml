@@ -427,6 +427,7 @@
     <string name="kzz_opponent_score_label">%1$s: %2$d</string>
     <string name="kzz_too_slow">Tačno, ali protivnik je bio brži!</string>
     <string name="kzz_opponent_left">Protivnik je napustio partiju</string>
+    <string name="kzz_times_format">Ti: %1$.1fs  ·  Protivnik: %2$.1fs</string>
 
     <!-- Spojnice — 1v1 (dodatno) -->
     <string name="spojnice_score_label">Bodovi: %d</string>
@@ -468,6 +469,14 @@
         <item>Dijamantska liga</item>
     </string-array>
 
+    <string name="dialog_ok_got_it">Važi!</string>
+    <string name="league_up_title">Napredovanje u ligu!</string>
+    <string name="league_up_message">Čestitamo! Prešao/la si u %1$s.</string>
+    <string name="league_down_title">Pad u nižu ligu</string>
+    <string name="league_down_message">Nažalost, pao/la si u %1$s.</string>
+    <string name="league_progress_next">Do sledeće lige: %1$d ⭐</string>
+    <string name="league_progress_max">Najviša liga!</string>
+
     <!-- Rang lista -->
     <string name="ranking_title">Rang lista</string>
     <string name="ranking_tab_weekly">Nedeljno</string>
@@ -485,4 +494,44 @@
     <string name="ranking_conclude_confirm_yes">Završi</string>
     <string name="ranking_conclude_confirm_no">Otkaži</string>
     <string name="ranking_cycle_concluded">Ciklus je završen — nagrade su dodeljene!</string>
+
+    <!-- Region (Student 2, KO) -->
+    <string name="region_title">Regioni</string>
+    <string name="region_map_hint">Šematski prikaz regiona Srbije. Tapni na region za statistiku. Tačke predstavljaju registrovane igrače.</string>
+    <string name="region_btn_leaderboard">Mesečna rang lista regiona</string>
+    <string name="region_stats_message">Osvojeno 1. mesta: %1$d\nOsvojeno 2. mesta: %2$d\nOsvojeno 3. mesta: %3$d\n\nTrenutno aktivnih igrača: %4$d\nUkupno registrovanih: %5$d</string>
+    <string name="region_leaderboard_title">Rang lista regiona (mesečno)</string>
+    <string name="region_leaderboard_empty">Trenutno nema podataka o regionima.</string>
+    <string name="region_rank_position">%1$d.</string>
+    <string name="region_rank_name_format">%1$s (%2$d igrača)</string>
+    <string name="region_rank_stars_format">%1$d ⭐</string>
+
+    <!-- Prijatelji (Student 2, KO) -->
+    <string name="friends_title">Prijatelji</string>
+    <string name="friends_btn_add">Dodaj prijatelja</string>
+    <string name="friends_btn_add_short">Dodaj</string>
+    <string name="friends_btn_play">Igraj</string>
+    <string name="friends_btn_cancel_invite">Otkaži</string>
+    <string name="friends_btn_accept">Prihvati</string>
+    <string name="friends_btn_decline">Odbij</string>
+    <string name="friends_empty">Nemaš još prijatelja. Dodaj ih pretragom po korisničkom imenu ili skeniranjem QR koda.</string>
+    <string name="friends_item_details">%1$s · %2$d ⭐ ovog meseca</string>
+
+    <string name="friends_dialog_add_title">Dodaj prijatelja</string>
+    <string name="friends_search_hint">Pretraži po korisničkom imenu</string>
+    <string name="friends_search_item_format">%1$s (%2$s)</string>
+    <string name="friends_btn_scan_qr">Skeniraj QR kod</string>
+    <string name="friends_qr_scan_prompt">Skeniraj QR kod prijatelja</string>
+    <string name="friends_error_self">Ne možeš dodati sebe kao prijatelja.</string>
+    <string name="friends_error_qr_not_found">Korisnik sa skeniranim kodom nije pronađen.</string>
+    <string name="friends_added_toast">%1$s je dodat/a u prijatelje.</string>
+
+    <string name="friends_waiting_title">Poziv poslat</string>
+    <string name="friends_waiting_message">Čeka se odgovor od %1$s… (%2$ds)</string>
+    <string name="friends_invite_declined">Poziv je odbijen.</string>
+    <string name="friends_invite_expired">Poziv je istekao.</string>
+
+    <string name="friends_incoming_title">Poziv na partiju</string>
+    <string name="friends_incoming_message">%1$s te poziva na prijateljsku partiju! (%2$ds)</string>
+    <string name="friends_preparing_match">Priprema partije…</string>
 </resources>

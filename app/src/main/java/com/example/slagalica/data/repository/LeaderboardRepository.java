@@ -1,10 +1,14 @@
 package com.example.slagalica.data.repository;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.example.slagalica.data.model.LeaderboardCycle;
+import com.example.slagalica.data.model.RegionCycleResult;
 import com.example.slagalica.data.model.User;
+import com.example.slagalica.logic.league.LeagueLogic;
 import com.example.slagalica.util.Constants;
+import com.example.slagalica.util.RegionKey;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
@@ -12,6 +16,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
@@ -167,16 +172,46 @@ public class LeaderboardRepository {
      * Zaključuje tekući ciklus (nedeljni ili mesečni): dodeljuje žetone prema
      * trenutnom plasmanu (mesta 1-10), resetuje brojač zvezda svih igrača na 0
      * i pokreće novi ciklus od sada.
+     *
+     * <p>Za <b>mesečni</b> ciklus dodatno:</p>
+     * <ul>
+     *   <li>igrač koji se nije plasirao (nije odigrao nijednu partiju u ciklusu,
+     *       tj. {@code monthlyStars == 0}) gubi 30% ukupnih zvezda i, ako to
+     *       povuče promenu, pada u nižu ligu (vidi {@link LeagueLogic});</li>
+     *   <li>računa se pobednički region (zbir {@code monthlyStars} po
+     *       regionu — "5. Prikaz regiona"): prva tri regiona dobijaju uvećan
+     *       istorijski brojač plasmana u kolekciji "regions", a igračima iz ta
+     *       tri regiona se postavlja {@code avatarFrameType} (1=zlatno,
+     *       2=srebrno, 3=bronzano; ostali na 0).</li>
+     * </ul>
      */
     public void concludeCycle(@NonNull String type, @NonNull SimpleCallback cb) {
         String field = starsField(type);
         int[] rewards = rewardsFor(type);
+        boolean isMonthly = Constants.LEADERBOARD_TYPE_MONTHLY.equals(type);
 
         mDb.collection(Constants.COLLECTION_USERS)
                 .orderBy(field, Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     WriteBatch batch = mDb.batch();
+
+                    // Prvi prolaz (samo mesečni ciklus): zbir zvezda po regionu, da bismo
+                    // znali prva tri regiona pre nego što upišemo okvire avatara u drugom prolazu.
+                    Map<String, Integer> starsByRegion = new HashMap<>();
+                    if (isMonthly) {
+                        for (QueryDocumentSnapshot doc : snapshot) {
+                            String region = doc.getString("region");
+                            if (region == null || region.isEmpty()) continue;
+                            Long stars = doc.getLong(field);
+                            starsByRegion.merge(region, stars != null ? stars.intValue() : 0, Integer::sum);
+                        }
+                    }
+                    List<String> topRegions = topThreeRegions(starsByRegion);
+                    String first  = topRegions.size() > 0 ? topRegions.get(0) : null;
+                    String second = topRegions.size() > 1 ? topRegions.get(1) : null;
+                    String third  = topRegions.size() > 2 ? topRegions.get(2) : null;
+
                     int rank = 0;
                     for (QueryDocumentSnapshot doc : snapshot) {
                         Map<String, Object> updates = new HashMap<>();
@@ -184,6 +219,28 @@ public class LeaderboardRepository {
                         if (rank < rewards.length) {
                             updates.put("tokens", FieldValue.increment(rewards[rank]));
                         }
+
+                        if (isMonthly) {
+                            Long monthlyStars = doc.getLong(field);
+                            boolean unranked = monthlyStars == null || monthlyStars == 0;
+                            if (unranked) {
+                                Long totalStarsField = doc.getLong("totalStars");
+                                int currentTotalStars = totalStarsField != null ? totalStarsField.intValue() : 0;
+                                int newTotalStars = LeagueLogic.applyMonthlyRelegationPenalty(currentTotalStars);
+                                updates.put("totalStars", newTotalStars);
+                                updates.put("currentLeague", LeagueLogic.leagueForStars(newTotalStars));
+                            }
+
+                            String region = doc.getString("region");
+                            int frameType = 0;
+                            if (region != null) {
+                                if (region.equals(first)) frameType = 1;
+                                else if (region.equals(second)) frameType = 2;
+                                else if (region.equals(third)) frameType = 3;
+                            }
+                            updates.put("avatarFrameType", frameType);
+                        }
+
                         batch.update(doc.getReference(), updates);
                         rank++;
                     }
@@ -194,10 +251,48 @@ public class LeaderboardRepository {
                             mDb.collection(Constants.COLLECTION_LEADERBOARD_CYCLES).document(type);
                     batch.set(cycleRef, newCycle);
 
+                    if (isMonthly) {
+                        applyRegionCycleResults(batch, first, second, third, now);
+                    }
+
                     batch.commit()
                             .addOnSuccessListener(unused -> cb.onSuccess())
                             .addOnFailureListener(e -> cb.onError("Zaključivanje ciklusa nije uspelo."));
                 })
                 .addOnFailureListener(e -> cb.onError("Učitavanje igrača za zaključivanje ciklusa nije uspelo."));
+    }
+
+    /** Vraća do tri naziva regiona sortirana opadajuće po zbiru zvezda. */
+    private List<String> topThreeRegions(@NonNull Map<String, Integer> starsByRegion) {
+        List<Map.Entry<String, Integer>> entries = new ArrayList<>(starsByRegion.entrySet());
+        entries.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i < Math.min(3, entries.size()); i++) {
+            result.add(entries.get(i).getKey());
+        }
+        return result;
+    }
+
+    /** Upisuje rezultat mesečnog ciklusa regiona i uvećava istorijske brojače plasmana. */
+    private void applyRegionCycleResults(@NonNull WriteBatch batch, @Nullable String first,
+                                         @Nullable String second, @Nullable String third, long now) {
+        DocumentReference resultRef = mDb.collection(Constants.COLLECTION_REGION_CYCLE_RESULTS)
+                .document(Constants.REGION_CYCLE_RESULTS_DOC);
+        batch.set(resultRef, new RegionCycleResult(first, second, third, now));
+
+        incrementRegionPlacement(batch, first, "firstPlaceCount");
+        incrementRegionPlacement(batch, second, "secondPlaceCount");
+        incrementRegionPlacement(batch, third, "thirdPlaceCount");
+    }
+
+    private void incrementRegionPlacement(@NonNull WriteBatch batch, @Nullable String regionName,
+                                          @NonNull String field) {
+        if (regionName == null) return;
+        DocumentReference ref = mDb.collection(Constants.COLLECTION_REGIONS)
+                .document(RegionKey.toKey(regionName));
+        Map<String, Object> update = new HashMap<>();
+        update.put("regionName", regionName);
+        update.put(field, FieldValue.increment(1));
+        batch.set(ref, update, SetOptions.merge());
     }
 }

@@ -64,6 +64,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private final UserRepository  userRepository  = UserRepository.getInstance();
     private String  matchId, myUid, opponentUid, opponentName;
     private boolean isPlayerOne;
+    private boolean isFriendly;
     private boolean opponentOnline = true;
     private int     myKzzScore, oppKzzScore;
 
@@ -123,6 +124,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
         opponentUid  = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_UID);
         opponentName = getIntent().getStringExtra(Constants.EXTRA_OPPONENT_NAME);
         isPlayerOne  = getIntent().getBooleanExtra(Constants.EXTRA_IS_PLAYER_ONE, false);
+        isFriendly   = getIntent().getBooleanExtra(Constants.EXTRA_IS_FRIENDLY, false);
         myKzzScore   = getIntent().getIntExtra(Constants.EXTRA_MY_SCORE, 0);
         oppKzzScore  = getIntent().getIntExtra(Constants.EXTRA_OPPONENT_SCORE, 0);
         myUid        = userRepository.getCurrentUid();
@@ -478,6 +480,7 @@ public class AsocijacijeActivity extends AppCompatActivity {
         intent.putExtra(Constants.EXTRA_OPP_KZZ, oppKzzScore);
         intent.putExtra(Constants.EXTRA_MY_ASOCIJACIJE, myTotalScore);
         intent.putExtra(Constants.EXTRA_OPP_ASOCIJACIJE, opponentTotalScore);
+        intent.putExtra(Constants.EXTRA_IS_FRIENDLY, isFriendly);
         startActivity(intent);
         finish();
     }

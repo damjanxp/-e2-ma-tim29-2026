@@ -29,10 +29,19 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:layout_marginTop="2dp"
-        android:layout_marginBottom="8dp"
         android:textAppearance="?attr/textAppearanceBodySmall"
         android:textStyle="italic"
         tools:text="Čeka se odgovor protivnika…" />
+
+    <TextView
+        android:id="@+id/tvTimes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="8dp"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        tools:text="Ti: 1.8s · Protivnik: 2.3s" />
 
     <!-- ===== KARTICA SA PITANJEM ===== -->
     <com.google.android.material.card.MaterialCardView

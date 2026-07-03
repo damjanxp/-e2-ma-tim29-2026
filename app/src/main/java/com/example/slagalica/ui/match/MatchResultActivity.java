@@ -5,14 +5,17 @@ import android.os.Bundle;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
+import com.example.slagalica.data.model.NotificationType;
 import com.example.slagalica.data.model.User;
 import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.match.MatchRewardCalculator;
 import com.example.slagalica.ui.main.MainActivity;
 import com.example.slagalica.util.Constants;
+import com.example.slagalica.util.NotificationPoster;
 import com.google.android.material.button.MaterialButton;
 
 import android.widget.TextView;
@@ -83,6 +86,25 @@ public class MatchResultActivity extends AppCompatActivity {
         }
         boolean won = myTotal > oppTotal;
         TextView tvReward = findViewById(R.id.tvReward);
+
+        // Ligu pre partije čitamo unapred da bismo posle mogli da uporedimo sa
+        // ligom posle nagrada i prikažemo obaveštenje o promeni (Student 2 — Lige).
+        userRepository.getOrCreateUser(uid, new UserRepository.UserCallback() {
+            @Override
+            public void onSuccess(User beforeUser) {
+                int leagueBefore = beforeUser.getCurrentLeague();
+                applyRewardsAfterLeagueRead(uid, won, myTotal, tvReward, leagueBefore);
+            }
+
+            @Override
+            public void onError(String message) {
+                applyRewardsAfterLeagueRead(uid, won, myTotal, tvReward, -1);
+            }
+        });
+    }
+
+    private void applyRewardsAfterLeagueRead(String uid, boolean won, int myTotal,
+                                             TextView tvReward, int leagueBefore) {
         userRepository.applyMatchRewards(uid, won, myTotal, new UserRepository.UserCallback() {
             @Override
             public void onSuccess(User user) {
@@ -98,6 +120,10 @@ public class MatchResultActivity extends AppCompatActivity {
                 String totals = getString(R.string.result_reward_totals,
                         user.getTotalStars(), user.getTokens());
                 tvReward.setText(head + "\n" + totals);
+
+                if (leagueBefore >= 0 && user.getCurrentLeague() != leagueBefore) {
+                    showLeagueChangeDialog(leagueBefore, user.getCurrentLeague());
+                }
             }
 
             @Override
@@ -105,6 +131,26 @@ public class MatchResultActivity extends AppCompatActivity {
                 // Tiho — ako upis nagrada ne uspe, rezultat je i dalje prikazan.
             }
         });
+    }
+
+    /** Prikazuje dijalog i notifikaciju kada partija promeni ligu igrača (napredak ili pad). */
+    private void showLeagueChangeDialog(int leagueBefore, int leagueAfter) {
+        String[] names = getResources().getStringArray(R.array.leagues_array);
+        String newLeagueName = leagueAfter >= 0 && leagueAfter < names.length
+                ? names[leagueAfter] : String.valueOf(leagueAfter);
+        boolean promoted = leagueAfter > leagueBefore;
+
+        String title = getString(promoted ? R.string.league_up_title : R.string.league_down_title);
+        String message = getString(promoted ? R.string.league_up_message : R.string.league_down_message,
+                newLeagueName);
+
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton(R.string.dialog_ok_got_it, null)
+                .show();
+
+        NotificationPoster.post(this, NotificationType.LEAGUE, title, message);
     }
 
     private void bindResult(int myKzz, int oppKzz, int myAsoc, int oppAsoc,

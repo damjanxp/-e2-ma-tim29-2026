@@ -15,6 +15,10 @@ public final class Constants {
     public static final String COLLECTION_KO_ZNA_ZNA = "koZnaZna";
     public static final String COLLECTION_SPOJNICE  = "spojnice";
     public static final String COLLECTION_LEADERBOARD_CYCLES = "leaderboardCycles";
+    public static final String COLLECTION_REGIONS = "regions";
+    public static final String COLLECTION_REGION_CYCLE_RESULTS = "regionMonthlyResults";
+    public static final String REGION_CYCLE_RESULTS_DOC = "latest";
+    public static final String COLLECTION_FRIENDS = "friends";
 
     // ==== Realtime Database ====
     // Baza je u regionu europe-west1; google-services.json ne sadrži adresu baze,
@@ -25,6 +29,7 @@ public final class Constants {
     public static final String RTDB_MATCHES     = "matches";
     public static final String RTDB_CHATS       = "chats";
     public static final String RTDB_CHALLENGES  = "challenges";
+    public static final String RTDB_FRIEND_INVITES = "friendInvites";
 
     // ==== Intent ekstre ====
     public static final String EXTRA_MATCH_ID      = "extra_match_id";
