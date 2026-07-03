@@ -558,6 +558,9 @@ public class KorakPoKorakActivity extends AppCompatActivity {
             if (!iAmActiveThisRound) myTotalScore += pts;
             else opponentTotalScore += pts;
         }
+        scoreBar.setScores(
+                myKzzScore + myAsocScore + mySkockoScore + myMojBrojScore + mySpojniceScore + myTotalScore,
+                oppKzzScore + oppAsocScore + oppSkockoScore + oppMojBrojScore + oppSpojniceScore + opponentTotalScore);
 
         boolean isLast = (currentRound >= MAX_ROUNDS - 1);
         handler.postDelayed(() -> {

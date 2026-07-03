@@ -568,6 +568,8 @@ public class SkockoActivity extends AppCompatActivity {
             int pts = SkockoLogic.OPPONENT_SCORE;
             if (!iAmActive) myTotalScore += pts; else opponentTotalScore += pts;
         }
+        scoreBar.setScores(myKzzScore + myAsocScore + myTotalScore,
+                oppKzzScore + oppAsocScore + opponentTotalScore);
         revealSolution();
         tvTurnStatus.setText(R.string.skocko_round_done);
 

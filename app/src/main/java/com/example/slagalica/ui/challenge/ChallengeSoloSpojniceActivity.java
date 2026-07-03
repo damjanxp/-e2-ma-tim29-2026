@@ -1,15 +1,18 @@
 package com.example.slagalica.ui.challenge;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.SpojniceAttempt;
@@ -24,8 +27,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Solo verzija igre "Spojnice" za Izazov — jedan igrač povezuje svih 5
- * pojmova bez protivnika koji preuzima ostatak. Vraća ukupan broj bodova
+ * Solo verzija igre "Spojnice" za Izazov — jedan igrač, jedna runda.
+ * Svaki levi pojam se pokušava tačno jednom: pogrešan pokušaj trajno
+ * zaključava pojam (crveno), tačan ga označava zelenim. Igra se završava
+ * kada su svi levi pojmovi pokušani ili kada istekne vreme. Vraća bodove
  * kroz {@link Constants#EXTRA_MY_SCORE}.
  */
 public class ChallengeSoloSpojniceActivity extends AppCompatActivity {
@@ -35,6 +40,7 @@ public class ChallengeSoloSpojniceActivity extends AppCompatActivity {
     private TextView tvCriterion;
     private TextView tvTimer;
     private TextView tvScore;
+    private ProgressBar pbTimer;
     private LinearLayout llLeft;
     private LinearLayout llRight;
 
@@ -47,6 +53,8 @@ public class ChallengeSoloSpojniceActivity extends AppCompatActivity {
     private CountDownTimer timer;
     private boolean finished = false;
 
+    private int colorSelected, colorConnected, colorWrong;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -55,8 +63,13 @@ public class ChallengeSoloSpojniceActivity extends AppCompatActivity {
         tvCriterion = findViewById(R.id.tvCriterion);
         tvTimer = findViewById(R.id.tvTimer);
         tvScore = findViewById(R.id.tvScore);
+        pbTimer = findViewById(R.id.pbTimer);
         llLeft = findViewById(R.id.llLeft);
         llRight = findViewById(R.id.llRight);
+
+        colorSelected  = ContextCompat.getColor(this, R.color.spojnice_item_selected);
+        colorConnected = ContextCompat.getColor(this, R.color.spojnice_item_connected);
+        colorWrong     = ContextCompat.getColor(this, R.color.spojnice_item_wrong);
 
         GameContentRepository.getInstance().loadSpojnicePuzzles(1,
                 new GameContentRepository.SpojniceCallback() {
@@ -111,10 +124,15 @@ public class ChallengeSoloSpojniceActivity extends AppCompatActivity {
     }
 
     private void onLeftClicked(int leftIdx) {
-        if (finished || SpojniceLogic.isConnected(leftIdx, attempts)) {
+        // Svaki levi pojam sme da se pokuša samo jednom — pokušani su zaključani.
+        if (finished || attempts.containsKey(leftIdx)) {
             return;
         }
+        if (selectedLeftIdx >= 0 && selectedLeftIdx != leftIdx) {
+            setTint(leftButtons.get(selectedLeftIdx), null);
+        }
         selectedLeftIdx = leftIdx;
+        setTint(leftButtons.get(leftIdx), colorSelected);
     }
 
     private void onRightClicked(int rightIdx) {
@@ -127,29 +145,53 @@ public class ChallengeSoloSpojniceActivity extends AppCompatActivity {
         boolean correct = puzzle.correctRightFor(leftIdx) == rightIdx;
         attempts.put(leftIdx, new SpojniceAttempt(SOLO_UID, rightIdx, correct));
 
+        MaterialButton leftButton = leftButtons.get(leftIdx);
+        leftButton.setEnabled(false);
         if (correct) {
-            leftButtons.get(leftIdx).setEnabled(false);
-            rightButtons.get(rightIdx).setEnabled(false);
+            setTint(leftButton, colorConnected);
+            MaterialButton rightButton = rightButtons.get(rightIdx);
+            setTint(rightButton, colorConnected);
+            rightButton.setEnabled(false);
+        } else {
+            setTint(leftButton, colorWrong);
         }
 
         int score = SpojniceLogic.pointsFor(SOLO_UID, attempts);
         tvScore.setText(getString(R.string.challenge_solo_score, score));
 
-        if (SpojniceLogic.allConnected(attempts)) {
+        if (attempts.size() >= puzzle.getLeftItems().size()) {
             finishWithScore(score);
         }
     }
 
+    private void setTint(MaterialButton button, Integer color) {
+        if (button == null) {
+            return;
+        }
+        if (color == null) {
+            button.setBackgroundTintList(null);
+        } else {
+            button.setBackgroundTintList(ColorStateList.valueOf(color));
+        }
+    }
+
     private void startTimer() {
+        int totalSeconds = (int) (Constants.SPOJNICE_ROUND_TIME_MS / 1000);
+        pbTimer.setMax(totalSeconds);
+        pbTimer.setProgress(totalSeconds);
+
         timer = new CountDownTimer(Constants.SPOJNICE_ROUND_TIME_MS, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                tvTimer.setText(getString(R.string.challenge_solo_timer_seconds,
-                        (int) Math.ceil(millisUntilFinished / 1000.0)));
+                int s = (int) Math.ceil(millisUntilFinished / 1000.0);
+                tvTimer.setText(getString(R.string.challenge_solo_timer_seconds, s));
+                pbTimer.setProgress(s);
             }
 
             @Override
             public void onFinish() {
+                tvTimer.setText(getString(R.string.challenge_solo_timer_seconds, 0));
+                pbTimer.setProgress(0);
                 finishWithScore(SpojniceLogic.pointsFor(SOLO_UID, attempts));
             }
         }.start();

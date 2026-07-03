@@ -93,6 +93,17 @@ public class ChallengeResultActivity extends AppCompatActivity {
                 ? getString(R.string.challenge_result_status_finished)
                 : getString(R.string.challenge_result_status_waiting, finishedCount, participants.size()));
 
+        // Bezbednosna mreža: raspodela nagrada se obično pokreće sa uređaja
+        // poslednjeg učesnika koji završi (vidi ChallengeRepository#submitScore).
+        // Ako taj klijent u međuvremenu prekine vezu pre nego što finalizacija
+        // stigne da se izvrši, izazov bi ostao zaglavljen bez dodele nagrada.
+        // Zato svaki klijent koji ovde primeti "svi završili, a status nije
+        // finished" i sam pokuša finalizaciju — poziv je idempotentan.
+        if (!finished && !participants.isEmpty() && finishedCount == participants.size()
+                && challengeId != null) {
+            challengeRepository.finalizeChallenge(challengeId);
+        }
+
         List<ChallengeParticipant> ranked = new ArrayList<>(participants.values());
         ranked.sort((a, b) -> {
             if (b.getScore() != a.getScore()) {

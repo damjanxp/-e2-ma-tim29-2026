@@ -270,6 +270,8 @@ public class SpojniceActivity extends AppCompatActivity {
             return;
         }
         roundAttempts.set(currentRound, attempts);
+        scoreBar.setScores(myKzzScore + myAsocScore + mySkockoScore + myMojBrojScore + mySpojniceScore(),
+                opponentKzzScore + oppAsocScore + oppSkockoScore + oppMojBrojScore + opponentSpojniceScore());
 
         boolean phaseChanged = phase != currentPhase;
         currentPhase = phase;

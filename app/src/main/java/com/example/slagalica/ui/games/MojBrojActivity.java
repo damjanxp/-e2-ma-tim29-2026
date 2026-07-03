@@ -593,6 +593,8 @@ public class MojBrojActivity extends AppCompatActivity {
 
         myTotalScore       += myDelta;
         opponentTotalScore += oppDelta;
+        scoreBar.setScores(myKzzScore + myAsocScore + mySkockoScore + myTotalScore,
+                oppKzzScore + oppAsocScore + oppSkockoScore + opponentTotalScore);
 
         boolean isLast = (currentRound >= MAX_ROUNDS - 1);
         String myRes  = myResult.validan  ? String.valueOf((int) Math.round(myResult.rezultat))  : "–";

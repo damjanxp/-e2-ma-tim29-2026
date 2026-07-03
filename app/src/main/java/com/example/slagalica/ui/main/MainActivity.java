@@ -18,7 +18,7 @@ import com.example.slagalica.ui.challenge.ChallengeListActivity;
 import com.example.slagalica.ui.chat.ChatActivity;
 import com.example.slagalica.ui.dailychallenge.DailyChallengesActivity;
 import com.example.slagalica.ui.friends.FriendsActivity;
-import com.example.slagalica.ui.games.GameMenuActivity;
+import com.example.slagalica.ui.match.MatchmakingActivity;
 import com.example.slagalica.ui.notifications.NotificationsActivity;
 import com.example.slagalica.ui.profile.ProfileActivity;
 import com.example.slagalica.ui.ranking.LeaderboardRewardActivity;
@@ -100,8 +100,9 @@ public class MainActivity extends AppCompatActivity {
     private void setupListeners() {
         btnProfile.setOnClickListener(v ->
                 startActivity(new Intent(this, ProfileActivity.class)));
+        // IGRAJ odmah ulazi u red za nasumično uparivanje (bez biranja igre).
         btnPlay.setOnClickListener(v ->
-                startActivity(new Intent(this, GameMenuActivity.class)));
+                startActivity(new Intent(this, MatchmakingActivity.class)));
         btnLeaderboard.setOnClickListener(v ->
                 startActivity(new Intent(this, RankingActivity.class)));
         btnFriends.setOnClickListener(v ->

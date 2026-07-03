@@ -383,6 +383,12 @@ public class AsocijacijeActivity extends AppCompatActivity {
     private void applyRoundState(@NonNull MatchRepository.AsocijacijeRoundState state) {
         if (puzzle == null) return;
 
+        Integer myLiveRoundScore = state.scores.get(myUid);
+        Integer oppLiveRoundScore = state.scores.get(opponentUid);
+        scoreBar.setScores(
+                myKzzScore + myTotalScore + (myLiveRoundScore != null ? myLiveRoundScore : 0),
+                oppKzzScore + opponentTotalScore + (oppLiveRoundScore != null ? oppLiveRoundScore : 0));
+
         for (int col = 0; col < NUM_COLS; col++) {
             boolean colAutoRevealed = state.colSolvedBy[col] != null || state.finalSolved;
             // Clue cells
