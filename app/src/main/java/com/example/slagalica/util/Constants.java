@@ -101,6 +101,26 @@ public final class Constants {
     public static final int AVATAR_COUNT = 6;
     public static final int LEAGUE_COUNT = 6; // nulta + 5 liga
 
+    // ==== Dnevni izazovi ====
+    public static final String DAILY_CHALLENGE_WIN_MATCH            = "win_regular_match";
+    public static final String DAILY_CHALLENGE_WIN_TOURNAMENT_MATCH = "win_tournament_match";
+    /**
+     * Registar svih dnevnih izazova — jedini spisak koji određuje koji izazovi
+     * postoje. Lista, reset i "Završi sve" u UI-ju automatski rade za svaki
+     * izazov iz ovog niza; za dodavanje novog vidi uputstvo u klasnom komentaru
+     * {@code DailyChallengesActivity}.
+     */
+    public static final String[] DAILY_CHALLENGE_IDS = {
+            DAILY_CHALLENGE_WIN_MATCH,
+            DAILY_CHALLENGE_WIN_TOURNAMENT_MATCH,
+    };
+    /** Zvezde dodeljene za svaki pojedinačno završen dnevni izazov. */
+    public static final int DAILY_CHALLENGE_REWARD_STARS = 3;
+    /** Dodatne zvezde kada su svi dnevni izazovi završeni istog dana. */
+    public static final int DAILY_CHALLENGE_ALL_BONUS_STARS = 2;
+    /** Dodatni žetoni kada su svi dnevni izazovi završeni istog dana. */
+    public static final int DAILY_CHALLENGE_ALL_BONUS_TOKENS = 3;
+
     // ==== Rang lista ====
     public static final String LEADERBOARD_TYPE_WEEKLY  = "weekly";
     public static final String LEADERBOARD_TYPE_MONTHLY = "monthly";

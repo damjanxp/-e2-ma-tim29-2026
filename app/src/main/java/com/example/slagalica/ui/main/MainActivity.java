@@ -13,6 +13,7 @@ import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.ui.auth.LoginActivity;
 import com.example.slagalica.ui.challenge.ChallengeListActivity;
 import com.example.slagalica.ui.chat.ChatActivity;
+import com.example.slagalica.ui.dailychallenge.DailyChallengesActivity;
 import com.example.slagalica.ui.games.GameMenuActivity;
 import com.example.slagalica.ui.notifications.NotificationsActivity;
 import com.example.slagalica.ui.profile.ProfileActivity;
@@ -46,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton btnChat;
     private MaterialButton btnChallenge;
     private MaterialButton btnTournament;
+    private MaterialButton btnDailyChallenges;
     private MaterialButton btnLogout;
 
     @Override
@@ -78,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
         btnChat = findViewById(R.id.btnChat);
         btnChallenge = findViewById(R.id.btnChallenge);
         btnTournament = findViewById(R.id.btnTournament);
+        btnDailyChallenges = findViewById(R.id.btnDailyChallenges);
         btnLogout = findViewById(R.id.btnLogout);
     }
 
@@ -105,6 +108,8 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(new Intent(this, ChallengeListActivity.class)));
         btnTournament.setOnClickListener(v ->
                 startActivity(new Intent(this, TournamentLobbyListActivity.class)));
+        btnDailyChallenges.setOnClickListener(v ->
+                startActivity(new Intent(this, DailyChallengesActivity.class)));
         btnLogout.setOnClickListener(v -> onLogoutClicked());
     }
 
