@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.slagalica.R;
 import com.example.slagalica.data.model.User;
+import com.example.slagalica.data.repository.DailyChallengeRepository;
 import com.example.slagalica.data.repository.MatchRepository;
 import com.example.slagalica.data.repository.TournamentRepository;
 import com.example.slagalica.data.repository.UserRepository;
@@ -23,6 +24,7 @@ import com.example.slagalica.util.Constants;
 import com.google.android.material.button.MaterialButton;
 
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * Ekran sa rezultatom završenog meča (KT2).
@@ -47,6 +49,7 @@ public class MatchResultActivity extends AppCompatActivity {
     private final UserRepository userRepository = UserRepository.getInstance();
     private final MatchRepository matchRepository = MatchRepository.getInstance();
     private final TournamentRepository tournamentRepository = TournamentRepository.getInstance();
+    private final DailyChallengeRepository dailyChallengeRepository = DailyChallengeRepository.getInstance();
 
     private int myTotal;
     private int oppTotal;
@@ -143,6 +146,20 @@ public class MatchResultActivity extends AppCompatActivity {
             return;
         }
         boolean won = myTotal > oppTotal;
+        if (won) {
+            dailyChallengeRepository.completeChallenge(uid, Constants.DAILY_CHALLENGE_WIN_MATCH,
+                    new DailyChallengeRepository.CompleteListener() {
+                        @Override
+                        public void onResult(boolean newlyCompleted, boolean bonusAwarded) {
+                            showDailyChallengeToast(newlyCompleted, bonusAwarded);
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            // Tiho — dnevni izazovi nisu kritični za tok rezultata partije.
+                        }
+                    });
+        }
         TextView tvReward = findViewById(R.id.tvReward);
         userRepository.applyMatchRewards(uid, won, myTotal, new UserRepository.UserCallback() {
             @Override
@@ -168,6 +185,20 @@ public class MatchResultActivity extends AppCompatActivity {
         });
     }
 
+    /** Prikazuje kratak Toast kada je dnevni izazov (i eventualno bonus) upravo osvojen. */
+    private void showDailyChallengeToast(boolean newlyCompleted, boolean bonusAwarded) {
+        if (!newlyCompleted || isFinishing() || isDestroyed()) {
+            return;
+        }
+        String msg = getString(R.string.daily_challenge_toast_completed,
+                Constants.DAILY_CHALLENGE_REWARD_STARS);
+        if (bonusAwarded) {
+            msg += "\n" + getString(R.string.daily_challenge_toast_bonus,
+                    Constants.DAILY_CHALLENGE_ALL_BONUS_STARS, Constants.DAILY_CHALLENGE_ALL_BONUS_TOKENS);
+        }
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+    }
+
     // =========================================================================
     // Turnirski meč
     // =========================================================================
@@ -189,6 +220,22 @@ public class MatchResultActivity extends AppCompatActivity {
 
         // Turnirske nagrade — samo pobednik, po šemi za polufinale/finale.
         if (winnerUid.equals(myUid)) {
+            // Pobeda u BILO KOM meču turnira (polufinale ili finale) ispunjava
+            // dnevni izazov "Pobedi u turniru".
+            dailyChallengeRepository.completeChallenge(myUid,
+                    Constants.DAILY_CHALLENGE_WIN_TOURNAMENT_MATCH,
+                    new DailyChallengeRepository.CompleteListener() {
+                        @Override
+                        public void onResult(boolean newlyCompleted, boolean bonusAwarded) {
+                            showDailyChallengeToast(newlyCompleted, bonusAwarded);
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message) {
+                            // Tiho — dnevni izazovi nisu kritični za tok rezultata partije.
+                        }
+                    });
+
             boolean isFinal = Constants.TOURNAMENT_SLOT_FINAL.equals(stage);
             int stars = isFinal
                     ? MatchRewardCalculator.starsForTournamentFinalWinner(myTotal)

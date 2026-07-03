@@ -66,4 +66,12 @@
     <color name="rank_bronze_border">#FF8C5323</color>
     <color name="rank_default_bg">#FFFFFFFF</color>
     <color name="rank_badge_bg">#FF16233F</color>
+
+    <!-- Dnevni izazovi — nezavršeno (žuto) / završeno (zeleno) -->
+    <color name="daily_challenge_incomplete_bg">#FFFFF8E1</color>
+    <color name="daily_challenge_incomplete_border">#FFFFC107</color>
+    <color name="daily_challenge_incomplete_text">#FF8D6E00</color>
+    <color name="daily_challenge_complete_bg">#FFE8F5E9</color>
+    <color name="daily_challenge_complete_border">#FF4CAF50</color>
+    <color name="daily_challenge_complete_text">#FF1B5E20</color>
 </resources>

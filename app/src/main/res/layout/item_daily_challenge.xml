@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp"
+    app:strokeWidth="2dp"
+    tools:cardBackgroundColor="@color/daily_challenge_incomplete_bg"
+    tools:strokeColor="@color/daily_challenge_incomplete_border">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="14dp">
+
+        <TextView
+            android:id="@+id/tvDailyIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:textSize="28sp"
+            tools:text="⚔️" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvDailyTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textStyle="bold"
+                tools:text="Pobedi u partiji" />
+
+            <TextView
+                android:id="@+id/tvDailyDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                tools:text="Pobedi u jednoj rankiranoj 1v1 partiji." />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvDailyStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textAppearance="?attr/textAppearanceLabelMedium"
+            android:textStyle="bold"
+            tools:text="✓ Završeno"
+            tools:textColor="@color/daily_challenge_complete_text" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

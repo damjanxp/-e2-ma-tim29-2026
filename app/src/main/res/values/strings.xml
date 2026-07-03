@@ -421,6 +421,24 @@
     <string name="matchmaking_preparing">Priprema meča…</string>
     <string name="matchmaking_btn_cancel">Otkaži</string>
 
+    <!-- Dnevni izazovi -->
+    <string name="main_btn_daily_challenges">Dnevni izazovi</string>
+    <string name="daily_challenges_title">Dnevni izazovi</string>
+    <string name="daily_challenge_title_win_match">Pobedi u partiji</string>
+    <string name="daily_challenge_desc_win_match">Pobedi u jednoj rankiranoj 1v1 partiji.</string>
+    <string name="daily_challenge_title_win_tournament">Pobedi u turniru</string>
+    <string name="daily_challenge_desc_win_tournament">Pobedi u jednom meču turnira (polufinale se računa).</string>
+    <string name="daily_challenge_status_complete">✓ Završeno</string>
+    <string name="daily_challenge_status_incomplete">U toku</string>
+    <string name="daily_challenge_reward_each">+%d ⭐ po izazovu</string>
+    <string name="daily_challenges_bonus_incomplete">Završi sve izazove za bonus: +%1$d ⭐ i +%2$d žetona</string>
+    <string name="daily_challenges_bonus_complete">Bonus osvojen: +%1$d ⭐ i +%2$d žetona 🎉</string>
+    <string name="daily_challenges_debug_section">Debug</string>
+    <string name="daily_challenges_btn_reset">Resetuj sve</string>
+    <string name="daily_challenges_btn_complete_all">Završi sve</string>
+    <string name="daily_challenge_toast_completed">Dnevni izazov završen! +%d ⭐</string>
+    <string name="daily_challenge_toast_bonus">Bonus: +%1$d ⭐ i +%2$d žetona!</string>
+
     <!-- Turnir (4 igrača) -->
     <string name="main_btn_tournament">Turnir</string>
     <string name="tournament_lobby_list_title">Turnirski lobiji</string>
