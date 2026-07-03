@@ -1,6 +1,7 @@
 package com.example.slagalica.data.repository;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.example.slagalica.data.model.LeaderboardCycle;
 import com.example.slagalica.data.model.User;
@@ -12,6 +13,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
@@ -27,6 +29,13 @@ import java.util.Map;
  * profila. Ciklusi se ne zaključuju automatski (nema Cloud Functions/planera na besplatnom
  * planu) — zaključuje ih ručno test-dugme na ekranu rang liste, koje dodeljuje žetone prema
  * trenutnom plasmanu i resetuje brojače zvezda za novi ciklus.</p>
+ *
+ * <p>Svaki nagrađeni igrač (mesto unutar dužine niza nagrada) dobija i upis u
+ * {@code leaderboardRewards/{uid}} (polje {@code pending} — niz čekajućih
+ * nagrada) — vidi {@link #getPendingReward} / {@link #markRewardSeen}. Kako
+ * nema pravog server-push-a (opet, besplatan plan), obaveštenje/popup se
+ * pojavljuje kad igračev UREĐAJ otkrije čekajuću nagradu: odmah kod onoga ko
+ * zaključuje ciklus, ili pri sledećem otvaranju/prijavi za ostale.</p>
  */
 public class LeaderboardRepository {
 
@@ -177,18 +186,19 @@ public class LeaderboardRepository {
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     WriteBatch batch = mDb.batch();
+                    long now = System.currentTimeMillis();
                     int rank = 0;
                     for (QueryDocumentSnapshot doc : snapshot) {
                         Map<String, Object> updates = new HashMap<>();
                         updates.put(field, 0);
-                        if (rank < rewards.length) {
+                        if (rank < rewards.length && rewards[rank] > 0) {
                             updates.put("tokens", FieldValue.increment(rewards[rank]));
+                            queueRewardNotice(batch, doc.getId(), type, rank + 1, rewards[rank], now);
                         }
                         batch.update(doc.getReference(), updates);
                         rank++;
                     }
 
-                    long now = System.currentTimeMillis();
                     LeaderboardCycle newCycle = new LeaderboardCycle(now, computeCycleEnd(type, now));
                     DocumentReference cycleRef =
                             mDb.collection(Constants.COLLECTION_LEADERBOARD_CYCLES).document(type);
@@ -199,5 +209,115 @@ public class LeaderboardRepository {
                             .addOnFailureListener(e -> cb.onError("Zaključivanje ciklusa nije uspelo."));
                 })
                 .addOnFailureListener(e -> cb.onError("Učitavanje igrača za zaključivanje ciklusa nije uspelo."));
+    }
+
+    /**
+     * Dodaje čekajuću nagradu u {@code leaderboardRewards/{uid}.pending} (isti batch
+     * kao dodela žetona, pa su atomični zajedno). Koristi se {@code arrayUnion} nad
+     * poljem umesto zasebne kolekcije s upitom — izbegava potrebu za composite
+     * indeksom u Firestore-u (koji bi morao ručno da se napravi u konzoli).
+     */
+    private void queueRewardNotice(@NonNull WriteBatch batch, @NonNull String uid,
+                                   @NonNull String type, int rank, int tokens, long now) {
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("leaderboardType", type);
+        entry.put("rank", rank);
+        entry.put("tokens", tokens);
+        entry.put("createdAt", now);
+
+        Map<String, Object> update = new HashMap<>();
+        update.put("pending", FieldValue.arrayUnion(entry));
+
+        DocumentReference rewardRef = mDb.collection(Constants.COLLECTION_LEADERBOARD_REWARDS).document(uid);
+        batch.set(rewardRef, update, SetOptions.merge());
+    }
+
+    // -------------------------------------------------------------------------
+    // Čekajuće nagrade (za obaveštenje/popup nakon zaključenja ciklusa)
+    // -------------------------------------------------------------------------
+
+    /** Jedna čekajuća nagrada — mesto i broj žetona sa jednog zaključenog ciklusa. */
+    public static final class PendingReward {
+        @NonNull public final String leaderboardType;
+        public final int rank;
+        public final int tokens;
+        public final long createdAt;
+        /** Originalna mapa iz Firestore-a — potrebna za tačno uklanjanje ({@code arrayRemove}). */
+        @NonNull private final Map<String, Object> raw;
+
+        private PendingReward(@NonNull Map<String, Object> raw) {
+            this.raw = raw;
+            Object typeVal = raw.get("leaderboardType");
+            this.leaderboardType = typeVal instanceof String
+                    ? (String) typeVal : Constants.LEADERBOARD_TYPE_WEEKLY;
+            this.rank = asInt(raw.get("rank"));
+            this.tokens = asInt(raw.get("tokens"));
+            this.createdAt = asLong(raw.get("createdAt"));
+        }
+
+        private static int asInt(@Nullable Object v) {
+            return v instanceof Number ? ((Number) v).intValue() : 0;
+        }
+
+        private static long asLong(@Nullable Object v) {
+            return v instanceof Number ? ((Number) v).longValue() : 0L;
+        }
+    }
+
+    /** Rezultat provere čekajuće nagrade — {@code reward} je {@code null} ako nema ničeg. */
+    public interface PendingRewardListener {
+        void onResult(@Nullable PendingReward reward);
+        void onError(@NonNull String message);
+    }
+
+    /**
+     * Vraća najstariju neviđenu nagradu igrača (ili {@code null} ako nema).
+     * Sortiranje po vremenu je namerno na klijentu (ne u upitu) da se izbegne
+     * potreba za composite indeksom.
+     */
+    public void getPendingReward(@NonNull String uid, @NonNull PendingRewardListener listener) {
+        mDb.collection(Constants.COLLECTION_LEADERBOARD_REWARDS).document(uid).get()
+                .addOnSuccessListener(snap -> {
+                    List<Map<String, Object>> pending = extractPendingList(snap);
+                    if (pending.isEmpty()) {
+                        listener.onResult(null);
+                        return;
+                    }
+                    Map<String, Object> oldest = null;
+                    long oldestTs = Long.MAX_VALUE;
+                    for (Map<String, Object> entry : pending) {
+                        long ts = PendingReward.asLong(entry.get("createdAt"));
+                        if (ts < oldestTs) {
+                            oldestTs = ts;
+                            oldest = entry;
+                        }
+                    }
+                    listener.onResult(oldest != null ? new PendingReward(oldest) : null);
+                })
+                .addOnFailureListener(e -> listener.onError("Učitavanje nagrade nije uspelo."));
+    }
+
+    /** Uklanja nagradu iz čekanja — poziva se kad igrač zatvori popup sa prikazom nagrade. */
+    public void markRewardSeen(@NonNull String uid, @NonNull PendingReward reward,
+                               @NonNull SimpleCallback cb) {
+        mDb.collection(Constants.COLLECTION_LEADERBOARD_REWARDS).document(uid)
+                .update("pending", FieldValue.arrayRemove(reward.raw))
+                .addOnSuccessListener(v -> cb.onSuccess())
+                .addOnFailureListener(e -> cb.onError("Ažuriranje nagrade nije uspelo."));
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    private List<Map<String, Object>> extractPendingList(@NonNull DocumentSnapshot snap) {
+        Object raw = snap.get("pending");
+        List<Map<String, Object>> result = new ArrayList<>();
+        if (raw instanceof List) {
+            for (Object item : (List<?>) raw) {
+                if (item instanceof Map) {
+                    result.add((Map<String, Object>) item);
+                }
+            }
+        }
+        return result;
     }
 }

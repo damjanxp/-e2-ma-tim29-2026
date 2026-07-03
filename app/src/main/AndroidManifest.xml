@@ -94,6 +94,11 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ui.ranking.LeaderboardRewardActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".ui.match.MatchmakingActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

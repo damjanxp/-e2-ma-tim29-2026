@@ -599,6 +599,13 @@ public class UserRepository {
             if (newTokens > 0) {
                 updates.put("tokens", FieldValue.increment(newTokens));
             }
+            // Rang lista prati OSVOJENE zvezde — delta nije "floor"-ovan kad je
+            // pozitivan (floor samo sprečava pad ispod nule), pa je bezbedno
+            // koristiti ga direktno kao stvarni dobitak ovog meča.
+            if (delta > 0) {
+                updates.put("weeklyStars", FieldValue.increment(delta));
+                updates.put("monthlyStars", FieldValue.increment(delta));
+            }
             ref.update(updates).addOnSuccessListener(v -> {
                 user.setTotalStars(newStars);
                 user.setTokens(user.getTokens() + newTokens);
@@ -606,6 +613,40 @@ public class UserRepository {
             }).addOnFailureListener(e -> cb.onError("Upis nagrada nije uspeo."));
         }).addOnFailureListener(e ->
                 cb.onError("Učitavanje profila nije uspelo. Proveri internet konekciju."));
+    }
+
+    /**
+     * Uvećava brojače zvezda za tekući nedeljni i mesečni ciklus rang liste
+     * ({@code weeklyStars}/{@code monthlyStars}) za {@code amount}.
+     *
+     * <p>Poziva se pored (ne umesto) metoda koje menjaju {@code totalStars}
+     * ({@link #applyMatchRewards}, {@link #creditChallengeReward}) — i to SAMO
+     * sa iznosom stvarno OSVOJENIH zvezda iz nekog izvora nagrade (pobeda u
+     * partiji, turniru, dnevni izazov, neto dobitak iz Izazova). Nikad se ne
+     * poziva za trošenje (ulog) ili za refundaciju uloga, tako da rang lista
+     * prati koliko je ko zvezda <b>osvojio</b> u tekućem periodu, a ne trenutni
+     * saldo zvezda (koji pada kad se zvezde troše).</p>
+     *
+     * <p>Ne radi ništa ako je {@code amount <= 0} — rang lista se nikad ne
+     * umanjuje, samo akumulira osvojeno.</p>
+     *
+     * @param uid    UID igrača
+     * @param amount broj novoosvojenih zvezda (ignoriše se ako je ≤ 0)
+     * @param cb     callback po završetku, može biti {@code null}
+     */
+    public void addLeaderboardStars(@NonNull String uid, int amount, @Nullable SimpleCallback cb) {
+        if (amount <= 0) {
+            if (cb != null) cb.onSuccess();
+            return;
+        }
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("weeklyStars", FieldValue.increment(amount));
+        updates.put("monthlyStars", FieldValue.increment(amount));
+        mDb.collection(COLLECTION_USERS).document(uid).update(updates)
+                .addOnSuccessListener(v -> { if (cb != null) cb.onSuccess(); })
+                .addOnFailureListener(e -> {
+                    if (cb != null) cb.onError("Ažuriranje rang liste nije uspelo.");
+                });
     }
 
     /** Odjava (alias za {@link #logout()} — koristi ga Student 2 kod profila). */

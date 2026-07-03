@@ -212,6 +212,9 @@ public class DailyChallengeRepository {
         int tokens = bonusAwarded ? Constants.DAILY_CHALLENGE_ALL_BONUS_TOKENS : 0;
         if (stars > 0 || tokens > 0) {
             userRepository.creditChallengeReward(uid, stars, tokens, null);
+            // Dnevni izazovi su čist dobitak (nema uloga), pa ceo iznos ide
+            // i na rang listu (nedeljni/mesečni brojač zvezda).
+            userRepository.addLeaderboardStars(uid, stars, null);
         }
     }
 

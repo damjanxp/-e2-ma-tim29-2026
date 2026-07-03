@@ -869,6 +869,7 @@ public class MatchRepository {
         public boolean mustReveal;
         public String phase = "PLAYING";
         public boolean[][] revealed = new boolean[4][4];
+        public String[][] revealedBy = new String[4][4];
         public String[] colSolvedBy = new String[4];
         public int[] colScores = new int[4];
         public boolean finalSolved;
@@ -877,27 +878,46 @@ public class MatchRepository {
         public Map<String, Integer> scores = new HashMap<>();
     }
 
+    /**
+     * Inicira rundu — prvi igrač na potezu MORA otvoriti tačno jedno polje pre
+     * nego što sme da pogađa (isto pravilo važi za svaki naredni potez, vidi
+     * {@link #revealAsocijacijeCell} i {@link #passAsocijacijeTurn}).
+     */
     public void initAsocijacijeRound(@NonNull String matchId, int round, @NonNull String firstTurnUid) {
         Map<String, Object> init = new HashMap<>();
         init.put("turn", firstTurnUid);
-        init.put("mustReveal", false);
+        init.put("mustReveal", true);
         init.put("phase", "PLAYING");
         asocRoundRef(matchId, round).updateChildren(init);
     }
 
-    public void revealAsocijacijeCell(@NonNull String matchId, int round, int col, int row, boolean clearMustReveal) {
+    /**
+     * Otkriva jedno polje i beleži KO ga je otkrio (za bojenje po igraču).
+     * Poziva se samo kada je {@code mustReveal == true} (proverava
+     * {@code AsocijacijeActivity} pre poziva) — nakon otkrivanja se
+     * {@code mustReveal} gasi, čime se sprečava otvaranje još polja pre pogotka.
+     */
+    public void revealAsocijacijeCell(@NonNull String matchId, int round, int col, int row,
+                                       @NonNull String revealerUid, boolean clearMustReveal) {
         Map<String, Object> update = new HashMap<>();
         update.put("revealed/" + col + "/" + row, true);
+        update.put("revealedBy/" + col + "/" + row, revealerUid);
         if (clearMustReveal) update.put("mustReveal", false);
         asocRoundRef(matchId, round).updateChildren(update);
     }
 
+    /**
+     * Beleži tačan pogodak kolone. Igrač nastavlja potez, ali mora ponovo
+     * otkriti novo polje pre sledećeg pogotka ({@code mustReveal} se ponovo
+     * pali) — isti ciklus "otkrij jedno pa pogodi" važi tokom cele runde.
+     */
     public void solveAsocijacijeColumn(@NonNull String matchId, int round, int col,
                                         @NonNull String solverUid, int colScore, int newTotalScore) {
         Map<String, Object> update = new HashMap<>();
         update.put("colSolved/" + col, solverUid);
         update.put("colScores/" + col, colScore);
         update.put("scores/" + solverUid, newTotalScore);
+        update.put("mustReveal", true);
         asocRoundRef(matchId, round).updateChildren(update);
     }
 
@@ -943,6 +963,15 @@ public class MatchRepository {
                         int r = safeParseInt(rowSnap.getKey(), -1);
                         if (r < 0 || r >= 4) continue;
                         if (Boolean.TRUE.equals(rowSnap.getValue(Boolean.class))) state.revealed[c][r] = true;
+                    }
+                }
+                for (DataSnapshot colSnap : snap.child("revealedBy").getChildren()) {
+                    int c = safeParseInt(colSnap.getKey(), -1);
+                    if (c < 0 || c >= 4) continue;
+                    for (DataSnapshot rowSnap : colSnap.getChildren()) {
+                        int r = safeParseInt(rowSnap.getKey(), -1);
+                        if (r < 0 || r >= 4) continue;
+                        state.revealedBy[c][r] = rowSnap.getValue(String.class);
                     }
                 }
                 for (DataSnapshot cs : snap.child("colSolved").getChildren()) {

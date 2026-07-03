@@ -244,6 +244,9 @@ public class MatchResultActivity extends AppCompatActivity {
                     ? MatchRewardCalculator.TOURNAMENT_FINAL_TOKENS
                     : MatchRewardCalculator.TOURNAMENT_SEMIFINAL_TOKENS;
             userRepository.creditChallengeReward(myUid, stars, tokens, null);
+            // Turnirska nagrada je čist dobitak (nema uloga koji se vraća), pa
+            // ceo iznos ide na rang listu (nedeljni/mesečni brojač zvezda).
+            userRepository.addLeaderboardStars(myUid, stars, null);
 
             TextView tvReward = findViewById(R.id.tvReward);
             tvReward.setText(getString(R.string.result_reward_gain, stars)
