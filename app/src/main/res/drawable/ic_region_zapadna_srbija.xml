@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Zapadna Srbija — planinski vrhovi (Zlatibor, Tara). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#7A8B99"
+        android:pathData="M2,20 L8,8 L11,13 L15,5 L22,20 Z" />
+</vector>

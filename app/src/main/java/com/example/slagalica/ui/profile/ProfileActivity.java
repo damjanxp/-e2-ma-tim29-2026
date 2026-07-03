@@ -20,6 +20,7 @@ import com.example.slagalica.data.repository.UserRepository;
 import com.example.slagalica.logic.league.LeagueLogic;
 import com.example.slagalica.ui.auth.LoginActivity;
 import com.example.slagalica.util.AvatarProvider;
+import com.example.slagalica.util.LeagueIconProvider;
 import com.example.slagalica.util.QrCodeGenerator;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
@@ -174,7 +175,7 @@ public class ProfileActivity extends AppCompatActivity {
         chipTokens.setText(getString(R.string.profile_label_tokens, (int) user.getTokens()));
         chipStars.setText(getString(R.string.profile_label_stars, (int) user.getTotalStars()));
         chipLeague.setText(getString(R.string.profile_label_league, leagueName((int) user.getCurrentLeague())));
-        chipLeague.setChipIconResource(R.drawable.ic_league);
+        chipLeague.setChipIconResource(LeagueIconProvider.getDrawableRes((int) user.getCurrentLeague()));
         chipRegion.setText(getString(R.string.profile_label_region, user.getRegion()));
 
         bindLeagueProgress((int) user.getTotalStars(), (int) user.getCurrentLeague());

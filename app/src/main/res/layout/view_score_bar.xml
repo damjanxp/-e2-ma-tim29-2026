@@ -28,7 +28,7 @@
             app:shapeAppearance="@style/ShapeAppearance.Avatar.Circle"
             app:strokeColor="@color/white"
             app:strokeWidth="2dp"
-            tools:src="@drawable/avatar_0" />
+            tools:src="@drawable/avatar_dinosaur" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -128,7 +128,7 @@
             app:shapeAppearance="@style/ShapeAppearance.Avatar.Circle"
             app:strokeColor="@color/white"
             app:strokeWidth="2dp"
-            tools:src="@drawable/avatar_1" />
+            tools:src="@drawable/avatar_fox" />
     </LinearLayout>
 
 </LinearLayout>

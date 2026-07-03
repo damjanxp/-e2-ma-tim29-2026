@@ -23,6 +23,7 @@ import com.example.slagalica.logic.match.MatchRewardCalculator;
 import com.example.slagalica.ui.main.MainActivity;
 import com.example.slagalica.ui.tournament.TournamentBracketActivity;
 import com.example.slagalica.util.Constants;
+import com.example.slagalica.util.LeagueIconProvider;
 import com.example.slagalica.util.NotificationPoster;
 import com.google.android.material.button.MaterialButton;
 
@@ -241,6 +242,7 @@ public class MatchResultActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
+                .setIcon(LeagueIconProvider.getDrawableRes(leagueAfter))
                 .setPositiveButton(R.string.dialog_ok_got_it, null)
                 .show();
 

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kosovo i Metohija — kupola na osnovi (baština, manastiri). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#8C7AA6"
+        android:pathData="M6,22 L6,14 A6,6 0 0,1 18,14 L18,22 Z" />
+</vector>

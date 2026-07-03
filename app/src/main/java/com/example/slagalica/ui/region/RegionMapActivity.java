@@ -58,13 +58,13 @@ public class RegionMapActivity extends AppCompatActivity {
     /** Proizvoljna ikonica po regionu (spec 5c). */
     private static final Map<String, Integer> ZONE_ICONS = new HashMap<>();
     static {
-        ZONE_ICONS.put("Beograd", R.drawable.ic_symbol_star);
-        ZONE_ICONS.put("Vojvodina", R.drawable.ic_symbol_circle);
-        ZONE_ICONS.put("Šumadija", R.drawable.ic_symbol_triangle);
-        ZONE_ICONS.put("Zapadna Srbija", R.drawable.ic_symbol_square);
-        ZONE_ICONS.put("Istočna Srbija", R.drawable.ic_symbol_heart);
-        ZONE_ICONS.put("Južna Srbija", R.drawable.ic_symbol_smiley);
-        ZONE_ICONS.put("Kosovo i Metohija", R.drawable.ic_league);
+        ZONE_ICONS.put("Beograd", R.drawable.ic_region_beograd);
+        ZONE_ICONS.put("Vojvodina", R.drawable.ic_region_vojvodina);
+        ZONE_ICONS.put("Šumadija", R.drawable.ic_region_sumadija);
+        ZONE_ICONS.put("Zapadna Srbija", R.drawable.ic_region_zapadna_srbija);
+        ZONE_ICONS.put("Istočna Srbija", R.drawable.ic_region_istocna_srbija);
+        ZONE_ICONS.put("Južna Srbija", R.drawable.ic_region_juzna_srbija);
+        ZONE_ICONS.put("Kosovo i Metohija", R.drawable.ic_region_kim);
     }
 
     /** Najviše markera koje iscrtavamo po regionu (čitljivost mape). */
@@ -210,10 +210,11 @@ public class RegionMapActivity extends AppCompatActivity {
             List<User> players = playersByRegion.getOrDefault(regionName, new ArrayList<>());
             List<PointF> markers = randomMarkersFor(players);
             int frameType = frameTypeFor(regionName, cycleResult);
+            Integer iconRes = ZONE_ICONS.get(regionName);
 
             zones.add(new RegionMapView.Zone(
                     regionName, bounds[0], bounds[1], bounds[2], bounds[3],
-                    players.size(), frameType, markers));
+                    players.size(), frameType, markers, iconRes != null ? iconRes : 0));
         }
         regionMapView.setZones(zones);
         pbLoading.setVisibility(View.GONE);

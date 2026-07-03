@@ -25,7 +25,7 @@
             app:strokeColor="@color/profile_avatar_stroke"
             app:strokeWidth="2dp"
             tools:ignore="ContentDescription"
-            tools:src="@drawable/avatar_0" />
+            tools:src="@drawable/avatar_dinosaur" />
 
         <LinearLayout
             android:layout_width="0dp"

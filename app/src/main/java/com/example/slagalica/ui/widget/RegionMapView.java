@@ -6,11 +6,13 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PointF;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +38,11 @@ public class RegionMapView extends View {
         public final int frameType;
         /** Pozicije igrača, relativne (0..1) unutar granica ovog regiona. */
         public final List<PointF> markers;
+        /** Drawable resurs ikonice regiona (specifikacija 5c), ili 0 ako nema. */
+        public final int iconRes;
 
         public Zone(String name, float left, float top, float right, float bottom,
-                    int playerCount, int frameType, List<PointF> markers) {
+                    int playerCount, int frameType, List<PointF> markers, int iconRes) {
             this.name = name;
             this.left = left;
             this.top = top;
@@ -47,6 +51,7 @@ public class RegionMapView extends View {
             this.playerCount = playerCount;
             this.frameType = frameType;
             this.markers = markers;
+            this.iconRes = iconRes;
         }
     }
 
@@ -64,6 +69,7 @@ public class RegionMapView extends View {
 
     private final List<Zone> zones = new ArrayList<>();
     private final List<RectF> zonePixelRects = new ArrayList<>();
+    private final List<Drawable> zoneIcons = new ArrayList<>();
     @Nullable private OnZoneClickListener listener;
 
     private final Paint fillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -103,6 +109,10 @@ public class RegionMapView extends View {
     public void setZones(@androidx.annotation.NonNull List<Zone> newZones) {
         zones.clear();
         zones.addAll(newZones);
+        zoneIcons.clear();
+        for (Zone z : newZones) {
+            zoneIcons.add(z.iconRes != 0 ? ContextCompat.getDrawable(getContext(), z.iconRes) : null);
+        }
         requestLayout();
         invalidate();
     }
@@ -140,6 +150,16 @@ public class RegionMapView extends View {
             float centerX = rect.centerX();
             canvas.drawText(zone.name, centerX, rect.top + dp(18), namePaint);
             canvas.drawText(zone.playerCount + " igrača", centerX, rect.top + dp(34), countPaint);
+
+            Drawable icon = zoneIcons.get(i);
+            if (icon != null) {
+                float iconSize = dp(22);
+                float iconRight = rect.right - dp(6);
+                float iconTop = rect.top + dp(6);
+                icon.setBounds((int) (iconRight - iconSize), (int) iconTop,
+                        (int) iconRight, (int) (iconTop + iconSize));
+                icon.draw(canvas);
+            }
 
             for (PointF marker : zone.markers) {
                 float mx = rect.left + marker.x * rect.width();

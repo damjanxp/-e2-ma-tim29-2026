@@ -17,12 +17,12 @@ import com.example.slagalica.R;
 public final class AvatarProvider {
 
     private static final int[] AVATARS = {
-            R.drawable.avatar_0,
-            R.drawable.avatar_1,
-            R.drawable.avatar_2,
-            R.drawable.avatar_3,
-            R.drawable.avatar_4,
-            R.drawable.avatar_5
+            R.drawable.avatar_dinosaur,
+            R.drawable.avatar_fox,
+            R.drawable.avatar_girl,
+            R.drawable.avatar_gorilla,
+            R.drawable.avatar_hacker,
+            R.drawable.avatar_panda
     };
 
     private AvatarProvider() {

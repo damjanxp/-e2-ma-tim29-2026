@@ -15,7 +15,7 @@
         android:scaleType="centerCrop"
         app:shapeAppearance="@style/ShapeAppearance.Avatar.Circle"
         tools:ignore="ContentDescription"
-        tools:src="@drawable/avatar_0" />
+        tools:src="@drawable/avatar_dinosaur" />
 
     <TextView
         android:id="@+id/tvSearchUsername"

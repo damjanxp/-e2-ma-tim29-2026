@@ -26,6 +26,7 @@ import com.example.slagalica.ui.ranking.RankingActivity;
 import com.example.slagalica.ui.region.RegionMapActivity;
 import com.example.slagalica.ui.tournament.TournamentLobbyListActivity;
 import com.example.slagalica.util.Constants;
+import com.example.slagalica.util.LeagueIconProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -140,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
                         chipTokens.setText(getString(R.string.main_chip_tokens, user.getTokens()));
                         chipStars.setText(getString(R.string.main_chip_stars, user.getTotalStars()));
                         chipLeague.setText(getString(R.string.main_chip_league, user.getCurrentLeague()));
+                        chipLeague.setChipIconResource(LeagueIconProvider.getDrawableRes(user.getCurrentLeague()));
 
                         // Dnevna dodela žetona (tiho; osvežava se pri sledećem ulasku na ekran).
                         userRepository.grantDailyTokensIfDue(uid, new UserRepository.SimpleCallback() {

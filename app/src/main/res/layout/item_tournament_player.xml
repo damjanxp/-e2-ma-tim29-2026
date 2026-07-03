@@ -18,8 +18,8 @@
         android:layout_width="56dp"
         android:layout_height="56dp"
         android:contentDescription="@string/tournament_bracket_title"
-        android:src="@drawable/avatar_0"
-        tools:src="@drawable/avatar_1" />
+        android:src="@drawable/avatar_dinosaur"
+        tools:src="@drawable/avatar_fox" />
 
     <TextView
         android:id="@+id/tvPlayerName"

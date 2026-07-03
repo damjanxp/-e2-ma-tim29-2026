@@ -60,7 +60,7 @@
                 app:shapeAppearance="@style/ShapeAppearance.Avatar.Circle"
                 app:strokeColor="@color/white"
                 app:strokeWidth="2dp"
-                tools:src="@drawable/avatar_0" />
+                tools:src="@drawable/avatar_dinosaur" />
 
             <TextView
                 android:id="@+id/tvRankCrown"
